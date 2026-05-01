@@ -317,8 +317,16 @@ const MsProvider = (() => {
     },
     async signIn() {
       boot();
-      const r = await app.loginPopup({ scopes: c.scopes });
-      return { name: r.account.name, email: r.account.username };
+      try {
+        const r = await app.loginPopup({ scopes: c.scopes });
+        return { name: r.account.name, email: r.account.username };
+      } catch(e) {
+        if (e.errorCode === 'block_nested_popups' || e.message?.includes('popup')) {
+          await app.loginRedirect({ scopes: c.scopes });
+          return null;
+        }
+        throw e;
+      }
     },
     async signOut() { boot(); await app.logoutPopup().catch(()=>{}); },
     async loadRows() {
