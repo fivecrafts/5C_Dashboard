@@ -109,6 +109,36 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
 .s-done{background:#f1f5f9;color:#475569;}.s-done::before{color:var(--slate2);}
 .s-cancelled{background:var(--red-l);color:#991b1b;}.s-cancelled::before{color:var(--red);}
 .cb{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.64rem;font-weight:500;background:#f1f5f9;color:var(--slate);border:1px solid var(--border);}
+.cat-project{background:#dcfce7;color:#166534;border-color:#bbf7d0;}
+.cat-partnership{background:#fce7f3;color:#9d174d;border-color:#fbcfe8;}
+.cat-prospect{background:#fef9c3;color:#854d0e;border-color:#fef08a;}
+.cat-pipeline{background:#dbeafe;color:#1e40af;border-color:#bfdbfe;}
+/* ── LEGEND ── */
+.legend{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;}
+.legend h3{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy2);margin-bottom:10px;}
+.legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.legend-section h4{font-size:.65rem;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+.legend-items{display:flex;flex-wrap:wrap;gap:5px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--slate);}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* ── EDIT DRAWER ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(15,37,64,.4);z-index:150;display:none;}
+.drawer-overlay.open{display:block;}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:95vw;background:var(--card);box-shadow:-4px 0 24px rgba(0,0,0,.15);z-index:160;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease;}
+.drawer.open{transform:translateX(0);}
+.drawer-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.drawer-head h2{font-size:.88rem;font-weight:700;color:var(--navy);}
+.drawer-close{width:28px;height:28px;border:none;background:#f1f5f9;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;color:var(--slate);}
+.drawer-close:hover{background:var(--border2);}
+.drawer-body{flex:1;overflow-y:auto;padding:16px 20px;}
+.drawer-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.field-group{margin-bottom:14px;}
+.field-group label{display:block;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);margin-bottom:5px;}
+.field-group input,.field-group select,.field-group textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;font-size:.82rem;font-family:var(--font);color:#1e293b;background:var(--card);outline:none;}
+.field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--blue);}
+.field-group textarea{resize:vertical;min-height:80px;line-height:1.5;}
+.edit-row{cursor:pointer;}
+.edit-row:hover td{background:#f0f4ff !important;}
 .filter-bar{display:flex;gap:9px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
 .filter-bar input,.filter-bar select{padding:7px 10px;border:1px solid var(--border2);border-radius:7px;font-size:.79rem;background:var(--card);font-family:var(--font);color:#1e293b;outline:none;}
 .filter-bar input:focus,.filter-bar select:focus{border-color:var(--blue);}
@@ -233,6 +263,36 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
 </div>
 <div class="toast-area" id="toasts"></div>
 
+<!-- EDIT DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h2 id="drawer-title">Edit Opportunity</h2>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field-group"><label>Client Name</label><input id="d-client" type="text"></div>
+    <div class="field-group"><label>Project / Scope</label><input id="d-project" type="text"></div>
+    <div class="field-group"><label>Detail / Roles & Requirements</label><textarea id="d-detail"></textarea></div>
+    <div class="field-group"><label>Category</label>
+      <select id="d-cat">
+        <option>Project</option><option>Partnership</option>
+        <option>Prospect</option><option>Pipeline</option>
+      </select>
+    </div>
+    <div class="field-group"><label>Status</label>
+      <select id="d-status"></select>
+    </div>
+    <div class="field-group"><label>Responsible (Owner)</label><input id="d-resp" type="text"></div>
+    <div class="field-group"><label>Contact</label><input id="d-contact" type="text"></div>
+    <div class="field-group"><label>Source</label><input id="d-source" type="text"></div>
+  </div>
+  <div class="drawer-foot">
+    <button class="sbtn sbtn-p" onclick="saveDrawer()" style="flex:1">✓ Save Changes</button>
+    <button class="sbtn sbtn-d" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5" onclick="closeDrawer()">Cancel</button>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -345,6 +405,22 @@ const MsProvider = (() => {
         `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${c.sheetName}/range(address='${c.statusCol}${row._row}')`,
         { values: [[newS]] });
     },
+    async saveRow(row, fields) {
+      // Columns: A=Client Name, B=Project Name, C=Detail, D=Category, E=Status, G=Responsible, H=Contact, I=Source (approx)
+      const excelRow = row._row;
+      const sheet = c.sheetName;
+      // Write A:E in one PATCH
+      const ok1 = await api('PATCH',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='A${excelRow}:E${excelRow}')`,
+        { values: [[fields.c, fields.p, fields.d, fields.cat, fields.s]] }
+      );
+      // Write G:H (Responsible, Contact)
+      const ok2 = await api('PATCH',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='G${excelRow}:H${excelRow}')`,
+        { values: [[fields.r, fields.rsp]] }
+      );
+      return ok1 && ok2;
+    },
   };
 })();
 
@@ -415,6 +491,13 @@ const GglProvider = (() => {
     async saveStatus(row, newS) {
       const range = `${c.sheetName}!${colLetter(c.statusCol)}${row._row}`;
       return sheetsPut(range, [[newS]]);
+    },
+    async saveRow(row, fields) {
+      const excelRow = row._row;
+      const sheet = c.sheetName;
+      const ok1 = await sheetsPut(`${sheet}!A${excelRow}:E${excelRow}`, [[fields.c, fields.p, fields.d, fields.cat, fields.s]]);
+      const ok2 = await sheetsPut(`${sheet}!G${excelRow}:H${excelRow}`, [[fields.r, fields.rsp]]);
+      return ok1 && ok2;
     },
   };
 })();
@@ -572,6 +655,32 @@ function renderDash(){
     <div class="kpi k-done" onclick="UI.nf('Done',null)"><div class="lbl">Done</div><div class="val">${cnt('Done')}</div><div class="sub">Completed</div></div>
     <div class="kpi k-can" onclick="UI.nf('Cancelled',null)"><div class="lbl">Cancelled</div><div class="val">${cnt('Cancelled')}</div><div class="sub">Archived</div></div>
   </div>
+  <!-- LEGEND -->
+  <div class="legend">
+    <h3>Legend</h3>
+    <div class="legend-grid">
+      <div class="legend-section">
+        <h4>Status — BD Workflow</h4>
+        <div class="legend-items">
+          <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Prospect — early signal, no active scope</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>Pipeline — active BD, scope discussed</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span>Bidding — proposal submitted</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Running — signed, work in progress</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--slate2)"></span>Done — completed engagement</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Cancelled — dropped / archived</span>
+        </div>
+      </div>
+      <div class="legend-section">
+        <h4>Category — Record Type</h4>
+        <div class="legend-items">
+          <span class="legend-item"><span class="cb cat-project" style="font-size:.65rem">Project</span> Active/past delivery engagement</span>
+          <span class="legend-item"><span class="cb cat-partnership" style="font-size:.65rem">Partnership</span> Partner, vendor, referral</span>
+          <span class="legend-item"><span class="cb cat-pipeline" style="font-size:.65rem">Pipeline</span> Specific sales opportunity</span>
+          <span class="legend-item"><span class="cb cat-prospect" style="font-size:.65rem">Prospect</span> Named target being evaluated</span>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="sect">By Owner</div>
   <div class="owner-grid">${owners.map(o=>{
     const rows=DATA.filter(r=>r.r===o), col=OC[o]||'#64748b', ini=o.split(' ').map(w=>w[0]).join('');
@@ -590,7 +699,7 @@ function renderDash(){
     <tbody>${sorted.map(r=>`<tr>
       <td><b style="color:var(--navy2)">${r.c}</b></td>
       <td style="font-size:.75rem;color:var(--slate)">${r.p||'—'}</td>
-      <td><span class="cb">${r.cat}</span></td><td>${badge(r.s)}</td>
+      <td>${catBadge(r.cat)}</td><td>${badge(r.s)}</td>
       <td style="font-size:.75rem">${r.r||'—'}</td>
     </tr>`).join('')}</tbody>
   </table></div>`;
@@ -610,6 +719,32 @@ function renderPipe(q, fs, fo) {
   const nch=Object.keys(CHANGES).length;
 
   $('pipe-out').innerHTML=`
+  <div class="legend" style="margin-bottom:14px;">
+    <h3>Legend</h3>
+    <div class="legend-grid">
+      <div class="legend-section">
+        <h4>Status Workflow</h4>
+        <div class="legend-items">
+          <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Prospect</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>Pipeline</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span>Bidding</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Running</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--slate2)"></span>Done</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Cancelled</span>
+        </div>
+      </div>
+      <div class="legend-section">
+        <h4>Category</h4>
+        <div class="legend-items">
+          <span class="cb cat-project" style="font-size:.65rem">Project</span>
+          <span class="cb cat-partnership" style="font-size:.65rem">Partnership</span>
+          <span class="cb cat-pipeline" style="font-size:.65rem">Pipeline</span>
+          <span class="cb cat-prospect" style="font-size:.65rem">Prospect</span>
+        </div>
+        <div style="font-size:.68rem;color:var(--slate);margin-top:6px;">Click any row to edit all fields</div>
+      </div>
+    </div>
+  </div>
   <div class="wf-card"><h3>Workflow</h3><div class="wf-flow">
     <span class="wf-step s-prospect">Prospect</span><span class="wf-arr">→</span>
     <span class="wf-step s-pipeline">Pipeline</span><span class="wf-arr">→</span>
@@ -636,12 +771,13 @@ function renderPipe(q, fs, fo) {
     <tbody>${filtered.map(r=>{
       const k=r.c+'|||'+r.p, cur=CHANGES[k]??r.s, allowed=FLOW[r.s]||ALL_S, changed=CHANGES[k]!==undefined;
       const opts=ALL_S.map(s=>`<option value="${s}"${cur===s?' selected':''}${!allowed.includes(s)&&s!==r.s?' disabled style="color:#ccc"':''}>${s}</option>`).join('');
-      return `<tr>
+      const safeKey = k.replace(/'/g, '__SQ__');
+      return `<tr class="edit-row" onclick="openDrawer('${safeKey}')">
         <td><b style="font-size:.82rem;color:var(--navy2)">${r.c}</b></td>
         <td style="font-size:.73rem;color:var(--slate)">${r.p||'—'}</td>
         <td><div class="dc" title="${(r.d||'').replace(/"/g,"'")}">${r.d||'—'}</div></td>
-        <td><span class="cb">${r.cat}</span></td>
-        <td><select class="ssel${changed?' changed':''}" data-key="${k}" data-orig="${r.s}" onchange="onChg(this)">${opts}</select></td>
+        <td>${catBadge(r.cat)}</td>
+        <td onclick="event.stopPropagation()"><select class="ssel${changed?' changed':''}" data-key="${k}" data-orig="${r.s}" onchange="onChg(this)">${opts}</select></td>
         <td style="font-size:.75rem">${r.r||'—'}</td>
         <td style="font-size:.72rem;color:var(--slate)">${r.rsp||'—'}</td>
       </tr>`;
@@ -664,6 +800,7 @@ function onChg(sel){
 // ── HELPERS ─────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 function badge(s){const m={Running:'s-running',Bidding:'s-bidding',Pipeline:'s-pipeline',Prospect:'s-prospect',Done:'s-done',Cancelled:'s-cancelled'};return `<span class="sb2 ${m[s]||'s-prospect'}">${s}</span>`;}
+function catBadge(c){const m={Project:'cat-project',Partnership:'cat-partnership',Prospect:'cat-prospect',Pipeline:'cat-pipeline'};return `<span class="cb ${m[c]||''}">${c||'—'}</span>`;}
 function chip(cls,txt){const el=$('chip-src');el.className='chip '+cls;el.textContent=txt;}
 function showErr(msg){const el=$('login-err');el.textContent='⚠ '+msg;el.style.display='block';}
 function toast(msg,type='info'){
@@ -671,6 +808,83 @@ function toast(msg,type='info'){
   t.className=`toast t-${type}`; t.textContent=msg; area.appendChild(t);
   requestAnimationFrame(()=>t.classList.add('show'));
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},4000);
+}
+
+// ── EDIT DRAWER ─────────────────────────────────────────────────
+let drawerKey = null;
+
+function openDrawer(k) {
+  k = k.replace(/__SQ__/g, "'");
+  const [c, p] = k.split('|||');
+  const row = DATA.find(r => r.c === c && r.p === p);
+  if (!row) return;
+  drawerKey = k;
+
+  // Populate fields
+  $('d-client').value   = row.c || '';
+  $('d-project').value  = row.p || '';
+  $('d-detail').value   = row.d || '';
+  $('d-cat').value      = row.cat || 'Prospect';
+  $('d-resp').value     = row.r || '';
+  $('d-contact').value  = row.rsp || '';
+  $('d-source').value   = row.src || '';
+  $('drawer-title').textContent = row.c + (row.p ? ' · ' + row.p : '');
+
+  // Populate status select with workflow rules
+  const allowed = FLOW[row.s] || ALL_S;
+  $('d-status').innerHTML = ALL_S.map(s =>
+    `<option value="${s}" ${row.s === s ? 'selected' : ''} ${!allowed.includes(s) && s !== row.s ? 'disabled style="color:#ccc"' : ''}>${s}</option>`
+  ).join('');
+
+  $('drawer-overlay').classList.add('open');
+  $('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  $('drawer-overlay').classList.remove('open');
+  $('drawer').classList.remove('open');
+  drawerKey = null;
+}
+
+async function saveDrawer() {
+  if (!drawerKey) return;
+  const [c, p] = drawerKey.split('|||');
+  const row = DATA.find(r => r.c === c && r.p === p);
+  if (!row) return;
+
+  // Read new values from drawer
+  const newC   = $('d-client').value.trim()  || row.c;
+  const newP   = $('d-project').value.trim();
+  const newD   = $('d-detail').value.trim();
+  const newCat = $('d-cat').value;
+  const newS   = $('d-status').value;
+  const newR   = $('d-resp').value.trim();
+  const newRsp = $('d-contact').value.trim();
+  const newSrc = $('d-source').value.trim();
+
+  toast('Saving…', 'info');
+
+  // Save via provider's saveRow — falls back to individual cell saves
+  try {
+    const ok = await activeProvider.saveRow(row, {
+      c:newC, p:newP, d:newD, cat:newCat, s:newS, r:newR, rsp:newRsp, src:newSrc
+    });
+    if (ok) {
+      // Update in-memory data
+      Object.assign(row, {c:newC, p:newP, d:newD, cat:newCat, s:newS, r:newR, rsp:newRsp, src:newSrc});
+      // Clear any pending change for this row since it's now saved
+      delete CHANGES[drawerKey];
+      toast('✓ All fields saved to SharePoint', 'success');
+      closeDrawer();
+      updateCounts();
+      renderDash();
+      renderPipe('','','');
+    } else {
+      toast('⚠ Save failed — check permissions', 'error');
+    }
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
 }
 
 // ── BOOT ────────────────────────────────────────────────────────
