@@ -232,9 +232,15 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
       <div class="tb-l"><span class="tb-t" id="tb-t">Dashboard</span><span style="color:var(--slate2)">·</span><span class="tb-s" id="tb-s">Overview · Five Crafts Q1/Q2 2026</span></div>
       <div class="tb-r">
         <span class="chip ch-a" id="chip-chg" style="display:none">⚠ <span id="chg-n">0</span> unsaved</span>
+        <span id="my-opps-chip" style="display:none;cursor:pointer" class="chip ch-b" onclick="UI.nf('',null,window.CURRENT_USER_NAME)" title="Show my opportunities"></span>
         <span class="chip ch-g" id="chip-src">● Loading…</span>
         <button class="reload-btn" onclick="App.load()">↻ Reload</button>
       </div>
+    </div>
+    <div id="stale-banner" style="display:none;background:#92400e;color:#fef3c7;padding:8px 22px;font-size:.78rem;align-items:center;gap:10px;flex-shrink:0;">
+      ⚠ Data loaded more than 30 minutes ago — someone may have changed the Excel file.
+      <button onclick="App.load();document.getElementById('stale-banner').style.display='none';staleWarned=false;" style="padding:3px 10px;background:#b45309;border:none;border-radius:5px;color:#fef3c7;cursor:pointer;font-size:.75rem;margin-left:auto">↻ Reload now</button>
+      <button onclick="document.getElementById('stale-banner').style.display='none'" style="padding:3px 8px;background:transparent;border:1px solid #b45309;border-radius:5px;color:#fef3c7;cursor:pointer;font-size:.75rem">Dismiss</button>
     </div>
     <div class="content">
       <div class="page active" id="page-dashboard"><div id="dash-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
@@ -264,6 +270,20 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
 <div class="toast-area" id="toasts"></div>
 
 <!-- EDIT DRAWER -->
+<!-- CONFLICT DIALOG -->
+<div class="mo" id="conflict-mo">
+  <div class="mo-box" style="max-width:460px">
+    <h2>⚠ Conflict Detected</h2>
+    <p>This record was changed in the Excel file since you loaded the dashboard.</p>
+    <div class="mo-list" id="conflict-details" style="font-size:.8rem;line-height:1.8;"></div>
+    <div class="mo-actions">
+      <button class="mbtn mbtn-s" onclick="closeConflict()">Cancel</button>
+      <button class="mbtn" style="background:var(--amber-t);color:var(--amber);border:1px solid var(--amber-l)" onclick="useTheirVersion()">Use Excel version</button>
+      <button class="mbtn mbtn-p" onclick="saveDrawer(true)">Keep my changes</button>
+    </div>
+  </div>
+</div>
+
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
   <div class="drawer-head">
@@ -283,7 +303,10 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
     <div class="field-group"><label>Status</label>
       <select id="d-status"></select>
     </div>
-    <div class="field-group"><label>Responsible (Owner)</label><input id="d-resp" type="text"></div>
+    <div class="field-group"><label>Responsible (Owner)</label>
+      <input id="d-resp" type="text" list="owners-list" autocomplete="off">
+      <datalist id="owners-list"></datalist>
+    </div>
     <div class="field-group"><label>Contact</label><input id="d-contact" type="text"></div>
     <div class="field-group"><label>Source</label><input id="d-source" type="text"></div>
   </div>
@@ -348,7 +371,7 @@ const MsProvider = (() => {
     if (app) return;
     app = new msal.PublicClientApplication({
       auth:  { clientId: c.clientId, authority: `https://login.microsoftonline.com/${c.tenantId}`, redirectUri: location.href.split('?')[0] },
-      cache: { cacheLocation: 'sessionStorage' },
+      cache: { cacheLocation: 'localStorage' },
     });
   }
 
@@ -406,20 +429,26 @@ const MsProvider = (() => {
         { values: [[newS]] });
     },
     async saveRow(row, fields) {
-      // Columns: A=Client Name, B=Project Name, C=Detail, D=Category, E=Status, G=Responsible, H=Contact, I=Source (approx)
       const excelRow = row._row;
       const sheet = c.sheetName;
-      // Write A:E in one PATCH
       const ok1 = await api('PATCH',
         `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='A${excelRow}:E${excelRow}')`,
         { values: [[fields.c, fields.p, fields.d, fields.cat, fields.s]] }
       );
-      // Write G:H (Responsible, Contact)
       const ok2 = await api('PATCH',
         `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='G${excelRow}:H${excelRow}')`,
         { values: [[fields.r, fields.rsp]] }
       );
       return ok1 && ok2;
+    },
+    async readCell(row, col) {
+      // Read a single cell for conflict detection
+      const excelRow = row._row;
+      const sheet = c.sheetName;
+      const json = await api('GET',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='${col}${excelRow}')?$select=values`
+      );
+      return json?.values?.[0]?.[0] ?? null;
     },
   };
 })();
@@ -499,6 +528,14 @@ const GglProvider = (() => {
       const ok2 = await sheetsPut(`${sheet}!G${excelRow}:H${excelRow}`, [[fields.r, fields.rsp]]);
       return ok1 && ok2;
     },
+    async readCell(row, col) {
+      const excelRow = row._row;
+      // col letter to 1-based index for Sheets API
+      const colIdx = col.charCodeAt(0) - 64;
+      const range = `${c.sheetName}!${col}${excelRow}`;
+      const json = await sheetsGet(range);
+      return json?.values?.[0]?.[0] ?? null;
+    },
   };
 })();
 
@@ -527,10 +564,35 @@ const FLOW = {
   Cancelled: ['Prospect','Pipeline','Cancelled'],
 };
 const ALL_S = ['Running','Bidding','Pipeline','Prospect','Done','Cancelled'];
-const OC    = {'Viktor Gřešek':'#2563eb','Petr Macalík':'#059669','Marián Vandas':'#7c3aed','Václav Malý':'#d97706'};
+// Owner colors — generated dynamically from data, not hardcoded
+const OWNER_PALETTE = ['#2563eb','#059669','#7c3aed','#d97706','#dc2626','#0891b2','#65a30d','#c2410c'];
+let OC = {}; // populated after data load from authenticated session + data
 
-let DATA    = [];   // normalised rows
-let CHANGES = {};   // key → newStatus
+function buildOwnerColors() {
+  // Pull unique owners from data (Responsible column) — no hardcoded names
+  const owners = [...new Set(DATA.map(r => r.r).filter(Boolean))].sort();
+  OC = {};
+  owners.forEach((o, i) => { OC[o] = OWNER_PALETTE[i % OWNER_PALETTE.length]; });
+  // Also expose owner list for UI dropdowns
+  window.OWNERS = owners;
+}
+
+let DATA      = [];   // normalised rows
+let CHANGES   = {};   // key → newStatus
+let LOAD_TIME = 0;    // timestamp when data was last loaded
+let STALE_MS  = 30 * 60 * 1000; // 30 min stale warning
+let staleWarned = false;
+
+// Stale session warning — check every 5 min
+setInterval(() => {
+  if (!LOAD_TIME) return;
+  const age = Date.now() - LOAD_TIME;
+  if (age > STALE_MS && !staleWarned) {
+    staleWarned = true;
+    const el = document.getElementById('stale-banner');
+    if (el) el.style.display = 'flex';
+  }
+}, 60 * 1000);
 
 const App = {
   async load() {
@@ -545,6 +607,8 @@ const App = {
       return;
     }
     CHANGES = {};
+    buildOwnerColors();   // derive owner list from live data
+    LOAD_TIME = Date.now();
     $('sb-loaded').textContent = new Date().toLocaleTimeString();
     $('sb-rows').textContent   = DATA.length;
     $('sb-src-lbl').textContent  = activeCfg.srcLabel;
@@ -605,7 +669,12 @@ const UI = {
   _onLogin(user) {
     $('login-screen').style.display='none';
     $('app-shell').classList.add('visible');
-    $('sb-user').textContent = user.name||user.email;
+    const displayName = user.name || user.email.split('@')[0];
+    $('sb-user').textContent = displayName;
+    // Store name for "My Opportunities" filter
+    window.CURRENT_USER_NAME = displayName;
+    const myChip = $('my-opps-chip');
+    if (myChip) { myChip.textContent = '👤 My opps'; myChip.style.display = 'inline-flex'; }
     const pb = $('sb-pvdr');
     pb.textContent = activeCfg.label;
     pb.className = 'sb-pvdr '+activeCfg.badgeCls;
@@ -620,13 +689,14 @@ const UI = {
     $('tb-s').textContent={dashboard:'Overview · Five Crafts Q1/Q2 2026',pipeline:'Edit status · confirm to write back'}[id]||'';
     if(id==='pipeline') renderPipe('','','');
   },
-  nf(status, el) {
+  nf(status, el, owner) {
     this.nav('pipeline',null);
     document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
     if(el) el.classList.add('active');
     $('tb-t').textContent='All Opportunities';
-    $('tb-s').textContent='Filtered: '+status;
-    renderPipe('',status,'');
+    owner = owner ? owner.replace(/__SQ__/g,"'") : '';
+    $('tb-s').textContent = 'Filtered: ' + [status, owner].filter(Boolean).join(' · ');
+    renderPipe('', status, owner);
   },
 };
 
@@ -644,7 +714,7 @@ function updateCounts(){
 function renderDash(){
   const SO={Running:0,Bidding:1,Pipeline:2,Prospect:3,Done:4,Cancelled:5};
   const sorted=[...DATA].sort((a,b)=>(SO[a.s]??9)-(SO[b.s]??9));
-  const owners=['Viktor Gřešek','Petr Macalík','Marián Vandas','Václav Malý'];
+  const owners = window.OWNERS || ['Viktor Gřešek','Petr Macalík','Marián Vandas','Václav Malý'];
   $('dash-out').innerHTML=`
   <div class="kpi-row">
     <div class="kpi k-tot" onclick="UI.nav('pipeline',null)"><div class="lbl">Total</div><div class="val">${DATA.length}</div><div class="sub">All opportunities</div></div>
@@ -684,14 +754,25 @@ function renderDash(){
   <div class="sect">By Owner</div>
   <div class="owner-grid">${owners.map(o=>{
     const rows=DATA.filter(r=>r.r===o), col=OC[o]||'#64748b', ini=o.split(' ').map(w=>w[0]).join('');
-    return `<div class="oc"><div class="oc-top"><div class="oc-av" style="background:${col}">${ini}</div>
-      <div><div class="oc-name">${o}</div><div class="oc-role">${rows.length} total</div></div></div>
+    const runC=rows.filter(r=>r.s==='Running').length;
+    const bidC=rows.filter(r=>r.s==='Bidding').length;
+    const pipC=rows.filter(r=>r.s==='Pipeline').length;
+    const proC=rows.filter(r=>r.s==='Prospect').length;
+    return `<div class="oc" style="cursor:pointer" onclick="UI.nf('',null,'${o.replace(/'/g,'__SQ__')}')" title="Click to see all opportunities for ${o}">
+      <div class="oc-top">
+        <div class="oc-av" style="background:${col}">${ini}</div>
+        <div>
+          <div class="oc-name">${o}</div>
+          <div class="oc-role">${rows.length} total · <span style="color:var(--blue);font-size:.65rem">view all →</span></div>
+        </div>
+      </div>
       <div class="oc-stats">
-        <div class="oc-stat" style="background:var(--green-t)"><div class="v" style="color:var(--green)">${rows.filter(r=>r.s==='Running').length}</div><div class="l">Run</div></div>
-        <div class="oc-stat" style="background:var(--purple-t)"><div class="v" style="color:var(--purple)">${rows.filter(r=>r.s==='Bidding').length}</div><div class="l">Bid</div></div>
-        <div class="oc-stat" style="background:var(--blue-t)"><div class="v" style="color:var(--blue)">${rows.filter(r=>r.s==='Pipeline').length}</div><div class="l">Pipe</div></div>
-        <div class="oc-stat" style="background:var(--amber-t)"><div class="v" style="color:var(--amber)">${rows.filter(r=>r.s==='Prospect').length}</div><div class="l">Pro</div></div>
-      </div></div>`;
+        <div class="oc-stat" style="background:var(--green-t)" onclick="event.stopPropagation();UI.nf('Running',null,'${o.replace(/'/g,'__SQ__')}')"><div class="v" style="color:var(--green)">${runC}</div><div class="l">Run</div></div>
+        <div class="oc-stat" style="background:var(--purple-t)" onclick="event.stopPropagation();UI.nf('Bidding',null,'${o.replace(/'/g,'__SQ__')}')"><div class="v" style="color:var(--purple)">${bidC}</div><div class="l">Bid</div></div>
+        <div class="oc-stat" style="background:var(--blue-t)" onclick="event.stopPropagation();UI.nf('Pipeline',null,'${o.replace(/'/g,'__SQ__')}')"><div class="v" style="color:var(--blue)">${pipC}</div><div class="l">Pipe</div></div>
+        <div class="oc-stat" style="background:var(--amber-t)" onclick="event.stopPropagation();UI.nf('Prospect',null,'${o.replace(/'/g,'__SQ__')}')"><div class="v" style="color:var(--amber)">${proC}</div><div class="l">Pro</div></div>
+      </div>
+    </div>`;
   }).join('')}</div>
   <div class="sect">All Opportunities <small><button onclick="UI.nav('pipeline',null)" style="padding:2px 8px;border:1px solid var(--border2);border-radius:5px;background:var(--card);cursor:pointer;font-family:var(--font);font-size:.68rem;color:var(--blue)">Edit status →</button></small></div>
   <div class="tbl-wrap"><table>
@@ -762,7 +843,7 @@ function renderPipe(q, fs, fo) {
     </select>
     <select id="f-o" onchange="renderPipe(undefined,undefined,this.value)">
       <option value="">All Owners</option>
-      ${['Viktor Gřešek','Petr Macalík','Marián Vandas','Václav Malý'].map(o=>`<option${fo===o?' selected':''}>${o}</option>`).join('')}
+      ${(window.OWNERS||[]).map(o=>`<option${fo===o?' selected':''}>${o}</option>`).join('')}
     </select>
     <span class="cnt">${filtered.length} / ${DATA.length}${nch>0?' · <b style="color:var(--amber)">'+nch+' pending</b>':''}</span>
   </div>
@@ -810,6 +891,44 @@ function toast(msg,type='info'){
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},4000);
 }
 
+// ── CONFLICT DIALOG ─────────────────────────────────────────────
+let conflictData = null;
+
+function showConflict({field, liveVal, ourVal, client, project}) {
+  conflictData = {liveVal, ourVal};
+  $('conflict-details').innerHTML = `
+    <div style="margin-bottom:8px"><b>Record:</b> ${client}${project ? ' · '+project : ''}</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="flex:1;padding:8px;background:var(--amber-t);border-radius:6px;border:1px solid var(--amber-l)">
+        <div style="font-size:.65rem;font-weight:600;color:var(--amber);text-transform:uppercase;margin-bottom:3px">Excel (current)</div>
+        <div style="font-weight:600">${liveVal}</div>
+      </div>
+      <div style="color:var(--slate2)">vs</div>
+      <div style="flex:1;padding:8px;background:var(--blue-t);border-radius:6px;border:1px solid var(--blue-l)">
+        <div style="font-size:.65rem;font-weight:600;color:var(--blue);text-transform:uppercase;margin-bottom:3px">Your change</div>
+        <div style="font-weight:600">${ourVal}</div>
+      </div>
+    </div>`;
+  $('conflict-mo').classList.add('open');
+}
+
+function closeConflict() {
+  $('conflict-mo').classList.remove('open');
+  conflictData = null;
+}
+
+function useTheirVersion() {
+  if (!conflictData) return;
+  // Update the drawer status select to match Excel
+  $('d-status').value = conflictData.liveVal;
+  // Also update in-memory
+  const [c, p] = drawerKey.split('|||');
+  const row = DATA.find(r => r.c === c && r.p === p);
+  if (row) row.s = conflictData.liveVal;
+  closeConflict();
+  toast('Updated to Excel version — review and save if needed', 'info');
+}
+
 // ── EDIT DRAWER ─────────────────────────────────────────────────
 let drawerKey = null;
 
@@ -836,6 +955,11 @@ function openDrawer(k) {
     `<option value="${s}" ${row.s === s ? 'selected' : ''} ${!allowed.includes(s) && s !== row.s ? 'disabled style="color:#ccc"' : ''}>${s}</option>`
   ).join('');
 
+  // Populate owner autocomplete from live data
+  const dl = $('owners-list');
+  if (dl) {
+    dl.innerHTML = (window.OWNERS||[]).map(o=>`<option value="${o}">`).join('');
+  }
   $('drawer-overlay').classList.add('open');
   $('drawer').classList.add('open');
 }
@@ -846,7 +970,7 @@ function closeDrawer() {
   drawerKey = null;
 }
 
-async function saveDrawer() {
+async function saveDrawer(forceOverwrite = false) {
   if (!drawerKey) return;
   const [c, p] = drawerKey.split('|||');
   const row = DATA.find(r => r.c === c && r.p === p);
@@ -861,6 +985,28 @@ async function saveDrawer() {
   const newR   = $('d-resp').value.trim();
   const newRsp = $('d-contact').value.trim();
   const newSrc = $('d-source').value.trim();
+
+  // ── CONFLICT DETECTION ──────────────────────────────────
+  // Before writing, read the current live value from Excel
+  // If Status changed since we loaded, warn the user
+  if (!forceOverwrite) {
+    try {
+      const liveRange = await activeProvider.readCell(row, 'E'); // Status column
+      if (liveRange && liveRange !== row.s) {
+        showConflict({
+          field: 'Status',
+          liveVal: liveRange,
+          ourVal: newS,
+          client: row.c,
+          project: row.p,
+        });
+        return; // stop — let user decide
+      }
+    } catch(e) {
+      // If conflict check fails (offline/permission), proceed with save
+      console.warn('Conflict check failed:', e.message);
+    }
+  }
 
   toast('Saving…', 'info');
 
