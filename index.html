@@ -311,22 +311,17 @@ const MsProvider = (() => {
   return {
     async tryAutoLogin() {
       boot();
-      await app.handleRedirectPromise().catch(()=>{});
+      // Handle redirect response after loginRedirect
+      const resp = await app.handleRedirectPromise().catch(()=>null);
+      if (resp) return { name: resp.account.name, email: resp.account.username };
       const accs = app.getAllAccounts();
       return accs.length ? { name: accs[0].name, email: accs[0].username } : null;
     },
     async signIn() {
       boot();
-      try {
-        const r = await app.loginPopup({ scopes: c.scopes });
-        return { name: r.account.name, email: r.account.username };
-      } catch(e) {
-        if (e.errorCode === 'block_nested_popups' || e.message?.includes('popup')) {
-          await app.loginRedirect({ scopes: c.scopes });
-          return null;
-        }
-        throw e;
-      }
+      // Always use redirect — works in Teams iframe and standalone
+      await app.loginRedirect({ scopes: c.scopes });
+      return null;
     },
     async signOut() { boot(); await app.logoutPopup().catch(()=>{}); },
     async loadRows() {
