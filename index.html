@@ -419,27 +419,49 @@ const MsProvider = (() => {
         const g = k => { const j=hdr.indexOf(k); return j>=0 ? String(row[j]??'').trim() : ''; };
         const client = g('Client Name'); if (!client) continue;
         out.push({ c:client, p:g('Project Name'), d:g('Project Detail - Roles and Requirements'),
-          cat:g('Category'), s:g('Status')||'Prospect', r:g('Responsible'), rsp:g('Contact'), src:g('Source'), _row:i+1 });
+          cat:g('Category'), s:g('Status')||'Prospect', r:g('Responsible'), rsp:g('Contact'),
+          src:g('Source'), updDate:g('Updated Date'), _row:i+1 });
       }
       return out;
     },
     async saveStatus(row, newS) {
-      return api('PATCH',
+      const today = new Date().toISOString().slice(0, 10);
+      // Write Status (E) and Updated Date (G) together
+      const okS = await api('PATCH',
         `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${c.sheetName}/range(address='${c.statusCol}${row._row}')`,
         { values: [[newS]] });
+      // Auto-update Updated Date (G)
+      await api('PATCH',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${c.sheetName}/range(address='G${row._row}')`,
+        { values: [[today]] }).catch(()=>{});
+      return okS;
     },
     async saveRow(row, fields) {
+      // COLUMN MAP (verified against live Excel 2026-05-18):
+      // A=Client Name, B=Project Name, C=Project Detail,
+      // D=Category, E=Status, F=Created Date (never overwrite),
+      // G=Updated Date (auto-set to today), H=Responsible,
+      // I=Contact, M=Source
       const excelRow = row._row;
       const sheet = c.sheetName;
+      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+      // Patch 1: A:E — core fields
       const ok1 = await api('PATCH',
         `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='A${excelRow}:E${excelRow}')`,
         { values: [[fields.c, fields.p, fields.d, fields.cat, fields.s]] }
       );
+      // Patch 2: G:I — Updated Date (auto), Responsible, Contact
       const ok2 = await api('PATCH',
-        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='G${excelRow}:H${excelRow}')`,
-        { values: [[fields.r, fields.rsp]] }
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='G${excelRow}:I${excelRow}')`,
+        { values: [[today, fields.r, fields.rsp]] }
       );
-      return ok1 && ok2;
+      // Patch 3: M — Source
+      const ok3 = await api('PATCH',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='M${excelRow}')`,
+        { values: [[fields.src]] }
+      );
+      return ok1 && ok2 && ok3;
     },
     async readCell(row, col) {
       // Read a single cell for conflict detection
@@ -522,11 +544,14 @@ const GglProvider = (() => {
       return sheetsPut(range, [[newS]]);
     },
     async saveRow(row, fields) {
+      // Same column map: A-E, G=Updated Date, H=Responsible, I=Contact, M=Source
       const excelRow = row._row;
       const sheet = c.sheetName;
+      const today = new Date().toISOString().slice(0, 10);
       const ok1 = await sheetsPut(`${sheet}!A${excelRow}:E${excelRow}`, [[fields.c, fields.p, fields.d, fields.cat, fields.s]]);
-      const ok2 = await sheetsPut(`${sheet}!G${excelRow}:H${excelRow}`, [[fields.r, fields.rsp]]);
-      return ok1 && ok2;
+      const ok2 = await sheetsPut(`${sheet}!G${excelRow}:I${excelRow}`, [[today, fields.r, fields.rsp]]);
+      const ok3 = await sheetsPut(`${sheet}!M${excelRow}`, [[fields.src]]);
+      return ok1 && ok2 && ok3;
     },
     async readCell(row, col) {
       const excelRow = row._row;
