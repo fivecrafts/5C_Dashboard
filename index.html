@@ -98,6 +98,11 @@ body{font-family:var(--font);background:var(--bg);color:#1e293b;font-size:.88rem
 .tbl-wrap{overflow-x:auto;margin-bottom:18px;}
 table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
 th{background:#f8fafc;padding:8px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border);}
+th.sortable{cursor:pointer;user-select:none;}
+th.sortable:hover{background:#f1f5f9;color:var(--navy2);}
+th.sort-asc::after{content:' ↑';color:var(--blue);}
+th.sort-desc::after{content:' ↓';color:var(--blue);}
+th.sort-asc,th.sort-desc{color:var(--navy2);background:#eef2ff;}
 td{padding:8px 11px;border-bottom:1px solid #f1f5f9;font-size:.8rem;vertical-align:middle;}
 tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
 .sb2{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:.67rem;font-weight:600;white-space:nowrap;}
@@ -604,6 +609,8 @@ function buildOwnerColors() {
 
 let DATA      = [];   // normalised rows
 let CHANGES   = {};   // key → newStatus
+let SORT_COL  = 's';  // default sort by status
+let SORT_DIR  = 1;    // 1=asc, -1=desc
 let LOAD_TIME = 0;    // timestamp when data was last loaded
 let STALE_MS  = 30 * 60 * 1000; // 30 min stale warning
 let staleWarned = false;
@@ -821,7 +828,13 @@ function renderPipe(q, fs, fo) {
   const SO={Running:0,Bidding:1,Pipeline:2,Prospect:3,Done:4,Cancelled:5};
   const filtered=DATA
     .filter(r=>(!q||(r.c+r.p+r.d+r.r+r.rsp).toLowerCase().includes(q))&&(!fs||r.s===fs)&&(!fo||r.r===fo))
-    .sort((a,b)=>(SO[a.s]??9)-(SO[b.s]??9));
+    .sort((a,b)=>{
+      let av, bv;
+      if (SORT_COL==='s') { av=SO[a.s]??9; bv=SO[b.s]??9; return (av-bv)*SORT_DIR; }
+      av = (a[SORT_COL]||'').toLowerCase();
+      bv = (b[SORT_COL]||'').toLowerCase();
+      return av<bv ? -SORT_DIR : av>bv ? SORT_DIR : 0;
+    });
   const nch=Object.keys(CHANGES).length;
 
   $('pipe-out').innerHTML=`
@@ -873,7 +886,13 @@ function renderPipe(q, fs, fo) {
     <span class="cnt">${filtered.length} / ${DATA.length}${nch>0?' · <b style="color:var(--amber)">'+nch+' pending</b>':''}</span>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Client</th><th>Project / Scope</th><th>Detail</th><th>Cat.</th><th>Status</th><th>Owner</th><th>Contact</th></tr></thead>
+    <thead><tr>
+    ${['c','p','d','cat','s','r','rsp'].map((col,i)=>{
+      const labels=['Client','Project / Scope','Detail','Category','Status','Owner','Contact'];
+      const cls = SORT_COL===col ? (SORT_DIR===1?'sort-asc':'sort-desc') : '';
+      return `<th class="sortable ${cls}" onclick="sortBy('${col}')">${labels[i]}</th>`;
+    }).join('')}
+  </tr></thead>
     <tbody>${filtered.map(r=>{
       const k=r.c+'|||'+r.p, cur=CHANGES[k]??r.s, allowed=FLOW[r.s]||ALL_S, changed=CHANGES[k]!==undefined;
       const opts=ALL_S.map(s=>`<option value="${s}"${cur===s?' selected':''}${!allowed.includes(s)&&s!==r.s?' disabled style="color:#ccc"':''}>${s}</option>`).join('');
@@ -914,6 +933,17 @@ function toast(msg,type='info'){
   t.className=`toast t-${type}`; t.textContent=msg; area.appendChild(t);
   requestAnimationFrame(()=>t.classList.add('show'));
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},4000);
+}
+
+// ── SORTING ──────────────────────────────────────────────────────
+function sortBy(col) {
+  if (SORT_COL === col) {
+    SORT_DIR = SORT_DIR * -1; // reverse
+  } else {
+    SORT_COL = col;
+    SORT_DIR = 1;
+  }
+  renderPipe('','','');
 }
 
 // ── CONFLICT DIALOG ─────────────────────────────────────────────
