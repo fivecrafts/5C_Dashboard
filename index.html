@@ -511,7 +511,11 @@ const MsProvider = (() => {
   function boot(){
     if(app) return;
     app = new msal.PublicClientApplication({
-      auth:{ clientId:c.clientId, authority:`https://login.microsoftonline.com/${c.tenantId}`, redirectUri:location.href.split('?')[0] },
+      auth:{ clientId:c.clientId, authority:`https://login.microsoftonline.com/${c.tenantId}`, 
+redirectUri:
+  window.location.origin +
+  window.location.pathname.replace(/index\.html$/,'')
+ },
       cache:{ cacheLocation:'localStorage' },
     });
   }
