@@ -464,8 +464,8 @@ const FLOW = {
   Cancelled: ['Prospect','Pipeline','Cancelled'],
 };
 const ALL_S = ['Running','Bidding','Pipeline','Prospect','Done','Cancelled'];
-const TASK_STATUSES = ['Open','Done','Cancelled'];
-const PRIORITIES = ['High','Medium','Low'];
+// removed duplicate: const TASK_STATUSES = ['Open','Done','Cancelled'];
+// removed duplicate: const PRIORITIES = ['High','Medium','Low'];
 const OWNER_PALETTE = ['#2563eb','#059669','#7c3aed','#d97706','#dc2626','#0891b2','#65a30d','#c2410c'];
 
 // ════════════════════════════════════════════════════════════════
@@ -476,7 +476,9 @@ let DATA_CONTACTS= [];
 let DATA_TASKS   = [];
 let DATA_OWNERS  = [];
 let DATA_CODELISTS = [];
-let TASK_TYPES   = ['Organize Meet','Send Pitchdeck','Organize Call','Followup Call','Send Contract','Send Proposal','LinkedIn Connect','Other'];
+let TASK_TYPES    = ['Organize Meet','Send Pitchdeck','Organize Call','Followup Call','Send Contract','Send Proposal','LinkedIn Connect','Other'];
+let TASK_STATUSES = ['Open','Done','Cancelled'];
+let PRIORITIES    = ['High','Medium','Low'];
 let CHANGES = {};
 let OC = {};
 let LOAD_TIME = 0;
@@ -541,9 +543,8 @@ const MsProvider = (() => {
   function hdrForField(col){ return col; } // passthrough — we use col letters directly
 
   function parseSheetByLetter(json){
-    // Returns array of objects with keys being column letters A,B,C...
     const rows=json.values||[];
-    if(rows.length<2) return {headers:[],rows:[]};
+    if(rows.length<2) return {headers:[],dataRows:[],allRows:rows};
     return {headers:rows[0].map(h=>String(h).trim()), dataRows:rows.slice(1), allRows:rows};
   }
 
@@ -591,6 +592,7 @@ const MsProvider = (() => {
 
     parseContacts(json){
       const {headers,dataRows}=parseSheetByLetter(json);
+      if(!dataRows||!dataRows.length) return [];
       const CMAP={
         id:'Contact ID',firstName:'First Name',lastName:'Last Name',email:'Email',
         phone:'Phone',web:'Web',company:'Company',linkedOpps:'Linked Opportunities',
@@ -605,6 +607,7 @@ const MsProvider = (() => {
 
     parseTasks(json){
       const {headers,dataRows}=parseSheetByLetter(json);
+      if(!dataRows||!dataRows.length) return [];
       const TMAP={
         id:'Task ID',type:'Task Type',linkedOpp:'Linked Opportunity',
         linkedContact:'Linked Contact',createdDate:'Date Created',
@@ -620,6 +623,7 @@ const MsProvider = (() => {
 
     parseOwners(json){
       const {headers,dataRows}=parseSheetByLetter(json);
+      if(!dataRows||!dataRows.length) return [];
       const OMAP={id:'Owner ID',firstName:'First Name',lastName:'Last Name',displayName:'Display Name',email:'Email',notes:'Notes'};
       return dataRows.map((row,i)=>{
         const rec=mapRow(row,headers,OMAP);
@@ -631,6 +635,7 @@ const MsProvider = (() => {
     parseCodelists(json){
       const {headers,dataRows}=parseSheetByLetter(json);
       const out={};
+      if(!dataRows||!dataRows.length) return out;
       dataRows.forEach(row=>{
         const listName=String(row[0]??'').trim();
         const value=String(row[1]??'').trim();
@@ -918,7 +923,7 @@ function updateCounts(){
 function renderDash(){
   const SO={Running:0,Bidding:1,Pipeline:2,Prospect:3,Done:4,Cancelled:5};
   const sorted=[...DATA_PIPE].sort((a,b)=>(SO[a.s]??9)-(SO[b.s]??9));
-  const owners=window.OWNERS||[];
+  const owners=(window.OWNERS||[]).filter(Boolean);
   const openTasks=DATA_TASKS.filter(t=>t.status==='Open').length;
   const overdue=DATA_TASKS.filter(t=>t.status==='Open'&&t.dueDate&&t.dueDate<new Date().toISOString().slice(0,10)).length;
 
