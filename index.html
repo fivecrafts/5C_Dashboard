@@ -303,6 +303,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
       <div class="sbg">People & Tasks</div>
       <div class="ni" onclick="UI.nav('contacts',this)"><span class="ic">👤</span><span> Contacts</span><span class="pl" id="pl-contacts">—</span></div>
       <div class="ni" onclick="UI.nav('tasks',this)"><span class="ic">✅</span><span> Tasks</span><span class="pl" id="pl-tasks">—</span></div>
+      <div class="ni" onclick="UI.nav('companies',this)"><span class="ic">🏢</span><span> Companies</span><span class="pl" id="pl-companies">—</span></div>
       <div class="ni" onclick="UI.nav('owners',this)"><span class="ic">🏠</span><span> Owners</span><span class="pl" id="pl-owners">—</span></div>
     </nav>
     <div class="sb-ft">Source: <b>5C_Pipeline.xlsx</b><br>Provider: <b id="sb-pvdr-lbl">—</b><br>Loaded: <b id="sb-loaded">—</b></div>
@@ -348,6 +349,10 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
       <!-- TASKS -->
       <div class="page" id="page-tasks">
         <div id="tasks-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div>
+      </div>
+      <!-- COMPANIES -->
+      <div class="page" id="page-companies">
+        <div id="companies-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div>
       </div>
       <!-- OWNERS -->
       <div class="page" id="page-owners">
@@ -421,6 +426,7 @@ const CFG = {
       tasks:      'Tasks',
       owners:     'Owners',
       codelists:  'Codelists',
+      companies:  'Companies',
     }
   },
   google: {
@@ -428,7 +434,7 @@ const CFG = {
     clientId:'YOUR_GOOGLE_CLIENT_ID', sheetId:'YOUR_SHEET_ID',
     scopes:['https://www.googleapis.com/auth/spreadsheets'],
     statusCol:5,
-    sheets:{ pipeline:'Pipeline', contacts:'Contacts', tasks:'Tasks', owners:'Owners', codelists:'Codelists' }
+    sheets:{ pipeline:'Pipeline', contacts:'Contacts', tasks:'Tasks', owners:'Owners', codelists:'Codelists', companies:'Companies' }
   },
 };
 
@@ -472,6 +478,7 @@ const OWNER_PALETTE = ['#2563eb','#059669','#7c3aed','#d97706','#dc2626','#0891b
 // STATE
 // ════════════════════════════════════════════════════════════════
 let DATA_PIPE    = [];
+let DATA_COMPANIES = [];
 let DATA_CONTACTS= [];
 let DATA_TASKS   = [];
 let DATA_OWNERS  = [];
@@ -488,7 +495,8 @@ let staleWarned = false;
 // Stale check
 setInterval(()=>{
   if(!LOAD_TIME) return;
-  if(Date.now()-LOAD_TIME > 30*60*1000 && !staleWarned){
+  const STALE_MS=30*60*1000;
+  if(Date.now()-LOAD_TIME > STALE_MS && !staleWarned){
     staleWarned=true;
     $('stale-banner').style.display='flex';
   }
@@ -614,8 +622,11 @@ const MsProvider = (() => {
         status:'Status',responsible:'Responsible',dueDate:'Due Date',
         notes:'Notes',priority:'Priority'
       };
+      // Priority header fix — col J (index 9) fallback if header missing
+      const hasPriority=headers.includes('Priority');
       return dataRows.map((row,i)=>{
         const rec=mapRow(row,headers,TMAP);
+        if(!hasPriority&&row[9]!==undefined) rec.priority=String(row[9]??'').trim();
         rec._row=i+2;
         return rec;
       }).filter(r=>r.id||r.type);
@@ -630,6 +641,21 @@ const MsProvider = (() => {
         rec._row=i+2;
         return rec;
       }).filter(r=>r.displayName||r.firstName);
+    },
+
+    parseCompanies(json){
+      const {headers,dataRows}=parseSheetByLetter(json);
+      if(!dataRows||!dataRows.length) return [];
+      const CMAP={
+        id:'Company ID', name:'Company Name', type:'Type',
+        website:'Website', industry:'Industry', country:'Country',
+        owner:'Owner', notes:'Notes', createdDate:'Created Date', updDate:'Updated Date'
+      };
+      return dataRows.map((row,i)=>{
+        const rec=mapRow(row,headers,CMAP);
+        rec._row=i+2;
+        return rec;
+      }).filter(r=>r.name||r.id);
     },
 
     parseCodelists(json){
@@ -737,6 +763,7 @@ const GglProvider = (() => {
     async signOut(){if(accessToken&&window.google)google.accounts.oauth2.revoke(accessToken);accessToken=null;user=null;},
     async loadSheet(name){return sheetsGet(`${name}!A:Z`);},
     parsePipeline(j){return MsProvider.parsePipeline(j);},
+    parseCompanies(j){return MsProvider.parseCompanies(j);},
     parseContacts(j){return MsProvider.parseContacts(j);},
     parseTasks(j){return MsProvider.parseTasks(j);},
     parseOwners(j){return MsProvider.parseOwners(j);},
@@ -768,17 +795,19 @@ const App={
   async loadAll(){
     chip('ch-b','⟳ Loading…');
     try{
-      const [pj,cj,tj,oj,clj]=await Promise.all([
+      const [pj,cj,tj,oj,clj,compj]=await Promise.all([
         P.loadSheet(activeCfg.sheets.pipeline),
         P.loadSheet(activeCfg.sheets.contacts),
         P.loadSheet(activeCfg.sheets.tasks),
         P.loadSheet(activeCfg.sheets.owners),
         P.loadSheet(activeCfg.sheets.codelists),
+        P.loadSheet(activeCfg.sheets.companies).catch(()=>({values:[]})),
       ]);
-      DATA_PIPE    =P.parsePipeline(pj);
-      DATA_CONTACTS=P.parseContacts(cj);
-      DATA_TASKS   =P.parseTasks(tj);
-      DATA_OWNERS  =P.parseOwners(oj);
+      DATA_PIPE      = P.parsePipeline(pj);
+      DATA_CONTACTS  = P.parseContacts(cj);
+      DATA_TASKS     = P.parseTasks(tj);
+      DATA_OWNERS    = P.parseOwners(oj);
+      DATA_COMPANIES = P.parseCompanies(compj);
       const cls=P.parseCodelists(clj);
       if(cls.TaskType&&cls.TaskType.length) TASK_TYPES=cls.TaskType;
       chip('ch-g','● '+activeCfg.label+' · Live');
@@ -803,6 +832,7 @@ const App={
       else if(id==='contacts') renderContacts('','');
       else if(id==='tasks') renderTasks('','','');
       else if(id==='owners') renderOwners();
+      else if(id==='companies') renderCompanies('','');
     } else renderDash();
   },
 
@@ -864,15 +894,16 @@ const UI={
     document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
     $('page-'+id).classList.add('active');
     if(el) el.classList.add('active');
-    const titles={dashboard:'Dashboard',pipeline:'All Opportunities',contacts:'Contacts',tasks:'Tasks',owners:'Owners'};
+    const titles={dashboard:'Dashboard',pipeline:'All Opportunities',contacts:'Contacts',tasks:'Tasks',owners:'Owners',companies:'Companies'};
     const subs={dashboard:'Overview · Five Crafts BD 2026',pipeline:'Edit status · confirm to write back',
-      contacts:'Contact database',tasks:'Tasks & follow-ups',owners:'Account managers'};
+      contacts:'Contact database',tasks:'Tasks & follow-ups',owners:'Account managers',companies:'Company profiles'};
     $('tb-t').textContent=titles[id]||id;
     $('tb-s').textContent=subs[id]||'';
     // Show/hide New button
     const nb=$('topbar-new-btn');
     if(id==='contacts'){nb.style.display='inline-block';nb.textContent='+ New Contact';}
     else if(id==='tasks'){nb.style.display='inline-block';nb.textContent='+ New Task';}
+    else if(id==='companies'){nb.style.display='inline-block';nb.textContent='+ New Company';}
     else nb.style.display='none';
     // Render
     if(id==='dashboard') renderDash();
@@ -880,6 +911,7 @@ const UI={
     else if(id==='contacts') renderContacts('','');
     else if(id==='tasks') renderTasks('','','');
     else if(id==='owners') renderOwners();
+    else if(id==='companies') renderCompanies('','');
   },
   nf(status,el,owner){
     this.nav('pipeline',null);
@@ -910,6 +942,7 @@ function updateCounts(){
   ALL_S.forEach(s=>{const el=$('pl-'+s.toLowerCase());if(el)el.textContent=cnt(s);});
   $('pl-total').textContent=$('pl-all').textContent=DATA_PIPE.length;
   $('pl-contacts').textContent=DATA_CONTACTS.length;
+  const plComp=$('pl-companies');if(plComp)plComp.textContent=DATA_COMPANIES.length;
   $('pl-tasks').textContent=DATA_TASKS.filter(t=>t.status==='Open').length+' open';
   $('pl-owners').textContent=DATA_OWNERS.length;
   const n=Object.keys(CHANGES).length;
@@ -935,6 +968,7 @@ function renderDash(){
     <div class="kpi k-pip" onclick="UI.nf('Pipeline',null)"><div class="lbl">Pipeline</div><div class="val">${cnt('Pipeline')}</div><div class="sub">Active BD</div></div>
     <div class="kpi k-pro" onclick="UI.nf('Prospect',null)"><div class="lbl">Prospect</div><div class="val">${cnt('Prospect')}</div><div class="sub">Early stage</div></div>
     <div class="kpi k-teal" onclick="UI.nav('contacts',null)"><div class="lbl">Contacts</div><div class="val">${DATA_CONTACTS.length}</div><div class="sub">In database</div></div>
+    <div class="kpi" style="--c:#0f766e" onclick="UI.nav('companies',null)"><div class="lbl">Companies</div><div class="val" style="color:#0f766e">${DATA_COMPANIES.length}</div><div class="sub">Customer &amp; partner</div></div>
     <div class="kpi k-pink" onclick="UI.nav('tasks',null)"><div class="lbl">Open Tasks</div><div class="val">${openTasks}</div><div class="sub">${overdue} overdue</div></div>
   </div>
 
@@ -1186,6 +1220,142 @@ function renderTasks(q,fs,fr){
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// COMPANIES PAGE
+// ════════════════════════════════════════════════════════════════
+function renderCompanies(q,ft){
+  q=q||'';ft=ft||'';
+  const filtered=DATA_COMPANIES.filter(r=>{
+    return(!q||(r.name+r.industry+r.country+r.owner).toLowerCase().includes(q.toLowerCase()))&&
+           (!ft||r.type===ft);
+  });
+  const customers=DATA_COMPANIES.filter(r=>r.type==='Customer'||r.type==='Both').length;
+  const partners=DATA_COMPANIES.filter(r=>r.type==='Partnership'||r.type==='Both').length;
+
+  $('companies-out').innerHTML=`
+  <div class="kpi-row">
+    <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_COMPANIES.length}</div><div class="sub">Companies</div></div>
+    <div class="kpi k-run"><div class="lbl">Customers</div><div class="val" style="color:var(--green)">${customers}</div><div class="sub">Customer / Both</div></div>
+    <div class="kpi k-pip"><div class="lbl">Partners</div><div class="val" style="color:var(--blue)">${partners}</div><div class="sub">Partnership / Both</div></div>
+    <div class="kpi k-pro"><div class="lbl">With Opps</div><div class="val" style="color:var(--amber)">${DATA_COMPANIES.filter(r=>DATA_PIPE.some(p=>p.c===r.name)).length}</div><div class="sub">Linked to pipeline</div></div>
+  </div>
+  <div class="filter-bar">
+    <input type="text" id="coq" placeholder="🔍  Search company, industry, country…" value="${q}" oninput="renderCompanies(this.value,undefined)">
+    <select id="coft" onchange="renderCompanies(undefined,this.value)">
+      <option value="">All Types</option>
+      <option value="Customer"${ft==='Customer'?' selected':''}>Customer</option>
+      <option value="Partnership"${ft==='Partnership'?' selected':''}>Partnership</option>
+      <option value="Both"${ft==='Both'?' selected':''}>Both</option>
+    </select>
+    <span class="cnt">${filtered.length}/${DATA_COMPANIES.length}</span>
+  </div>
+  ${filtered.length===0&&DATA_COMPANIES.length===0?`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:32px;text-align:center;color:var(--slate)">
+      <div style="font-size:2rem;margin-bottom:8px">🏢</div>
+      <div style="font-weight:600;margin-bottom:4px">No companies yet</div>
+      <div style="font-size:.8rem">Add a <b>Companies</b> sheet to 5C_Pipeline.xlsx with headers:<br>
+      Company ID · Company Name · Type · Website · Industry · Country · Owner · Notes · Created Date · Updated Date</div>
+    </div>`:
+  `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
+    ${filtered.map(co=>{
+      const opps=DATA_PIPE.filter(r=>r.c===co.name);
+      const contacts=DATA_CONTACTS.filter(r=>r.company===co.name);
+      const tasks=DATA_TASKS.filter(t=>t.responsible===co.owner&&t.status==='Open').length;
+      const col=OC[co.owner]||'#64748b';
+      const safeId=(co.id||co.name).replace(/'/g,'__SQ__');
+      return \`<div class="oc" style="padding:16px" onclick="openCompanyDrawer('\${safeId}')">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-weight:700;font-size:.88rem;color:var(--navy2)">\${co.name}</div>
+            <div style="font-size:.72rem;color:var(--slate);margin-top:2px">\${co.industry||''}\${co.country?' · '+co.country:''}</div>
+          </div>
+          \${compTypeBadge(co.type)}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="text-align:center;padding:6px;background:var(--blue-t);border-radius:6px">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--blue)">\${opps.length}</div>
+            <div style="font-size:.6rem;color:var(--slate)">Opps</div>
+          </div>
+          <div style="text-align:center;padding:6px;background:var(--teal-t);border-radius:6px">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--teal)">\${contacts.length}</div>
+            <div style="font-size:.6rem;color:var(--slate)">Contacts</div>
+          </div>
+          <div style="text-align:center;padding:6px;background:var(--amber-t);border-radius:6px">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--amber)">\${tasks}</div>
+            <div style="font-size:.6rem;color:var(--slate)">Tasks</div>
+          </div>
+        </div>
+        \${opps.length?'<div style="font-size:.72rem;color:var(--slate);margin-bottom:4px">'+opps.slice(0,2).map(o=>\`<span class="sb2 \${o.s==='Running'?'s-running':o.s==='Pipeline'?'s-pipeline':o.s==='Bidding'?'s-bidding':'s-prospect'}" style="margin-right:3px">\${o.p||o.c}</span>\`).join('')+(opps.length>2?\`<span style="color:var(--slate2)"> +\${opps.length-2} more</span>\`:'')+'</div>':''}
+        \${co.owner?'<div style="font-size:.7rem;color:var(--slate);display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:50%;background:'+col+';display:inline-flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;color:#fff">'+co.owner.split(' ').map(w=>w[0]).join('')+'</span>'+co.owner+'</div>':''}
+      </div>\`;
+    }).join('')}
+  </div>`}`;
+}
+
+function openCompanyDrawer(safeId){
+  const id=safeId.replace(/__SQ__/g,"'");
+  const co=DATA_COMPANIES.find(r=>r.id===id||r.name===id);
+  if(!co) return;
+  const opps=DATA_PIPE.filter(r=>r.c===co.name);
+  const contacts=DATA_CONTACTS.filter(r=>r.company===co.name);
+
+  const oppList=opps.length?opps.map(o=>`<div class="linked-opp-item">
+    <span class="linked-opp-link" onclick="openOppFromContact('${esc(o.c+(o.p?' · '+o.p:''))}')">${o.p||o.c}</span>
+    ${badge(o.s)}
+  </div>`).join(''):'<div style="color:var(--slate2);font-size:.77rem">No opportunities</div>';
+
+  const contList=contacts.length?contacts.map(c=>{
+    const name=((c.firstName||'')+' '+(c.lastName||'')).trim();
+    return `<div class="linked-opp-item"><span class="linked-opp-link" onclick="openContactFromPipeline('${esc(name)}')">${name}</span><span style="font-size:.7rem;color:var(--slate)">${c.email||''}</span></div>`;
+  }).join(''):'<div style="color:var(--slate2);font-size:.77rem">No contacts</div>';
+
+  const body=`
+    <div class="field-row">
+      <div class="field-group"><label>Company Name</label><input id="dco-name" value="${esc(co.name||'')}"></div>
+      <div class="field-group"><label>Type</label><select id="dco-type">
+        ${['Customer','Partnership','Both'].map(t=>`<option${co.type===t?' selected':''}>${t}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Industry</label><input id="dco-ind" value="${esc(co.industry||'')}"></div>
+      <div class="field-group"><label>Country</label><input id="dco-cou" value="${esc(co.country||'')}"></div>
+    </div>
+    <div class="field-group"><label>Website</label><input id="dco-web" value="${esc(co.website||'')}"></div>
+    <div class="field-group"><label>Owner</label><input id="dco-own" value="${esc(co.owner||'')}" list="owners-list" autocomplete="off"></div>
+    <div class="field-group"><label>Notes</label><textarea id="dco-notes">${esc(co.notes||'')}</textarea></div>
+    <div class="field-group"><label>Opportunities (${opps.length})</label><div class="linked-opps">${oppList}</div></div>
+    <div class="field-group"><label>Contacts (${contacts.length})</label><div class="linked-opps">${contList}</div></div>
+    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">${co.id||''} · Created ${co.createdDate||'—'}</div>`;
+
+  const foot=`<button class="sbtn sbtn-p" onclick="saveCompanyDrawer('${esc(co.id||co.name)}')" style="flex:1">✓ Save</button>
+    <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('company','','')">+ Task</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+
+  openDrawer(co.name||'Company',body,foot,'company',id);
+}
+
+async function saveCompanyDrawer(origId){
+  const co=DATA_COMPANIES.find(r=>r.id===origId||r.name===origId);
+  if(!co) return;
+  toast('Saving…','info');
+  const fields={
+    name:$('dco-name').value.trim(), type:$('dco-type').value,
+    industry:$('dco-ind').value.trim(), country:$('dco-cou').value.trim(),
+    website:$('dco-web').value.trim(), owner:$('dco-own').value.trim(),
+    notes:$('dco-notes').value.trim(),
+  };
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const ok=await P.patchRange(
+      activeCfg.sheets.companies,
+      `B${co._row}:J${co._row}`,
+      [[fields.name,fields.type,fields.website,fields.industry,fields.country,fields.owner,fields.notes,co.createdDate||today,today]]
+    );
+    if(ok){Object.assign(co,fields);renderCompanies('','');toast('✓ Saved','success');closeDrawer();}
+    else toast('⚠ Save failed','error');
+  }catch(e){toast('Error: '+e.message,'error');}
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1520,6 +1690,50 @@ function openNewDrawer(){
   const active=document.querySelector('.page.active');
   if(active?.id==='page-contacts') openNewContactDrawer();
   else if(active?.id==='page-tasks') openNewTask('','','');
+  else if(active?.id==='page-companies') openNewCompanyDrawer();
+}
+
+function openNewCompanyDrawer(){
+  const body=`
+    <div class="field-row">
+      <div class="field-group"><label>Company Name</label><input id="dco-name" value=""></div>
+      <div class="field-group"><label>Type</label><select id="dco-type">
+        <option>Customer</option><option>Partnership</option><option>Both</option>
+      </select></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Industry</label><input id="dco-ind" value=""></div>
+      <div class="field-group"><label>Country</label><input id="dco-cou" value=""></div>
+    </div>
+    <div class="field-group"><label>Website</label><input id="dco-web" value=""></div>
+    <div class="field-group"><label>Owner</label><input id="dco-own" value="${window.CURRENT_USER_NAME||''}" list="owners-list" autocomplete="off"></div>
+    <div class="field-group"><label>Notes</label><textarea id="dco-notes"></textarea></div>`;
+  const foot=`<button class="sbtn sbtn-p" onclick="createCompanyDrawer()" style="flex:1">+ Create Company</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+  openDrawer('New Company',body,foot,'new-company',null);
+}
+
+async function createCompanyDrawer(){
+  const name=$('dco-name').value.trim();
+  if(!name){toast('Company name required','error');return;}
+  toast('Creating…','info');
+  const today=new Date().toISOString().slice(0,10);
+  const newId=`CO-${String(DATA_COMPANIES.length+1).padStart(3,'0')}`;
+  const fields={
+    name, type:$('dco-type').value,
+    website:$('dco-web').value.trim(), industry:$('dco-ind').value.trim(),
+    country:$('dco-cou').value.trim(), owner:$('dco-own').value.trim(),
+    notes:$('dco-notes').value.trim(),
+  };
+  try{
+    await P.appendRow(activeCfg.sheets.companies,
+      [[newId,fields.name,fields.type,fields.website,fields.industry,fields.country,fields.owner,fields.notes,today,today]]
+    );
+    const j=await P.loadSheet(activeCfg.sheets.companies);
+    DATA_COMPANIES=P.parseCompanies(j);
+    updateCounts();renderCompanies('','');
+    toast('✓ Company created','success');closeDrawer();
+  }catch(e){toast('Error: '+e.message,'error');}
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1602,6 +1816,10 @@ function useTheirVersion(){
 const $=id=>document.getElementById(id);
 function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function badge(s){const m={Running:'s-running',Bidding:'s-bidding',Pipeline:'s-pipeline',Prospect:'s-prospect',Done:'s-done',Cancelled:'s-cancelled'};return `<span class="sb2 ${m[s]||'s-prospect'}">${s||'—'}</span>`;}
+function compTypeBadge(t){
+  const m={Customer:'background:#dcfce7;color:#166534;border:1px solid #bbf7d0',Partnership:'background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8',Both:'background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe'};
+  return t?`<span class="cb" style="${m[t]||''}">${t}</span>`:'—';
+}
 function catBadge(c){const m={Project:'cat-project',Partnership:'cat-partnership',Prospect:'cat-prospect',Pipeline:'cat-pipeline'};return `<span class="cb ${m[c]||''}">${c||'—'}</span>`;}
 function taskStatusBadge(s){const m={Open:'ts-open',Done:'ts-done',Cancelled:'ts-cancelled'};return `<span class="sb2 ${m[s]||'ts-open'}">${s||'Open'}</span>`;}
 function prioBadge(p){const m={High:'pri-high',Medium:'pri-medium',Low:'pri-low'};return p?`<span class="${m[p]||'pri-medium'}">${p}</span>`:'—';}
