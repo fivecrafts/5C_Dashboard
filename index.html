@@ -1,36 +1,1851 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>5C Pipeline · Five Crafts</title>
-
-<!-- ✅ MSAL FIX -->
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <style>
-body { font-family: Arial; background:#f0f2f7; }
-.login-screen { display:flex; height:100vh; align-items:center; justify-content:center; background:#0f2540; }
-.login-box { background:#fff; padding:30px; border-radius:12px; width:320px; text-align:center; }
-button { padding:10px; cursor:pointer; }
+:root{
+  --bg:#f0f2f7;--card:#fff;--border:#e2e8f0;--border2:#d1d9e6;
+  --navy:#0f2540;--navy2:#1a3a5c;
+  --blue:#2563eb;--blue-l:#dbeafe;--blue-t:#eff6ff;
+  --green:#059669;--green-l:#d1fae5;--green-t:#ecfdf5;
+  --amber:#d97706;--amber-l:#fef3c7;--amber-t:#fffbeb;
+  --red:#dc2626;--red-l:#fee2e2;--red-t:#fef2f2;
+  --purple:#7c3aed;--purple-l:#ede9fe;--purple-t:#f5f3ff;
+  --slate:#64748b;--slate2:#94a3b8;
+  --teal:#0891b2;--teal-l:#cffafe;--teal-t:#ecfeff;
+  --pink:#db2777;--pink-l:#fce7f3;--pink-t:#fdf2f8;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  --mono:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--font);background:var(--bg);color:#1e293b;font-size:.88rem;}
+
+/* ── LOGIN ── */
+.login-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:var(--navy);}
+.login-box{background:#fff;border-radius:16px;padding:40px 44px;width:380px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.3);}
+.login-logo{width:52px;height:52px;background:var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;color:#fff;margin:0 auto 16px;}
+.login-title{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.login-sub{font-size:.78rem;color:var(--slate);margin-bottom:24px;line-height:1.5;}
+.login-divider{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:.7rem;color:var(--slate2);}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.login-btn{width:100%;padding:11px;border:none;border-radius:9px;font-size:.85rem;font-weight:600;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s;margin-bottom:10px;}
+.btn-ms{background:var(--blue);color:#fff;}.btn-ms:hover{background:#1d4ed8;}
+.btn-google{background:#fff;color:#3c4043;border:1px solid var(--border2);}.btn-google:hover{background:#f8fafc;}
+.login-note{font-size:.69rem;color:var(--slate2);margin-top:14px;line-height:1.5;}
+.login-err{font-size:.74rem;color:var(--red);margin-top:10px;display:none;padding:8px;background:var(--red-t);border-radius:6px;}
+
+/* ── SHELL ── */
+.shell{display:none;height:100vh;overflow:hidden;}
+.shell.visible{display:flex;}
+.sb{width:224px;background:var(--navy);color:#fff;display:flex;flex-direction:column;flex-shrink:0;}
+.sb-brand{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sb-logo{display:flex;align-items:center;gap:9px;margin-bottom:3px;}
+.sb-badge{width:32px;height:32px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;}
+.sb-name{font-size:.9rem;font-weight:700;}.sb-sub{font-size:.67rem;color:rgba(255,255,255,.4);margin-top:1px;}
+.sb-user{font-size:.63rem;color:rgba(255,255,255,.32);margin-top:5px;display:flex;align-items:center;gap:4px;overflow:hidden;}
+.sb-user span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sb-pvdr{display:inline-block;padding:1px 5px;border-radius:3px;font-size:.58rem;font-weight:600;}
+.pvdr-ms{background:rgba(37,99,235,.4);color:#93c5fd;}
+.pvdr-google{background:rgba(234,67,53,.3);color:#fca5a5;}
+.sb-nav{flex:1;padding:8px 0;overflow-y:auto;}
+.sbg{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:rgba(255,255,255,.28);padding:10px 16px 3px;}
+.ni{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;font-size:.8rem;color:rgba(255,255,255,.62);transition:background .12s;position:relative;}
+.ni:hover{background:rgba(255,255,255,.07);color:#fff;}
+.ni.active{background:rgba(255,255,255,.11);color:#fff;}
+.ni.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue);border-radius:0 2px 2px 0;}
+.ni .ic{width:18px;text-align:center;flex-shrink:0;}
+.ni .pl{margin-left:auto;font-size:.65rem;font-family:var(--mono);background:rgba(255,255,255,.09);padding:1px 5px;border-radius:8px;color:rgba(255,255,255,.45);}
+.ni.active .pl{background:var(--blue);color:#fff;}
+.sb-ft{padding:10px 16px;border-top:1px solid rgba(255,255,255,.08);font-size:.63rem;color:rgba(255,255,255,.28);line-height:1.8;}
+.sb-ft b{color:rgba(255,255,255,.45);}
+.signout-btn{width:calc(100% - 32px);margin:0 16px 12px;padding:6px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.45);border-radius:6px;font-size:.7rem;font-family:var(--font);cursor:pointer;}
+.signout-btn:hover{background:rgba(255,255,255,.08);color:#fff;}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;height:52px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
+.tb-l{display:flex;align-items:baseline;gap:9px;}
+.tb-t{font-size:.95rem;font-weight:700;color:var(--navy);}
+.tb-s{font-size:.73rem;color:var(--slate);}
+.tb-r{display:flex;align-items:center;gap:7px;}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:500;border:1px solid transparent;}
+.ch-g{background:var(--green-t);color:var(--green);border-color:var(--green-l);}
+.ch-a{background:var(--amber-t);color:var(--amber);border-color:var(--amber-l);}
+.ch-b{background:var(--blue-t);color:var(--blue);border-color:var(--blue-l);}
+.reload-btn{padding:4px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--card);font-size:.73rem;font-family:var(--font);cursor:pointer;color:var(--slate);}
+.reload-btn:hover{border-color:var(--blue);color:var(--blue);}
+.new-btn{padding:5px 12px;border:none;border-radius:6px;background:var(--blue);color:#fff;font-size:.73rem;font-weight:600;font-family:var(--font);cursor:pointer;}
+.new-btn:hover{background:#1d4ed8;}
+
+/* ── STALE BANNER ── */
+#stale-banner{display:none;background:#92400e;color:#fef3c7;padding:8px 22px;font-size:.78rem;align-items:center;gap:10px;flex-shrink:0;}
+
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:20px 22px;}
+.page{display:none;}.page.active{display:block;}
+
+/* ── KPI ROW ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;position:relative;overflow:hidden;transition:box-shadow .15s;}
+.kpi:hover{box-shadow:0 2px 12px rgba(0,0,0,.08);}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi.k-run::after{background:var(--green);}.kpi.k-bid::after{background:var(--purple);}
+.kpi.k-pip::after{background:var(--blue);}.kpi.k-pro::after{background:var(--amber);}
+.kpi.k-done::after{background:var(--slate2);}.kpi.k-can::after{background:var(--red);}
+.kpi.k-tot::after{background:linear-gradient(90deg,var(--blue),var(--purple));}
+.kpi.k-teal::after{background:var(--teal);}
+.kpi.k-pink::after{background:var(--pink);}
+.kpi.k-over::after{background:var(--red);}
+.kpi .lbl{font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--slate);margin-bottom:4px;}
+.kpi .val{font-size:1.85rem;font-weight:700;line-height:1;margin-bottom:2px;}
+.kpi.k-run .val{color:var(--green);}.kpi.k-bid .val{color:var(--purple);}
+.kpi.k-pip .val{color:var(--blue);}.kpi.k-pro .val{color:var(--amber);}
+.kpi.k-done .val{color:var(--slate2);}.kpi.k-can .val{color:var(--red);}
+.kpi.k-tot .val{color:var(--navy);}
+.kpi.k-teal .val{color:var(--teal);}
+.kpi.k-pink .val{color:var(--pink);}
+.kpi.k-over .val{color:var(--red);}
+.kpi .sub{font-size:.68rem;color:var(--slate2);}
+
+/* ── SECTION ── */
+.sect{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy2);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--blue);display:flex;align-items:center;}
+.sect small{font-size:.63rem;font-weight:400;text-transform:none;letter-spacing:0;color:var(--slate);margin-left:auto;}
+
+/* ── OWNER GRID ── */
+.owner-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px;margin-bottom:20px;}
+.oc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:box-shadow .15s;}
+.oc:hover{box-shadow:0 2px 10px rgba(0,0,0,.08);}
+.oc-top{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.oc-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff;flex-shrink:0;}
+.oc-name{font-size:.79rem;font-weight:600;color:var(--navy2);}.oc-role{font-size:.67rem;color:var(--slate);}
+.oc-stats{display:flex;gap:5px;}
+.oc-stat{flex:1;text-align:center;padding:5px 3px;border-radius:6px;cursor:pointer;}
+.oc-stat .v{font-size:1rem;font-weight:700;}.oc-stat .l{font-size:.58rem;color:var(--slate);}
+
+/* ── TABLES ── */
+.tbl-wrap{overflow-x:auto;margin-bottom:18px;}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+th{background:#f8fafc;padding:8px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border);}
+th.sortable{cursor:pointer;user-select:none;}
+th.sortable:hover{background:#f1f5f9;color:var(--navy2);}
+th.sort-asc::after{content:' ↑';color:var(--blue);}
+th.sort-desc::after{content:' ↓';color:var(--blue);}
+th.sort-asc,th.sort-desc{color:var(--navy2);background:#eef2ff;}
+td{padding:8px 11px;border-bottom:1px solid #f1f5f9;font-size:.8rem;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
+
+/* ── BADGES ── */
+.sb2{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:.67rem;font-weight:600;white-space:nowrap;}
+.sb2::before{content:'●';font-size:.5rem;}
+.s-running{background:var(--green-l);color:#065f46;}.s-running::before{color:var(--green);}
+.s-bidding{background:var(--purple-l);color:#4c1d95;}.s-bidding::before{color:var(--purple);}
+.s-pipeline{background:var(--blue-l);color:#1e40af;}.s-pipeline::before{color:var(--blue);}
+.s-prospect{background:var(--amber-l);color:#92400e;}.s-prospect::before{color:var(--amber);}
+.s-done{background:#f1f5f9;color:#475569;}.s-done::before{color:var(--slate2);}
+.s-cancelled{background:var(--red-l);color:#991b1b;}.s-cancelled::before{color:var(--red);}
+/* Task status */
+.ts-open{background:var(--blue-l);color:#1e40af;}
+.ts-done{background:var(--green-l);color:#065f46;}
+.ts-cancelled{background:#f1f5f9;color:#475569;}
+.ts-overdue{background:var(--red-l);color:#991b1b;}
+/* Priority */
+.pri-high{background:var(--red-l);color:#991b1b;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;}
+.pri-medium{background:var(--amber-l);color:#92400e;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;}
+.pri-low{background:var(--green-l);color:#065f46;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;}
+/* Category */
+.cat-project{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
+.cat-partnership{background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8;}
+.cat-prospect{background:#fef9c3;color:#854d0e;border:1px solid #fef08a;}
+.cat-pipeline{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe;}
+.cb{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.64rem;font-weight:500;background:#f1f5f9;color:var(--slate);border:1px solid var(--border);}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:9px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+.filter-bar input,.filter-bar select{padding:7px 10px;border:1px solid var(--border2);border-radius:7px;font-size:.79rem;background:var(--card);font-family:var(--font);color:#1e293b;outline:none;}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--blue);}
+.filter-bar input{flex:1;min-width:180px;}
+.filter-bar .cnt{font-size:.71rem;color:var(--slate);font-family:var(--mono);white-space:nowrap;margin-left:auto;}
+
+/* ── STATUS SELECT ── */
+.ssel{padding:3px 7px;border:1px solid var(--border2);border-radius:5px;font-size:.72rem;font-family:var(--font);background:var(--card);cursor:pointer;outline:none;color:#1e293b;}
+.ssel.changed{border-color:var(--amber);background:var(--amber-t);}
+
+/* ── SAVE BAR ── */
+.save-bar{position:sticky;bottom:0;background:var(--navy);color:#fff;padding:11px 22px;display:none;align-items:center;gap:12px;z-index:50;border-top:2px solid var(--blue);}
+.save-bar.on{display:flex;}.save-bar .msg{font-size:.8rem;flex:1;}.save-bar .msg b{color:#93c5fd;}
+.sbtn{padding:7px 16px;border-radius:7px;font-size:.78rem;font-weight:600;font-family:var(--font);cursor:pointer;border:none;}
+.sbtn-p{background:var(--blue);color:#fff;}.sbtn-p:hover{background:#1d4ed8;}
+.sbtn-d{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);}
+
+/* ── LEGEND ── */
+.legend{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;}
+.legend h3{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy2);margin-bottom:10px;}
+.legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.legend-section h4{font-size:.65rem;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+.legend-items{display:flex;flex-wrap:wrap;gap:5px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--slate);}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ── MODALS ── */
+.mo{position:fixed;inset:0;background:rgba(15,37,64,.5);z-index:200;display:none;align-items:center;justify-content:center;}
+.mo.open{display:flex;}
+.mo-box{background:var(--card);border-radius:14px;padding:24px;width:420px;max-width:92vw;box-shadow:0 16px 50px rgba(0,0,0,.22);}
+.mo-box h2{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:7px;}
+.mo-box p{font-size:.79rem;color:var(--slate);line-height:1.5;margin-bottom:14px;}
+.mo-list{background:#f8fafc;border-radius:7px;padding:10px 12px;margin-bottom:14px;max-height:200px;overflow-y:auto;}
+.mo-row{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:.75rem;}
+.mo-row:last-child{border-bottom:none;}
+.mo-cl{font-weight:600;flex:1;color:var(--navy2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mo-actions{display:flex;gap:8px;justify-content:flex-end;}
+.mbtn{padding:8px 16px;border-radius:7px;font-size:.78rem;font-weight:600;font-family:var(--font);cursor:pointer;border:none;}
+.mbtn-p{background:var(--blue);color:#fff;}.mbtn-p:hover{background:#1d4ed8;}
+.mbtn-s{background:#f1f5f9;color:var(--slate);}
+
+/* ── DRAWER ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(15,37,64,.4);z-index:150;display:none;}
+.drawer-overlay.open{display:block;}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:460px;max-width:96vw;background:var(--card);box-shadow:-4px 0 24px rgba(0,0,0,.15);z-index:160;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease;}
+.drawer.open{transform:translateX(0);}
+.drawer-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.drawer-head h2{font-size:.88rem;font-weight:700;color:var(--navy);}
+.drawer-head-actions{display:flex;gap:6px;align-items:center;}
+.drawer-close{width:28px;height:28px;border:none;background:#f1f5f9;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;color:var(--slate);}
+.drawer-close:hover{background:var(--border2);}
+.drawer-body{flex:1;overflow-y:auto;padding:16px 20px;}
+.drawer-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.field-group{margin-bottom:13px;}
+.field-group label{display:block;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);margin-bottom:5px;}
+.field-group input,.field-group select,.field-group textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;font-size:.82rem;font-family:var(--font);color:#1e293b;background:var(--card);outline:none;}
+.field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--blue);}
+.field-group textarea{resize:vertical;min-height:70px;line-height:1.5;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.edit-row{cursor:pointer;}
+.edit-row:hover td{background:#f0f4ff !important;}
+
+/* ── LINKED OPPS IN CONTACT DRAWER ── */
+.linked-opps{display:flex;flex-direction:column;gap:5px;max-height:140px;overflow-y:auto;}
+.linked-opp-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f8fafc;border-radius:6px;border:1px solid var(--border);font-size:.77rem;}
+.linked-opp-link{color:var(--blue);cursor:pointer;text-decoration:underline;font-weight:500;}
+.linked-opp-link:hover{color:#1d4ed8;}
+
+/* ── CONTACT CARD IN PIPELINE ── */
+.contact-link{color:var(--blue);cursor:pointer;text-decoration:underline;font-size:.75rem;}
+.contact-link:hover{color:#1d4ed8;}
+
+/* ── WORKFLOW CARD ── */
+.wf-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 16px;margin-bottom:16px;}
+.wf-card h3{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy2);margin-bottom:8px;}
+.wf-flow{display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:.73rem;}
+.wf-step{padding:3px 9px;border-radius:5px;font-weight:500;}.wf-arr{color:var(--slate2);font-size:.75rem;}
+
+/* ── TOAST ── */
+.toast-area{position:fixed;top:14px;right:16px;z-index:300;display:flex;flex-direction:column;gap:7px;}
+.toast{background:var(--navy);color:#fff;padding:9px 14px;border-radius:8px;font-size:.77rem;box-shadow:0 4px 16px rgba(0,0,0,.22);transform:translateX(110%);transition:transform .25s ease;max-width:300px;}
+.toast.show{transform:translateX(0);}
+.toast.t-success{border-left:3px solid var(--green);}
+.toast.t-error{border-left:3px solid var(--red);}
+.toast.t-info{border-left:3px solid var(--blue);}
+.loading{display:flex;align-items:center;justify-content:center;padding:50px;flex-direction:column;gap:12px;color:var(--slate);}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.dc{max-width:220px;font-size:.72rem;color:var(--slate2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 </style>
 </head>
-
 <body>
 
+<!-- LOGIN -->
 <div class="login-screen" id="login-screen">
   <div class="login-box">
-    <h2>5C Dashboard</h2>
-    <button onclick="UI.signIn()">Sign in with Microsoft</button>
-    <div id="login-err" style="color:red;margin-top:10px"></div>
+    <div class="login-logo">5C</div>
+    <div class="login-title">5C Pipeline Dashboard</div>
+    <div class="login-sub">Five Crafts Business Development<br>Sign in to access your pipeline data.</div>
+    <button class="login-btn btn-ms" onclick="UI.signIn('microsoft')">
+      <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/><rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/></svg>
+      Sign in with Microsoft
+    </button>
+    <div class="login-divider">or</div>
+    <button class="login-btn btn-google" onclick="UI.signIn('google')">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="login-note">Access restricted to Five Crafts accounts only.</div>
+    <div class="login-err" id="login-err"></div>
   </div>
 </div>
 
-<div id="app" style="display:none;padding:20px;">
-  <h2>✅ App Loaded</h2>
-  <button onclick="UI.signOut()">Sign out</button>
+<!-- APP -->
+<div class="shell" id="app-shell">
+  <div class="sb">
+    <div class="sb-brand">
+      <div class="sb-logo">
+        <div class="sb-badge">5C</div>
+        <div><div class="sb-name">Pipeline</div><div class="sb-sub">Five Crafts BD 2026</div></div>
+      </div>
+      <div class="sb-user">👤 <span id="sb-user">—</span> <span class="sb-pvdr" id="sb-pvdr"></span></div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sbg">Views</div>
+      <div class="ni active" onclick="UI.nav('dashboard',this)"><span class="ic">◉</span><span> Dashboard</span><span class="pl" id="pl-total">—</span></div>
+      <div class="ni" onclick="UI.nav('pipeline',this)"><span class="ic">⚡</span><span> All Opportunities</span><span class="pl" id="pl-all">—</span></div>
+      <div class="sbg">By Status</div>
+      <div class="ni" onclick="UI.nf('Running',this)"><span class="ic">🟢</span><span> Running</span><span class="pl" id="pl-running">—</span></div>
+      <div class="ni" onclick="UI.nf('Bidding',this)"><span class="ic">🟣</span><span> Bidding</span><span class="pl" id="pl-bidding">—</span></div>
+      <div class="ni" onclick="UI.nf('Pipeline',this)"><span class="ic">🔵</span><span> Pipeline</span><span class="pl" id="pl-pipeline">—</span></div>
+      <div class="ni" onclick="UI.nf('Prospect',this)"><span class="ic">🟡</span><span> Prospect</span><span class="pl" id="pl-prospect">—</span></div>
+      <div class="ni" onclick="UI.nf('Done',this)"><span class="ic">⚪</span><span> Done</span><span class="pl" id="pl-done">—</span></div>
+      <div class="ni" onclick="UI.nf('Cancelled',this)"><span class="ic">🔴</span><span> Cancelled</span><span class="pl" id="pl-cancelled">—</span></div>
+      <div class="sbg">People & Tasks</div>
+      <div class="ni" onclick="UI.nav('contacts',this)"><span class="ic">👤</span><span> Contacts</span><span class="pl" id="pl-contacts">—</span></div>
+      <div class="ni" onclick="UI.nav('tasks',this)"><span class="ic">✅</span><span> Tasks</span><span class="pl" id="pl-tasks">—</span></div>
+      <div class="ni" onclick="UI.nav('companies',this)"><span class="ic">🏢</span><span> Companies</span><span class="pl" id="pl-companies">—</span></div>
+      <div class="ni" onclick="UI.nav('owners',this)"><span class="ic">🏠</span><span> Owners</span><span class="pl" id="pl-owners">—</span></div>
+    </nav>
+    <div class="sb-ft">Source: <b>5C_Pipeline.xlsx</b><br>Provider: <b id="sb-pvdr-lbl">—</b><br>Loaded: <b id="sb-loaded">—</b></div>
+    <button class="signout-btn" onclick="UI.signOut()">↩ Sign out</button>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="tb-l"><span class="tb-t" id="tb-t">Dashboard</span><span style="color:var(--slate2)">·</span><span class="tb-s" id="tb-s">Overview</span></div>
+      <div class="tb-r">
+        <span class="chip ch-a" id="chip-chg" style="display:none">⚠ <span id="chg-n">0</span> unsaved</span>
+        <span id="my-opps-chip" style="display:none;cursor:pointer" class="chip ch-b" onclick="UI.nf('',null,window.CURRENT_USER_NAME)"></span>
+        <span class="chip ch-g" id="chip-src">● Loading…</span>
+        <button id="topbar-new-btn" class="new-btn" style="display:none" onclick="openNewDrawer()">+ New</button>
+        <button class="reload-btn" onclick="App.loadAll()">↻ Reload</button>
+      </div>
+    </div>
+
+    <div id="stale-banner">
+      ⚠ Data loaded more than 30 minutes ago — someone may have changed the Excel file.
+      <button onclick="App.loadAll();$('stale-banner').style.display='none';staleWarned=false;" style="padding:3px 10px;background:#b45309;border:none;border-radius:5px;color:#fef3c7;cursor:pointer;font-size:.75rem;margin-left:auto">↻ Reload now</button>
+      <button onclick="$('stale-banner').style.display='none'" style="padding:3px 8px;background:transparent;border:1px solid #b45309;border-radius:5px;color:#fef3c7;cursor:pointer;font-size:.75rem">Dismiss</button>
+    </div>
+
+    <div class="content">
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div id="dash-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div>
+      </div>
+      <!-- PIPELINE -->
+      <div class="page" id="page-pipeline">
+        <div id="pipe-out"></div>
+        <div class="save-bar" id="save-bar">
+          <span class="msg">⚡ <b id="chg-count">0 changes</b> pending</span>
+          <button class="sbtn sbtn-d" onclick="App.discard()">Discard</button>
+          <button class="sbtn sbtn-p" onclick="App.openModal()">Save Changes</button>
+        </div>
+      </div>
+      <!-- CONTACTS -->
+      <div class="page" id="page-contacts">
+        <div id="contacts-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div>
+      </div>
+      <!-- TASKS -->
+      <div class="page" id="page-tasks">
+        <div id="tasks-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div>
+      </div>
+      <!-- COMPANIES -->
+      <div class="page" id="page-companies">
+        <div id="companies-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div>
+      </div>
+      <!-- OWNERS -->
+      <div class="page" id="page-owners">
+        <div id="owners-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- CONFIRM MODAL -->
+<div class="mo" id="mo">
+  <div class="mo-box">
+    <h2>Confirm Status Changes</h2>
+    <p>These changes will be written back to the Pipeline sheet.</p>
+    <div class="mo-list" id="mo-list"></div>
+    <div class="mo-actions">
+      <button class="mbtn mbtn-s" onclick="App.closeMo()">Cancel</button>
+      <button class="mbtn mbtn-p" onclick="App.save()">✓ Confirm & Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFLICT MODAL -->
+<div class="mo" id="conflict-mo">
+  <div class="mo-box" style="max-width:460px">
+    <h2>⚠ Conflict Detected</h2>
+    <p>This record was changed in Excel since you loaded the dashboard.</p>
+    <div class="mo-list" id="conflict-details" style="font-size:.8rem;line-height:1.8;"></div>
+    <div class="mo-actions">
+      <button class="mbtn mbtn-s" onclick="closeConflict()">Cancel</button>
+      <button class="mbtn" style="background:var(--amber-t);color:var(--amber);border:1px solid var(--amber-l)" onclick="useTheirVersion()">Use Excel version</button>
+      <button class="mbtn mbtn-p" onclick="saveDrawer(true)">Keep my changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- DRAWER OVERLAY + DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h2 id="drawer-title">Edit</h2>
+    <div class="drawer-head-actions">
+      <button id="drawer-task-btn" class="new-btn" style="display:none;font-size:.7rem;padding:4px 10px" onclick="openNewTaskFromContext()">+ Task</button>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+  <div class="drawer-foot" id="drawer-foot"></div>
+</div>
+
+<div class="toast-area" id="toasts"></div>
 
 <script>
 'use strict';
 
+// ════════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════════
+const CFG = {
+  ACTIVE: 'microsoft',
+  microsoft: {
+    label:'Microsoft', badgeCls:'pvdr-ms', srcLabel:'5C_Pipeline.xlsx',
+    clientId: 'f40e3049-3a3e-45a4-bef4-76c21ed50419',
+    tenantId: 'fivecrafts.cz',
+    driveId:  'b!sfRUpRpD1UGP25IZgoe25EIG1LQLxKZMqzutcQq84SwTUIT0yfgyRa__hqyrQ6PI',
+    fileId:   '01MIP6LSHXFSXX7HPIN5A2KEUXK6GPIPBJ',
+    scopes:   ['Files.ReadWrite','Sites.ReadWrite.All','User.Read'],
+    sheets: {
+      pipeline:   'Pipeline',
+      contacts:   'Contacts',
+      tasks:      'Tasks',
+      owners:     'Owners',
+      codelists:  'Codelists',
+      companies:  'Companies',
+    }
+  },
+  google: {
+    label:'Google', badgeCls:'pvdr-google', srcLabel:'5C_Pipeline (Sheets)',
+    clientId:'YOUR_GOOGLE_CLIENT_ID', sheetId:'YOUR_SHEET_ID',
+    scopes:['https://www.googleapis.com/auth/spreadsheets'],
+    statusCol:5,
+    sheets:{ pipeline:'Pipeline', contacts:'Contacts', tasks:'Tasks', owners:'Owners', codelists:'Codelists', companies:'Companies' }
+  },
+};
+
+// Pipeline column map (verified 2026-05-19)
+const PIPE_COLS = {
+  A:'c', B:'p', C:'d', D:'cat', E:'s',
+  F:'createdDate', G:'updDate', H:'r', I:'rsp',
+  J:'phone', K:'email', L:'projStart', M:'src'
+};
+
+// Contacts column map
+const CONT_COLS = {
+  A:'id', B:'firstName', C:'lastName', D:'email', E:'phone',
+  F:'web', G:'company', H:'linkedOpps', I:'src', J:'createdDate', K:'updDate'
+};
+
+// Tasks column map
+const TASK_COLS = {
+  A:'id', B:'type', C:'linkedOpp', D:'linkedContact',
+  E:'createdDate', F:'status', G:'responsible', H:'dueDate', I:'notes', J:'priority'
+};
+
+// Owners column map
+const OWN_COLS = { A:'id', B:'firstName', C:'lastName', D:'displayName', E:'email', F:'notes' };
+
+// Workflow
+const FLOW = {
+  Prospect:  ['Pipeline','Prospect','Cancelled'],
+  Pipeline:  ['Bidding','Running','Prospect','Done','Cancelled','Pipeline'],
+  Bidding:   ['Running','Done','Cancelled','Pipeline','Bidding'],
+  Running:   ['Done','Cancelled','Running','Pipeline'],
+  Done:      ['Pipeline','Prospect','Done'],
+  Cancelled: ['Prospect','Pipeline','Cancelled'],
+};
+const ALL_S = ['Running','Bidding','Pipeline','Prospect','Done','Cancelled'];
+// removed duplicate: const TASK_STATUSES = ['Open','Done','Cancelled'];
+// removed duplicate: const PRIORITIES = ['High','Medium','Low'];
+const OWNER_PALETTE = ['#2563eb','#059669','#7c3aed','#d97706','#dc2626','#0891b2','#65a30d','#c2410c'];
+
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+let DATA_PIPE    = [];
+let DATA_COMPANIES = [];
+let DATA_CONTACTS= [];
+let DATA_TASKS   = [];
+let DATA_OWNERS  = [];
+let DATA_CODELISTS = [];
+let TASK_TYPES    = ['Organize Meet','Send Pitchdeck','Organize Call','Followup Call','Send Contract','Send Proposal','LinkedIn Connect','Other'];
+let TASK_STATUSES = ['Open','Done','Cancelled'];
+let PRIORITIES    = ['High','Medium','Low'];
+let CHANGES = {};
+let OC = {};
+let LOAD_TIME = 0;
+let SORT_COL = 's', SORT_DIR = 1;
+let staleWarned = false;
+
+// Stale check
+setInterval(()=>{
+  if(!LOAD_TIME) return;
+  const STALE_MS=30*60*1000;
+  if(Date.now()-LOAD_TIME > STALE_MS && !staleWarned){
+    staleWarned=true;
+    $('stale-banner').style.display='flex';
+  }
+},60000);
+
+// ════════════════════════════════════════════════════════════════
+// MICROSOFT PROVIDER
+// ════════════════════════════════════════════════════════════════
+const MsProvider = (() => {
+  const c = CFG.microsoft;
+  let app = null;
+  function boot(){
+    if(app) return;
+    app = new msal.PublicClientApplication({
+      auth:{ clientId:c.clientId, authority:`https://login.microsoftonline.com/${c.tenantId}`, redirectUri:location.href.split('?')[0] },
+      cache:{ cacheLocation:'localStorage' },
+    });
+  }
+  async function token(){
+    const accs = app.getAllAccounts();
+    if(!accs.length) throw new Error('Not signed in');
+    return (await app.acquireTokenSilent({scopes:c.scopes,account:accs[0]})).accessToken;
+  }
+  async function api(method, path, body){
+    const t = await token();
+    const r = await fetch('https://graph.microsoft.com/v1.0'+path,{
+      method, headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},
+      body:body?JSON.stringify(body):undefined,
+    });
+    if(!r.ok) throw new Error('Graph HTTP '+r.status+' '+path);
+    return method==='PATCH'?true:r.json();
+  }
+
+  function parseSheet(json, colMap){
+    const rows = json.values||[];
+    if(rows.length<2) return [];
+    const hdr = rows[0].map(h=>String(h).trim());
+    const out=[];
+    for(let i=1;i<rows.length;i++){
+      const row=rows[i];
+      const g=k=>{const j=hdr.indexOf(k);return j>=0?String(row[j]??'').trim():''};
+      const rec={_row:i+1};
+      Object.entries(colMap).forEach(([col,field])=>{
+        const name=Object.values(PIPE_COLS).includes(field)?null:null; // unused
+        rec[field]=g(hdrForField(col));
+      });
+      out.push(rec);
+    }
+    return out;
+  }
+
+  function hdrForField(col){ return col; } // passthrough — we use col letters directly
+
+  function parseSheetByLetter(json){
+    const rows=json.values||[];
+    if(rows.length<2) return {headers:[],dataRows:[],allRows:rows};
+    return {headers:rows[0].map(h=>String(h).trim()), dataRows:rows.slice(1), allRows:rows};
+  }
+
+  function mapRow(row, headers, mapping){
+    // mapping = {fieldName: headerName}
+    const rec={};
+    Object.entries(mapping).forEach(([field,hdr])=>{
+      const idx=headers.indexOf(hdr);
+      rec[field]=idx>=0?String(row[idx]??'').trim():'';
+    });
+    return rec;
+  }
+
+  return {
+    async tryAutoLogin(){
+      boot();
+      await app.handleRedirectPromise().catch(()=>{});
+      const accs=app.getAllAccounts();
+      return accs.length?{name:accs[0].name,email:accs[0].username}:null;
+    },
+    async signIn(){boot();const r=await app.loginRedirect({scopes:c.scopes});return null;},
+    async signOut(){boot();await app.logoutPopup().catch(()=>{});},
+
+    async loadSheet(sheetName){
+      const url=`/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheetName}/usedRange?$select=values`;
+      return api('GET',url);
+    },
+
+    parsePipeline(json){
+      const {headers,dataRows}=parseSheetByLetter(json);
+      if(!headers.length) return [];
+      const out=[];
+      const PMAP={
+        c:'Client Name',p:'Project Name',d:'Project Detail - Roles and Requirements',
+        cat:'Category',s:'Status',createdDate:'Created Date',updDate:'Updated Date',
+        r:'Responsible',rsp:'Contact',phone:'Phone',email:'Email',projStart:'Project start',src:'Source'
+      };
+      dataRows.forEach((row,i)=>{
+        const rec=mapRow(row,headers,PMAP);
+        rec._row=i+2;
+        if(rec.c) out.push(rec);
+      });
+      return out;
+    },
+
+    parseContacts(json){
+      const {headers,dataRows}=parseSheetByLetter(json);
+      if(!dataRows||!dataRows.length) return [];
+      const CMAP={
+        id:'Contact ID',firstName:'First Name',lastName:'Last Name',email:'Email',
+        phone:'Phone',web:'Web',company:'Company',linkedOpps:'Linked Opportunities',
+        src:'Source',createdDate:'Created Date',updDate:'Updated Date'
+      };
+      return dataRows.map((row,i)=>{
+        const rec=mapRow(row,headers,CMAP);
+        rec._row=i+2;
+        return rec;
+      }).filter(r=>r.firstName||r.lastName);
+    },
+
+    parseTasks(json){
+      const {headers,dataRows}=parseSheetByLetter(json);
+      if(!dataRows||!dataRows.length) return [];
+      const TMAP={
+        id:'Task ID',type:'Task Type',linkedOpp:'Linked Opportunity',
+        linkedContact:'Linked Contact',createdDate:'Date Created',
+        status:'Status',responsible:'Responsible',dueDate:'Due Date',
+        notes:'Notes',priority:'Priority'
+      };
+      // Priority header fix — col J (index 9) fallback if header missing
+      const hasPriority=headers.includes('Priority');
+      return dataRows.map((row,i)=>{
+        const rec=mapRow(row,headers,TMAP);
+        if(!hasPriority&&row[9]!==undefined) rec.priority=String(row[9]??'').trim();
+        rec._row=i+2;
+        return rec;
+      }).filter(r=>r.id||r.type);
+    },
+
+    parseOwners(json){
+      const {headers,dataRows}=parseSheetByLetter(json);
+      if(!dataRows||!dataRows.length) return [];
+      const OMAP={id:'Owner ID',firstName:'First Name',lastName:'Last Name',displayName:'Display Name',email:'Email',notes:'Notes'};
+      return dataRows.map((row,i)=>{
+        const rec=mapRow(row,headers,OMAP);
+        rec._row=i+2;
+        return rec;
+      }).filter(r=>r.displayName||r.firstName);
+    },
+
+    parseCompanies(json){
+      const {headers,dataRows}=parseSheetByLetter(json);
+      if(!dataRows||!dataRows.length) return [];
+      const CMAP={
+        id:'Company ID', name:'Company Name', type:'Type',
+        website:'Website', industry:'Industry', country:'Country',
+        owner:'Owner', notes:'Notes', createdDate:'Created Date', updDate:'Updated Date'
+      };
+      return dataRows.map((row,i)=>{
+        const rec=mapRow(row,headers,CMAP);
+        rec._row=i+2;
+        return rec;
+      }).filter(r=>r.name||r.id);
+    },
+
+    parseCodelists(json){
+      const {headers,dataRows}=parseSheetByLetter(json);
+      const out={};
+      if(!dataRows||!dataRows.length) return out;
+      dataRows.forEach(row=>{
+        const listName=String(row[0]??'').trim();
+        const value=String(row[1]??'').trim();
+        if(listName&&value){
+          if(!out[listName]) out[listName]=[];
+          out[listName].push(value);
+        }
+      });
+      return out;
+    },
+
+    async readCell(row,col){
+      const json=await api('GET',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${CFG.microsoft.sheets.pipeline}/range(address='${col}${row._row}')?$select=values`
+      );
+      return json?.values?.[0]?.[0]??null;
+    },
+
+    async patchRange(sheet,address,values){
+      return api('PATCH',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='${address}')`,
+        {values}
+      );
+    },
+
+    async appendRow(sheet,values){
+      // Read current last row, then patch next empty row
+      const json=await api('GET',`/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/usedRange?$select=rowCount`);
+      const nextRow=(json.rowCount||1)+1;
+      const colEnd=String.fromCharCode(64+values[0].length);
+      return api('PATCH',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='A${nextRow}:${colEnd}${nextRow}')`,
+        {values}
+      );
+    },
+
+    async savePipelineRow(row,fields){
+      const s=CFG.microsoft.sheets.pipeline;
+      const today=new Date().toISOString().slice(0,10);
+      const r1=await this.patchRange(s,`A${row._row}:E${row._row}`,[[fields.c,fields.p,fields.d,fields.cat,fields.s]]);
+      const r2=await this.patchRange(s,`G${row._row}:L${row._row}`,[[today,fields.r,fields.rsp,fields.phone,fields.email,fields.projStart]]);
+      const r3=await this.patchRange(s,`M${row._row}`,[[fields.src]]);
+      return r1&&r2&&r3;
+    },
+
+    async saveStatusOnly(row,newS){
+      const s=CFG.microsoft.sheets.pipeline;
+      const today=new Date().toISOString().slice(0,10);
+      const r1=await this.patchRange(s,`E${row._row}`,[[newS]]);
+      await this.patchRange(s,`G${row._row}`,[[today]]).catch(()=>{});
+      return r1;
+    },
+
+    async saveContactRow(row,fields){
+      const s=CFG.microsoft.sheets.contacts;
+      const today=new Date().toISOString().slice(0,10);
+      return this.patchRange(s,`B${row._row}:K${row._row}`,
+        [[fields.firstName,fields.lastName,fields.email,fields.phone,fields.web,fields.company,fields.linkedOpps,fields.src,fields.createdDate||today,today]]
+      );
+    },
+
+    async createContact(fields){
+      const s=CFG.microsoft.sheets.contacts;
+      const today=new Date().toISOString().slice(0,10);
+      const newId=`C-${String(DATA_CONTACTS.length+1).padStart(3,'0')}`;
+      return this.appendRow(s,[[newId,fields.firstName,fields.lastName,fields.email,fields.phone,fields.web,fields.company,fields.linkedOpps||'',fields.src||'Dashboard',today,today]]);
+    },
+
+    async saveTaskRow(row,fields){
+      const s=CFG.microsoft.sheets.tasks;
+      return this.patchRange(s,`A${row._row}:J${row._row}`,
+        [[row.id,fields.type,fields.linkedOpp,fields.linkedContact,row.createdDate,fields.status,fields.responsible,fields.dueDate,fields.notes,fields.priority]]
+      );
+    },
+
+    async createTask(fields){
+      const s=CFG.microsoft.sheets.tasks;
+      const today=new Date().toISOString().slice(0,10);
+      const newId=`T-${String(DATA_TASKS.length+1).padStart(3,'0')}`;
+      return this.appendRow(s,[[newId,fields.type,fields.linkedOpp||'',fields.linkedContact||'',today,fields.status||'Open',fields.responsible||'',fields.dueDate||'',fields.notes||'',fields.priority||'Medium']]);
+    },
+  };
+})();
+
+// ════════════════════════════════════════════════════════════════
+// GOOGLE PROVIDER (stub — same interface)
+// ════════════════════════════════════════════════════════════════
+const GglProvider = (() => {
+  const c=CFG.google;
+  let accessToken=null,user=null;
+  function loadGSI(){return new Promise(res=>{if(window.google?.accounts){res();return;}const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;document.head.appendChild(s);});}
+  async function t(){if(!accessToken)throw new Error('Not signed in');return accessToken;}
+  async function sheetsGet(r){const tk=await t();const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${c.sheetId}/values/${encodeURIComponent(r)}`,{headers:{Authorization:'Bearer '+tk}});if(!res.ok)throw new Error('Sheets '+res.status);return res.json();}
+  async function sheetsPut(r,values){const tk=await t();const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${c.sheetId}/values/${encodeURIComponent(r)}?valueInputOption=RAW`,{method:'PUT',headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify({range:r,majorDimension:'ROWS',values})});return res.ok;}
+  const stub={values:[[]]};
+  return {
+    async tryAutoLogin(){return null;},
+    async signIn(){await loadGSI();return new Promise((res,rej)=>{google.accounts.oauth2.initTokenClient({client_id:c.clientId,scope:c.scopes.join(' '),callback:async resp=>{if(resp.error){rej(new Error(resp.error));return;}accessToken=resp.access_token;const u=await(await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+accessToken}})).json();user={name:u.name,email:u.email};res(user);}}).requestAccessToken();});},
+    async signOut(){if(accessToken&&window.google)google.accounts.oauth2.revoke(accessToken);accessToken=null;user=null;},
+    async loadSheet(name){return sheetsGet(`${name}!A:Z`);},
+    parsePipeline(j){return MsProvider.parsePipeline(j);},
+    parseCompanies(j){return MsProvider.parseCompanies(j);},
+    parseContacts(j){return MsProvider.parseContacts(j);},
+    parseTasks(j){return MsProvider.parseTasks(j);},
+    parseOwners(j){return MsProvider.parseOwners(j);},
+    parseCodelists(j){return MsProvider.parseCodelists(j);},
+    async readCell(row,col){const j=await sheetsGet(`${c.sheets.pipeline}!${col}${row._row}`);return j?.values?.[0]?.[0]??null;},
+    async patchRange(sheet,addr,vals){return sheetsPut(`${sheet}!${addr}`,vals);},
+    async appendRow(sheet,vals){return sheetsPut(`${sheet}!A:Z`,vals);},
+    async savePipelineRow(row,f){return MsProvider.savePipelineRow.call(this,row,f);},
+    async saveStatusOnly(row,s){return MsProvider.saveStatusOnly.call(this,row,s);},
+    async saveContactRow(row,f){return MsProvider.saveContactRow.call(this,row,f);},
+    async createContact(f){return MsProvider.createContact.call(this,f);},
+    async saveTaskRow(row,f){return MsProvider.saveTaskRow.call(this,row,f);},
+    async createTask(f){return MsProvider.createTask.call(this,f);},
+  };
+})();
+
+// ════════════════════════════════════════════════════════════════
+// PROVIDER REGISTRY
+// ════════════════════════════════════════════════════════════════
+const PROVIDERS={microsoft:MsProvider,google:GglProvider};
+let P=PROVIDERS[CFG.ACTIVE]||MsProvider;
+let activeCfg=CFG[CFG.ACTIVE]||CFG.microsoft;
+function setProvider(name){if(PROVIDERS[name]){P=PROVIDERS[name];activeCfg=CFG[name];}}
+
+// ════════════════════════════════════════════════════════════════
+// APP — data + actions
+// ════════════════════════════════════════════════════════════════
+const App={
+  async loadAll(){
+    chip('ch-b','⟳ Loading…');
+    try{
+      const [pj,cj,tj,oj,clj,compj]=await Promise.all([
+        P.loadSheet(activeCfg.sheets.pipeline),
+        P.loadSheet(activeCfg.sheets.contacts),
+        P.loadSheet(activeCfg.sheets.tasks),
+        P.loadSheet(activeCfg.sheets.owners),
+        P.loadSheet(activeCfg.sheets.codelists),
+        P.loadSheet(activeCfg.sheets.companies).catch(()=>({values:[]})),
+      ]);
+      DATA_PIPE      = P.parsePipeline(pj);
+      DATA_CONTACTS  = P.parseContacts(cj);
+      DATA_TASKS     = P.parseTasks(tj);
+      DATA_OWNERS    = P.parseOwners(oj);
+      DATA_COMPANIES = P.parseCompanies(compj);
+      const cls=P.parseCodelists(clj);
+      if(cls.TaskType&&cls.TaskType.length) TASK_TYPES=cls.TaskType;
+      chip('ch-g','● '+activeCfg.label+' · Live');
+      toast(`Loaded ${DATA_PIPE.length} opps · ${DATA_CONTACTS.length} contacts · ${DATA_TASKS.length} tasks`,'success');
+    }catch(e){
+      chip('ch-a','⚠ '+e.message);
+      toast('Load failed: '+e.message,'error');
+      return;
+    }
+    CHANGES={};
+    LOAD_TIME=Date.now();
+    buildOwnerColors();
+    $('sb-loaded').textContent=new Date().toLocaleTimeString();
+    $('sb-pvdr-lbl').textContent=activeCfg.label;
+    updateCounts();
+    // Re-render active page
+    const active=document.querySelector('.page.active');
+    if(active){
+      const id=active.id.replace('page-','');
+      if(id==='dashboard') renderDash();
+      else if(id==='pipeline') renderPipe('','','');
+      else if(id==='contacts') renderContacts('','');
+      else if(id==='tasks') renderTasks('','','');
+      else if(id==='owners') renderOwners();
+      else if(id==='companies') renderCompanies('','');
+    } else renderDash();
+  },
+
+  discard(){CHANGES={};updateCounts();renderPipe('','','');toast('Discarded','info');},
+
+  openModal(){
+    $('mo-list').innerHTML=Object.entries(CHANGES).map(([k,ns])=>{
+      const [c,p]=k.split('|||');const row=DATA_PIPE.find(r=>r.c===c&&r.p===p);
+      return `<div class="mo-row"><span class="mo-cl">${c}${p?' · '+p:''}</span>${badge(row?.s||'?')}<span style="color:var(--slate2)">→</span>${badge(ns)}</div>`;
+    }).join('');
+    $('mo').classList.add('open');
+  },
+
+  closeMo(){$('mo').classList.remove('open');},
+
+  async save(){
+    this.closeMo();toast('Saving…','info');
+    let saved=0,failed=0;
+    for(const [k,newS] of Object.entries(CHANGES)){
+      const [c,p]=k.split('|||');
+      const row=DATA_PIPE.find(r=>r.c===c&&r.p===p);
+      if(!row) continue;
+      const ok=await P.saveStatusOnly(row,newS);
+      if(ok){row.s=newS;saved++;}else failed++;
+    }
+    CHANGES={};updateCounts();renderPipe('','','');renderDash();
+    if(failed===0) toast(`✓ ${saved} change${saved>1?'s':''} saved`,'success');
+    else toast(`⚠ ${saved} saved · ${failed} failed`,'error');
+  },
+};
+
+// ════════════════════════════════════════════════════════════════
+// UI CONTROLLER
+// ════════════════════════════════════════════════════════════════
+const UI={
+  async signIn(providerName){
+    setProvider(providerName);
+    try{const user=await P.signIn();if(user)this._onLogin(user);}
+    catch(e){if(!e.message.includes('user_cancelled')&&!e.message.includes('popup_closed'))showErr(e.message);}
+  },
+  async signOut(){
+    await P.signOut().catch(()=>{});
+    $('app-shell').classList.remove('visible');
+    $('login-screen').style.display='flex';
+    DATA_PIPE=[];DATA_CONTACTS=[];DATA_TASKS=[];DATA_OWNERS=[];CHANGES={};
+  },
+  _onLogin(user){
+    $('login-screen').style.display='none';
+    $('app-shell').classList.add('visible');
+    const name=user.name||user.email.split('@')[0];
+    $('sb-user').textContent=name;
+    window.CURRENT_USER_NAME=name;
+    const pb=$('sb-pvdr');pb.textContent=activeCfg.label;pb.className='sb-pvdr '+activeCfg.badgeCls;
+    const mc=$('my-opps-chip');if(mc){mc.textContent='👤 My opps';mc.style.display='inline-flex';}
+    App.loadAll();
+  },
+  nav(id,el){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+    $('page-'+id).classList.add('active');
+    if(el) el.classList.add('active');
+    const titles={dashboard:'Dashboard',pipeline:'All Opportunities',contacts:'Contacts',tasks:'Tasks',owners:'Owners',companies:'Companies'};
+    const subs={dashboard:'Overview · Five Crafts BD 2026',pipeline:'Edit status · confirm to write back',
+      contacts:'Contact database',tasks:'Tasks & follow-ups',owners:'Account managers',companies:'Company profiles'};
+    $('tb-t').textContent=titles[id]||id;
+    $('tb-s').textContent=subs[id]||'';
+    // Show/hide New button
+    const nb=$('topbar-new-btn');
+    if(id==='contacts'){nb.style.display='inline-block';nb.textContent='+ New Contact';}
+    else if(id==='tasks'){nb.style.display='inline-block';nb.textContent='+ New Task';}
+    else if(id==='companies'){nb.style.display='inline-block';nb.textContent='+ New Company';}
+    else nb.style.display='none';
+    // Render
+    if(id==='dashboard') renderDash();
+    else if(id==='pipeline') renderPipe('','','');
+    else if(id==='contacts') renderContacts('','');
+    else if(id==='tasks') renderTasks('','','');
+    else if(id==='owners') renderOwners();
+    else if(id==='companies') renderCompanies('','');
+  },
+  nf(status,el,owner){
+    this.nav('pipeline',null);
+    document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+    if(el) el.classList.add('active');
+    $('tb-t').textContent='All Opportunities';
+    owner=owner?owner.replace(/__SQ__/g,"'"):'';
+    $('tb-s').textContent='Filtered: '+[status,owner].filter(Boolean).join(' · ');
+    renderPipe('',status,owner);
+  },
+};
+
+// ════════════════════════════════════════════════════════════════
+// COUNTS
+// ════════════════════════════════════════════════════════════════
+function buildOwnerColors(){
+  const owners=[...new Set(DATA_PIPE.map(r=>r.r).filter(Boolean))].sort();
+  OC={};owners.forEach((o,i)=>{OC[o]=OWNER_PALETTE[i%OWNER_PALETTE.length];});
+  window.OWNERS=owners;
+  // Populate owner datalist
+  const dl=$('owners-list');if(dl) dl.innerHTML=owners.map(o=>`<option value="${o}">`).join('');
+}
+
+function cnt(s){return DATA_PIPE.filter(r=>(CHANGES[key(r)]??r.s)===s).length;}
+function key(r){return r.c+'|||'+r.p;}
+
+function updateCounts(){
+  ALL_S.forEach(s=>{const el=$('pl-'+s.toLowerCase());if(el)el.textContent=cnt(s);});
+  $('pl-total').textContent=$('pl-all').textContent=DATA_PIPE.length;
+  $('pl-contacts').textContent=DATA_CONTACTS.length;
+  const plComp=$('pl-companies');if(plComp)plComp.textContent=DATA_COMPANIES.length;
+  $('pl-tasks').textContent=DATA_TASKS.filter(t=>t.status==='Open').length+' open';
+  $('pl-owners').textContent=DATA_OWNERS.length;
+  const n=Object.keys(CHANGES).length;
+  $('chg-n').textContent=n;
+  $('chip-chg').style.display=n>0?'inline-flex':'none';
+}
+
+// ════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════════
+function renderDash(){
+  const SO={Running:0,Bidding:1,Pipeline:2,Prospect:3,Done:4,Cancelled:5};
+  const sorted=[...DATA_PIPE].sort((a,b)=>(SO[a.s]??9)-(SO[b.s]??9));
+  const owners=(window.OWNERS||[]).filter(Boolean);
+  const openTasks=DATA_TASKS.filter(t=>t.status==='Open').length;
+  const overdue=DATA_TASKS.filter(t=>t.status==='Open'&&t.dueDate&&t.dueDate<new Date().toISOString().slice(0,10)).length;
+
+  $('dash-out').innerHTML=`
+  <div class="kpi-row">
+    <div class="kpi k-tot" onclick="UI.nav('pipeline',null)"><div class="lbl">Total Opps</div><div class="val">${DATA_PIPE.length}</div><div class="sub">All opportunities</div></div>
+    <div class="kpi k-run" onclick="UI.nf('Running',null)"><div class="lbl">Running</div><div class="val">${cnt('Running')}</div><div class="sub">Active</div></div>
+    <div class="kpi k-bid" onclick="UI.nf('Bidding',null)"><div class="lbl">Bidding</div><div class="val">${cnt('Bidding')}</div><div class="sub">Proposals</div></div>
+    <div class="kpi k-pip" onclick="UI.nf('Pipeline',null)"><div class="lbl">Pipeline</div><div class="val">${cnt('Pipeline')}</div><div class="sub">Active BD</div></div>
+    <div class="kpi k-pro" onclick="UI.nf('Prospect',null)"><div class="lbl">Prospect</div><div class="val">${cnt('Prospect')}</div><div class="sub">Early stage</div></div>
+    <div class="kpi k-teal" onclick="UI.nav('contacts',null)"><div class="lbl">Contacts</div><div class="val">${DATA_CONTACTS.length}</div><div class="sub">In database</div></div>
+    <div class="kpi" style="--c:#0f766e" onclick="UI.nav('companies',null)"><div class="lbl">Companies</div><div class="val" style="color:#0f766e">${DATA_COMPANIES.length}</div><div class="sub">Customer &amp; partner</div></div>
+    <div class="kpi k-pink" onclick="UI.nav('tasks',null)"><div class="lbl">Open Tasks</div><div class="val">${openTasks}</div><div class="sub">${overdue} overdue</div></div>
+  </div>
+
+  <div class="legend">
+    <h3>Legend</h3>
+    <div class="legend-grid">
+      <div class="legend-section">
+        <h4>Status Workflow</h4>
+        <div class="legend-items">
+          <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Prospect — early signal</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>Pipeline — active BD</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span>Bidding — proposal sent</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Running — signed</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--slate2)"></span>Done — completed</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Cancelled — archived</span>
+        </div>
+      </div>
+      <div class="legend-section">
+        <h4>Category</h4>
+        <div class="legend-items">
+          <span class="legend-item"><span class="cb cat-project">Project</span> Delivery engagement</span>
+          <span class="legend-item"><span class="cb cat-partnership">Partnership</span> Partner/vendor</span>
+          <span class="legend-item"><span class="cb cat-pipeline">Pipeline</span> Sales opportunity</span>
+          <span class="legend-item"><span class="cb cat-prospect">Prospect</span> Named target</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect">By Owner <small>click card to filter · click stat to filter by status</small></div>
+  <div class="owner-grid">${owners.map(o=>{
+    const rows=DATA_PIPE.filter(r=>r.r===o),col=OC[o]||'#64748b',ini=o.split(' ').map(w=>w[0]).join('');
+    const sq=o.replace(/'/g,'__SQ__');
+    return `<div class="oc" onclick="UI.nf('',null,'${sq}')">
+      <div class="oc-top"><div class="oc-av" style="background:${col}">${ini}</div>
+        <div><div class="oc-name">${o}</div><div class="oc-role">${rows.length} total · <span style="color:var(--blue);font-size:.65rem">view all →</span></div></div></div>
+      <div class="oc-stats">
+        <div class="oc-stat" style="background:var(--green-t)" onclick="event.stopPropagation();UI.nf('Running',null,'${sq}')"><div class="v" style="color:var(--green)">${rows.filter(r=>r.s==='Running').length}</div><div class="l">Run</div></div>
+        <div class="oc-stat" style="background:var(--blue-t)" onclick="event.stopPropagation();UI.nf('Pipeline',null,'${sq}')"><div class="v" style="color:var(--blue)">${rows.filter(r=>r.s==='Pipeline').length}</div><div class="l">Pipe</div></div>
+        <div class="oc-stat" style="background:var(--amber-t)" onclick="event.stopPropagation();UI.nf('Prospect',null,'${sq}')"><div class="v" style="color:var(--amber)">${rows.filter(r=>r.s==='Prospect').length}</div><div class="l">Pro</div></div>
+        <div class="oc-stat" style="background:var(--purple-t)" onclick="event.stopPropagation();UI.nf('Bidding',null,'${sq}')"><div class="v" style="color:var(--purple)">${rows.filter(r=>r.s==='Bidding').length}</div><div class="l">Bid</div></div>
+      </div></div>`;
+  }).join('')}</div>
+
+  <div class="sect">All Opportunities <small><button onclick="UI.nav('pipeline',null)" style="padding:2px 8px;border:1px solid var(--border2);border-radius:5px;background:var(--card);cursor:pointer;font-family:var(--font);font-size:.68rem;color:var(--blue)">Edit status →</button></small></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Client</th><th>Project</th><th>Category</th><th>Status</th><th>Owner</th></tr></thead>
+    <tbody>${sorted.map(r=>`<tr>
+      <td><b style="color:var(--navy2)">${r.c}</b></td>
+      <td style="font-size:.75rem;color:var(--slate)">${r.p||'—'}</td>
+      <td>${catBadge(r.cat)}</td><td>${badge(r.s)}</td>
+      <td style="font-size:.75rem">${r.r||'—'}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// PIPELINE PAGE
+// ════════════════════════════════════════════════════════════════
+function renderPipe(q,fs,fo){
+  if(q===undefined){const el=$('f-q');q=el?el.value.toLowerCase():'';}
+  if(fs===undefined){const el=$('f-s');if(el)fs=el.value;}
+  if(fo===undefined){const el=$('f-o');if(el)fo=el.value;}
+  q=q||'';fs=fs||'';fo=fo||'';
+  const SO={Running:0,Bidding:1,Pipeline:2,Prospect:3,Done:4,Cancelled:5};
+  const filtered=DATA_PIPE
+    .filter(r=>(!q||(r.c+r.p+r.d+r.r+r.rsp).toLowerCase().includes(q))&&(!fs||r.s===fs)&&(!fo||r.r===fo))
+    .sort((a,b)=>{
+      if(SORT_COL==='s'){return((SO[a.s]??9)-(SO[b.s]??9))*SORT_DIR;}
+      const av=(a[SORT_COL]||'').toLowerCase(),bv=(b[SORT_COL]||'').toLowerCase();
+      return av<bv?-SORT_DIR:av>bv?SORT_DIR:0;
+    });
+  const nch=Object.keys(CHANGES).length;
+  const cols=['c','p','d','cat','s','r','rsp'];
+  const labels=['Client','Project / Scope','Detail','Category','Status','Owner','Contact'];
+
+  $('pipe-out').innerHTML=`
+  <div class="legend" style="margin-bottom:14px;">
+    <h3>Legend</h3>
+    <div class="legend-grid">
+      <div class="legend-section"><h4>Status</h4><div class="legend-items">
+        ${ALL_S.map(s=>`<span class="legend-item"><span class="legend-dot" style="background:var(--${s==='Running'?'green':s==='Bidding'?'purple':s==='Pipeline'?'blue':s==='Prospect'?'amber':s==='Done'?'slate2':'red'})"></span>${s}</span>`).join('')}
+      </div></div>
+      <div class="legend-section"><h4>Category & Actions</h4><div class="legend-items">
+        <span class="cb cat-project">Project</span><span class="cb cat-partnership">Partnership</span>
+        <span class="cb cat-pipeline">Pipeline</span><span class="cb cat-prospect">Prospect</span>
+      </div>
+      <div style="font-size:.68rem;color:var(--slate);margin-top:6px">Click row to edit all fields · Click contact name to view profile</div></div>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <input type="text" id="f-q" placeholder="🔍  Search…" value="${q}" oninput="renderPipe(this.value,undefined,undefined)">
+    <select id="f-s" onchange="renderPipe(undefined,this.value,undefined)">
+      <option value="">All Statuses</option>
+      ${ALL_S.map(s=>`<option value="${s}"${fs===s?' selected':''}>${s}</option>`).join('')}
+    </select>
+    <select id="f-o" onchange="renderPipe(undefined,undefined,this.value)">
+      <option value="">All Owners</option>
+      ${(window.OWNERS||[]).map(o=>`<option${fo===o?' selected':''}>${o}</option>`).join('')}
+    </select>
+    <span class="cnt">${filtered.length}/${DATA_PIPE.length}${nch>0?' · <b style="color:var(--amber)">'+nch+' pending</b>':''}</span>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>${cols.map((col,i)=>{
+      const cls=SORT_COL===col?(SORT_DIR===1?'sort-asc':'sort-desc'):'';
+      return `<th class="sortable ${cls}" onclick="sortBy('${col}')">${labels[i]}</th>`;
+    }).join('')}</tr></thead>
+    <tbody>${filtered.map(r=>{
+      const k=key(r),cur=CHANGES[k]??r.s,allowed=FLOW[r.s]||ALL_S,changed=CHANGES[k]!==undefined;
+      const opts=ALL_S.map(s=>`<option value="${s}"${cur===s?' selected':''}${!allowed.includes(s)&&s!==r.s?' disabled style="color:#ccc"':''}>${s}</option>`).join('');
+      const safeKey=k.replace(/'/g,'__SQ__');
+      // Contact link
+      const contactDisplay=r.rsp?`<span class="contact-link" onclick="openContactFromPipeline('${r.rsp.replace(/'/g,'__SQ__')}')" title="View contact profile">${r.rsp}</span>`:'—';
+      return `<tr class="edit-row" onclick="openPipeDrawer('${safeKey}')">
+        <td><b style="font-size:.82rem;color:var(--navy2)">${r.c}</b></td>
+        <td style="font-size:.73rem;color:var(--slate)">${r.p||'—'}</td>
+        <td><div class="dc" title="${(r.d||'').replace(/"/g,"'")}">${r.d||'—'}</div></td>
+        <td>${catBadge(r.cat)}</td>
+        <td onclick="event.stopPropagation()"><select class="ssel${changed?' changed':''}" data-key="${k}" data-orig="${r.s}" onchange="onChg(this)">${opts}</select></td>
+        <td style="font-size:.75rem">${r.r||'—'}</td>
+        <td onclick="event.stopPropagation()">${contactDisplay}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+  $('save-bar').className='save-bar'+(nch>0?' on':'');
+  $('chg-count').textContent=nch+(nch===1?' change':' changes');
+}
+
+function onChg(sel){
+  const k=sel.dataset.key,orig=sel.dataset.orig,nv=sel.value;
+  if(nv===orig) delete CHANGES[k]; else CHANGES[k]=nv;
+  sel.className='ssel'+(CHANGES[k]!==undefined?' changed':'');
+  const n=Object.keys(CHANGES).length;
+  $('chg-n').textContent=n;$('chip-chg').style.display=n>0?'inline-flex':'none';
+  $('save-bar').className='save-bar'+(n>0?' on':'');
+  $('chg-count').textContent=n+(n===1?' change':' changes');
+}
+
+function sortBy(col){
+  if(SORT_COL===col) SORT_DIR*=-1; else{SORT_COL=col;SORT_DIR=1;}
+  renderPipe('','','');
+}
+
+// ════════════════════════════════════════════════════════════════
+// CONTACTS PAGE
+// ════════════════════════════════════════════════════════════════
+function renderContacts(q,fc){
+  q=q||'';fc=fc||'';
+  const filtered=DATA_CONTACTS.filter(r=>{
+    const name=((r.firstName||'')+' '+(r.lastName||'')).trim();
+    return(!q||(name+r.email+r.company+r.phone).toLowerCase().includes(q.toLowerCase()))&&
+           (!fc||r.company===fc);
+  });
+  const companies=[...new Set(DATA_CONTACTS.map(r=>r.company).filter(Boolean))].sort();
+  const withEmail=DATA_CONTACTS.filter(r=>r.email).length;
+  const withPhone=DATA_CONTACTS.filter(r=>r.phone).length;
+  const linked=DATA_CONTACTS.filter(r=>r.linkedOpps).length;
+
+  $('contacts-out').innerHTML=`
+  <div class="kpi-row">
+    <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_CONTACTS.length}</div><div class="sub">Contacts</div></div>
+    <div class="kpi k-teal"><div class="lbl">With Email</div><div class="val">${withEmail}</div><div class="sub">${Math.round(withEmail/DATA_CONTACTS.length*100)||0}%</div></div>
+    <div class="kpi k-pip"><div class="lbl">With Phone</div><div class="val">${withPhone}</div><div class="sub">${Math.round(withPhone/DATA_CONTACTS.length*100)||0}%</div></div>
+    <div class="kpi k-pro"><div class="lbl">Linked to Opps</div><div class="val">${linked}</div><div class="sub">of ${DATA_CONTACTS.length}</div></div>
+  </div>
+  <div class="filter-bar">
+    <input type="text" id="cq" placeholder="🔍  Search name, email, company…" value="${q}" oninput="renderContacts(this.value,undefined)">
+    <select id="cfc" onchange="renderContacts(undefined,this.value)">
+      <option value="">All Companies</option>
+      ${companies.map(c=>`<option${fc===c?' selected':''}>${c}</option>`).join('')}
+    </select>
+    <span class="cnt">${filtered.length}/${DATA_CONTACTS.length}</span>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>ID</th><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>Linked Opportunities</th><th>Source</th></tr></thead>
+    <tbody>${filtered.map(r=>{
+      const name=((r.firstName||'')+' '+(r.lastName||'')).trim();
+      const safeId=(r.id||name).replace(/'/g,'__SQ__');
+      const linkedCount=r.linkedOpps?(r.linkedOpps.split(';').filter(Boolean).length+' opp'+(r.linkedOpps.split(';').filter(Boolean).length!==1?'s':'')):'—';
+      return `<tr class="edit-row" onclick="openContactDrawer('${safeId}')">
+        <td style="font-size:.7rem;color:var(--slate2)">${r.id||'—'}</td>
+        <td><b style="color:var(--navy2)">${name||'—'}</b></td>
+        <td style="font-size:.77rem">${r.company||'—'}</td>
+        <td style="font-size:.75rem"><a href="mailto:${r.email}" onclick="event.stopPropagation()" style="color:var(--blue)">${r.email||'—'}</a></td>
+        <td style="font-size:.75rem">${r.phone||'—'}</td>
+        <td style="font-size:.75rem;color:var(--blue);cursor:pointer">${linkedCount}</td>
+        <td style="font-size:.68rem;color:var(--slate2)">${r.src||'—'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// TASKS PAGE
+// ════════════════════════════════════════════════════════════════
+function renderTasks(q,fs,fr){
+  q=q||'';fs=fs||'';fr=fr||'';
+  const today=new Date().toISOString().slice(0,10);
+  const filtered=DATA_TASKS.filter(r=>{
+    const overdue=r.status==='Open'&&r.dueDate&&r.dueDate<today;
+    const fsMatch=!fs||(fs==='Overdue'?overdue:r.status===fs);
+    return(!q||(r.type+r.linkedOpp+r.linkedContact+r.notes).toLowerCase().includes(q.toLowerCase()))&&
+           fsMatch&&(!fr||r.responsible===fr);
+  });
+  const open=DATA_TASKS.filter(t=>t.status==='Open').length;
+  const done=DATA_TASKS.filter(t=>t.status==='Done').length;
+  const cancelled=DATA_TASKS.filter(t=>t.status==='Cancelled').length;
+  const overdue=DATA_TASKS.filter(t=>t.status==='Open'&&t.dueDate&&t.dueDate<today).length;
+
+  $('tasks-out').innerHTML=`
+  <div class="kpi-row">
+    <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_TASKS.length}</div><div class="sub">All tasks</div></div>
+    <div class="kpi k-pip" onclick="renderTasks('','Open','')"><div class="lbl">Open</div><div class="val">${open}</div><div class="sub">Active</div></div>
+    <div class="kpi k-done" onclick="renderTasks('','Done','')"><div class="lbl">Done</div><div class="val">${done}</div><div class="sub">Completed</div></div>
+    <div class="kpi k-can" onclick="renderTasks('','Cancelled','')"><div class="lbl">Cancelled</div><div class="val">${cancelled}</div><div class="sub">Dropped</div></div>
+    <div class="kpi k-over" onclick="renderTasks('','Overdue','')"><div class="lbl">Overdue</div><div class="val">${overdue}</div><div class="sub">Past due date</div></div>
+  </div>
+  <div class="filter-bar">
+    <input type="text" id="tq" placeholder="🔍  Search type, opportunity, contact…" value="${q}" oninput="renderTasks(this.value,undefined,undefined)">
+    <select id="tfs" onchange="renderTasks(undefined,this.value,undefined)">
+      <option value="">All Statuses</option>
+      <option value="Open"${fs==='Open'?' selected':''}>Open</option>
+      <option value="Done"${fs==='Done'?' selected':''}>Done</option>
+      <option value="Cancelled"${fs==='Cancelled'?' selected':''}>Cancelled</option>
+      <option value="Overdue"${fs==='Overdue'?' selected':''}>Overdue</option>
+    </select>
+    <select id="tfr" onchange="renderTasks(undefined,undefined,this.value)">
+      <option value="">All Owners</option>
+      ${(window.OWNERS||[]).map(o=>`<option${fr===o?' selected':''}>${o}</option>`).join('')}
+    </select>
+    <span class="cnt">${filtered.length}/${DATA_TASKS.length}</span>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>ID</th><th>Type</th><th>Priority</th><th>Linked Opportunity</th><th>Linked Contact</th><th>Due Date</th><th>Status</th><th>Responsible</th><th>Notes</th></tr></thead>
+    <tbody>${filtered.map(r=>{
+      const isOverdue=r.status==='Open'&&r.dueDate&&r.dueDate<today;
+      const safeId=(r.id||'').replace(/'/g,'__SQ__');
+      const dueCls=isOverdue?'color:var(--red);font-weight:600':'color:var(--slate)';
+      return `<tr class="edit-row" onclick="openTaskDrawer('${safeId}')">
+        <td style="font-size:.7rem;color:var(--slate2)">${r.id||'—'}</td>
+        <td style="font-size:.78rem;font-weight:500">${r.type||'—'}</td>
+        <td>${prioBadge(r.priority)}</td>
+        <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openOppFromTask('${(r.linkedOpp||'').replace(/'/g,'__SQ__')}')">${r.linkedOpp||'—'}</span></td>
+        <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openContactFromTask('${(r.linkedContact||'').replace(/'/g,'__SQ__')}')">${r.linkedContact||'—'}</span></td>
+        <td style="font-size:.75rem;${dueCls}">${r.dueDate||'—'}${isOverdue?' ⚠':''}</td>
+        <td>${taskStatusBadge(r.status)}</td>
+        <td style="font-size:.75rem">${r.responsible||'—'}</td>
+        <td style="font-size:.72rem;color:var(--slate2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes||'—'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// COMPANIES PAGE
+// ════════════════════════════════════════════════════════════════
+function renderCompanies(q,ft){
+  q=q||'';ft=ft||'';
+  const filtered=DATA_COMPANIES.filter(r=>{
+    return(!q||(r.name+r.industry+r.country+r.owner).toLowerCase().includes(q.toLowerCase()))&&
+           (!ft||r.type===ft);
+  });
+  const customers=DATA_COMPANIES.filter(r=>r.type==='Customer'||r.type==='Both').length;
+  const partners=DATA_COMPANIES.filter(r=>r.type==='Partnership'||r.type==='Both').length;
+
+  $('companies-out').innerHTML=`
+  <div class="kpi-row">
+    <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_COMPANIES.length}</div><div class="sub">Companies</div></div>
+    <div class="kpi k-run"><div class="lbl">Customers</div><div class="val" style="color:var(--green)">${customers}</div><div class="sub">Customer / Both</div></div>
+    <div class="kpi k-pip"><div class="lbl">Partners</div><div class="val" style="color:var(--blue)">${partners}</div><div class="sub">Partnership / Both</div></div>
+    <div class="kpi k-pro"><div class="lbl">With Opps</div><div class="val" style="color:var(--amber)">${DATA_COMPANIES.filter(r=>DATA_PIPE.some(p=>p.c===r.name)).length}</div><div class="sub">Linked to pipeline</div></div>
+  </div>
+  <div class="filter-bar">
+    <input type="text" id="coq" placeholder="🔍  Search company, industry, country…" value="${q}" oninput="renderCompanies(this.value,undefined)">
+    <select id="coft" onchange="renderCompanies(undefined,this.value)">
+      <option value="">All Types</option>
+      <option value="Customer"${ft==='Customer'?' selected':''}>Customer</option>
+      <option value="Partnership"${ft==='Partnership'?' selected':''}>Partnership</option>
+      <option value="Both"${ft==='Both'?' selected':''}>Both</option>
+    </select>
+    <span class="cnt">${filtered.length}/${DATA_COMPANIES.length}</span>
+  </div>
+  ${filtered.length===0&&DATA_COMPANIES.length===0?`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:32px;text-align:center;color:var(--slate)">
+      <div style="font-size:2rem;margin-bottom:8px">🏢</div>
+      <div style="font-weight:600;margin-bottom:4px">No companies yet</div>
+      <div style="font-size:.8rem">Add a <b>Companies</b> sheet to 5C_Pipeline.xlsx with headers:<br>
+      Company ID · Company Name · Type · Website · Industry · Country · Owner · Notes · Created Date · Updated Date</div>
+    </div>`:
+  `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
+    ${filtered.map(co=>{
+      const opps=DATA_PIPE.filter(r=>r.c===co.name);
+      const contacts=DATA_CONTACTS.filter(r=>r.company===co.name);
+      const tasks=DATA_TASKS.filter(t=>t.responsible===co.owner&&t.status==='Open').length;
+      const col=OC[co.owner]||'#64748b';
+      const safeId=(co.id||co.name).replace(/'/g,'__SQ__');
+      return \`<div class="oc" style="padding:16px" onclick="openCompanyDrawer('${safeId}')">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-weight:700;font-size:.88rem;color:var(--navy2)">\${co.name}</div>
+            <div style="font-size:.72rem;color:var(--slate);margin-top:2px">\${co.industry||''}\${co.country?' · '+co.country:''}</div>
+          </div>
+          \${compTypeBadge(co.type)}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="text-align:center;padding:6px;background:var(--blue-t);border-radius:6px">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--blue)">\${opps.length}</div>
+            <div style="font-size:.6rem;color:var(--slate)">Opps</div>
+          </div>
+          <div style="text-align:center;padding:6px;background:var(--teal-t);border-radius:6px">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--teal)">\${contacts.length}</div>
+            <div style="font-size:.6rem;color:var(--slate)">Contacts</div>
+          </div>
+          <div style="text-align:center;padding:6px;background:var(--amber-t);border-radius:6px">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--amber)">\${tasks}</div>
+            <div style="font-size:.6rem;color:var(--slate)">Tasks</div>
+          </div>
+        </div>
+        \${opps.length?'<div style="font-size:.72rem;color:var(--slate);margin-bottom:4px">'+opps.slice(0,2).map(o=>\`<span class="sb2 \${o.s==='Running'?'s-running':o.s==='Pipeline'?'s-pipeline':o.s==='Bidding'?'s-bidding':'s-prospect'}" style="margin-right:3px">\${o.p||o.c}</span>\`).join('')+(opps.length>2?\`<span style="color:var(--slate2)"> +\${opps.length-2} more</span>\`:'')+'</div>':''}
+        \${co.owner?'<div style="font-size:.7rem;color:var(--slate);display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:50%;background:'+col+';display:inline-flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;color:#fff">'+co.owner.split(' ').map(w=>w[0]).join('')+'</span>'+co.owner+'</div>':''}
+      </div>\`;
+    }).join('')}
+  </div>`}`;
+}
+
+function openCompanyDrawer(safeId){
+  const id=safeId.replace(/__SQ__/g,"'");
+  const co=DATA_COMPANIES.find(r=>r.id===id||r.name===id);
+  if(!co) return;
+  const opps=DATA_PIPE.filter(r=>r.c===co.name);
+  const contacts=DATA_CONTACTS.filter(r=>r.company===co.name);
+
+  const oppList=opps.length?opps.map(o=>`<div class="linked-opp-item">
+    <span class="linked-opp-link" onclick="openOppFromContact('${esc(o.c+(o.p?' · '+o.p:''))}')">${o.p||o.c}</span>
+    ${badge(o.s)}
+  </div>`).join(''):'<div style="color:var(--slate2);font-size:.77rem">No opportunities</div>';
+
+  const contList=contacts.length?contacts.map(c=>{
+    const name=((c.firstName||'')+' '+(c.lastName||'')).trim();
+    return `<div class="linked-opp-item"><span class="linked-opp-link" onclick="openContactFromPipeline('${esc(name)}')">${name}</span><span style="font-size:.7rem;color:var(--slate)">${c.email||''}</span></div>`;
+  }).join(''):'<div style="color:var(--slate2);font-size:.77rem">No contacts</div>';
+
+  const body=`
+    <div class="field-row">
+      <div class="field-group"><label>Company Name</label><input id="dco-name" value="${esc(co.name||'')}"></div>
+      <div class="field-group"><label>Type</label><select id="dco-type">
+        ${['Customer','Partnership','Both'].map(t=>`<option${co.type===t?' selected':''}>${t}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Industry</label><input id="dco-ind" value="${esc(co.industry||'')}"></div>
+      <div class="field-group"><label>Country</label><input id="dco-cou" value="${esc(co.country||'')}"></div>
+    </div>
+    <div class="field-group"><label>Website</label><input id="dco-web" value="${esc(co.website||'')}"></div>
+    <div class="field-group"><label>Owner</label><input id="dco-own" value="${esc(co.owner||'')}" list="owners-list" autocomplete="off"></div>
+    <div class="field-group"><label>Notes</label><textarea id="dco-notes">${esc(co.notes||'')}</textarea></div>
+    <div class="field-group"><label>Opportunities (${opps.length})</label><div class="linked-opps">${oppList}</div></div>
+    <div class="field-group"><label>Contacts (${contacts.length})</label><div class="linked-opps">${contList}</div></div>
+    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">${co.id||''} · Created ${co.createdDate||'—'}</div>`;
+
+  const foot=`<button class="sbtn sbtn-p" onclick="saveCompanyDrawer('${esc(co.id||co.name)}')" style="flex:1">✓ Save</button>
+    <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('company','','')">+ Task</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+
+  openDrawer(co.name||'Company',body,foot,'company',id);
+}
+
+async function saveCompanyDrawer(origId){
+  const co=DATA_COMPANIES.find(r=>r.id===origId||r.name===origId);
+  if(!co) return;
+  toast('Saving…','info');
+  const fields={
+    name:$('dco-name').value.trim(), type:$('dco-type').value,
+    industry:$('dco-ind').value.trim(), country:$('dco-cou').value.trim(),
+    website:$('dco-web').value.trim(), owner:$('dco-own').value.trim(),
+    notes:$('dco-notes').value.trim(),
+  };
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const ok=await P.patchRange(
+      activeCfg.sheets.companies,
+      `B${co._row}:J${co._row}`,
+      [[fields.name,fields.type,fields.website,fields.industry,fields.country,fields.owner,fields.notes,co.createdDate||today,today]]
+    );
+    if(ok){Object.assign(co,fields);renderCompanies('','');toast('✓ Saved','success');closeDrawer();}
+    else toast('⚠ Save failed','error');
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ════════════════════════════════════════════════════════════════
+// OWNERS PAGE
+// ════════════════════════════════════════════════════════════════
+function renderOwners(){
+  $('owners-out').innerHTML=`
+  <div class="kpi-row">
+    <div class="kpi k-tot"><div class="lbl">Owners</div><div class="val">${DATA_OWNERS.length}</div><div class="sub">Account managers</div></div>
+    <div class="kpi k-run"><div class="lbl">Total Running</div><div class="val">${cnt('Running')}</div><div class="sub">Active projects</div></div>
+    <div class="kpi k-pip"><div class="lbl">Total Pipeline</div><div class="val">${cnt('Pipeline')}</div><div class="sub">Active BD</div></div>
+    <div class="kpi k-pro"><div class="lbl">Total Prospect</div><div class="val">${cnt('Prospect')}</div><div class="sub">Early stage</div></div>
+  </div>
+  <div class="owner-grid">${DATA_OWNERS.map(o=>{
+    const name=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();
+    const rows=DATA_PIPE.filter(r=>r.r===name);
+    const col=OC[name]||'#64748b';
+    const ini=name.split(' ').map(w=>w[0]).join('');
+    const tasks=DATA_TASKS.filter(t=>t.responsible===name&&t.status==='Open').length;
+    const sq=name.replace(/'/g,'__SQ__');
+    return `<div class="oc" onclick="UI.nf('',null,'${sq}')">
+      <div class="oc-top"><div class="oc-av" style="background:${col}">${ini}</div>
+        <div><div class="oc-name">${name}</div>
+          <div class="oc-role">${o.email||''}</div>
+          <div class="oc-role">${rows.length} opps · ${tasks} open tasks</div></div></div>
+      <div class="oc-stats">
+        <div class="oc-stat" style="background:var(--green-t)"><div class="v" style="color:var(--green)">${rows.filter(r=>r.s==='Running').length}</div><div class="l">Run</div></div>
+        <div class="oc-stat" style="background:var(--blue-t)"><div class="v" style="color:var(--blue)">${rows.filter(r=>r.s==='Pipeline').length}</div><div class="l">Pipe</div></div>
+        <div class="oc-stat" style="background:var(--amber-t)"><div class="v" style="color:var(--amber)">${rows.filter(r=>r.s==='Prospect').length}</div><div class="l">Pro</div></div>
+        <div class="oc-stat" style="background:var(--purple-t)"><div class="v" style="color:var(--purple)">${rows.filter(r=>r.s==='Bidding').length}</div><div class="l">Bid</div></div>
+      </div></div>`;
+  }).join('')}
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// DRAWERS
+// ════════════════════════════════════════════════════════════════
+let drawerKey=null, drawerType=null;
+let conflictData=null;
+
+function openDrawer(title, bodyHTML, footHTML, type, key){
+  drawerType=type; drawerKey=key;
+  $('drawer-title').textContent=title;
+  $('drawer-body').innerHTML=bodyHTML;
+  $('drawer-foot').innerHTML=footHTML;
+  $('drawer-task-btn').style.display=(type==='pipeline'||type==='contact')?'inline-block':'none';
+  $('drawer-overlay').classList.add('open');
+  $('drawer').classList.add('open');
+}
+
+function closeDrawer(){
+  $('drawer-overlay').classList.remove('open');
+  $('drawer').classList.remove('open');
+  drawerKey=null; drawerType=null;
+}
+
+// ── Pipeline Drawer ──
+function openPipeDrawer(safeKey){
+  const k=safeKey.replace(/__SQ__/g,"'");
+  const [c,p]=k.split('|||');
+  const row=DATA_PIPE.find(r=>r.c===c&&r.p===p);
+  if(!row) return;
+  drawerKey=k;
+  const allowed=FLOW[row.s]||ALL_S;
+  const body=`
+    <div class="field-row">
+      <div class="field-group"><label>Client Name</label><input id="d-c" value="${esc(row.c)}"></div>
+      <div class="field-group"><label>Category</label><select id="d-cat">
+        ${['Project','Partnership','Prospect','Pipeline'].map(v=>`<option${row.cat===v?' selected':''}>${v}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="field-group"><label>Project / Scope</label><input id="d-p" value="${esc(row.p)}"></div>
+    <div class="field-group"><label>Detail / Roles & Requirements</label><textarea id="d-d">${esc(row.d)}</textarea></div>
+    <div class="field-row">
+      <div class="field-group"><label>Status</label><select id="d-s">
+        ${ALL_S.map(s=>`<option value="${s}"${row.s===s?' selected':''}${!allowed.includes(s)&&s!==row.s?' disabled style="color:#ccc"':''}>${s}</option>`).join('')}
+      </select></div>
+      <div class="field-group"><label>Project Start</label><input id="d-projStart" type="date" value="${row.projStart||''}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Responsible</label><input id="d-r" value="${esc(row.r)}" list="owners-list" autocomplete="off"><datalist id="owners-list">${(window.OWNERS||[]).map(o=>`<option value="${o}">`).join('')}</datalist></div>
+      <div class="field-group"><label>Contact</label><input id="d-rsp" value="${esc(row.rsp)}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Phone</label><input id="d-phone" value="${esc(row.phone||'')}"></div>
+      <div class="field-group"><label>Email</label><input id="d-email" type="email" value="${esc(row.email||'')}"></div>
+    </div>
+    <div class="field-group"><label>Source</label><input id="d-src" value="${esc(row.src||'')}"></div>
+    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">Row ${row._row} · Created ${row.createdDate||'—'} · Updated ${row.updDate||'—'}</div>`;
+  const foot=`<button class="sbtn sbtn-p" onclick="savePipeDrawer()" style="flex:1">✓ Save Changes</button>
+    <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('opp','${esc(row.c+(row.p?' · '+row.p:''))}','')">+ Task</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+  openDrawer((row.c+(row.p?' · '+row.p:''))||'Edit Opportunity',body,foot,'pipeline',k);
+}
+
+async function savePipeDrawer(forceOverwrite=false){
+  const [c,p]=drawerKey.split('|||');
+  const row=DATA_PIPE.find(r=>r.c===c&&r.p===p);
+  if(!row) return;
+  const newS=$('d-s').value;
+  if(!forceOverwrite){
+    try{
+      const live=await P.readCell(row,'E');
+      if(live&&live!==row.s){
+        showConflict({field:'Status',liveVal:live,ourVal:newS,client:row.c,project:row.p});
+        return;
+      }
+    }catch(e){console.warn('Conflict check failed',e);}
+  }
+  toast('Saving…','info');
+  const fields={
+    c:$('d-c').value.trim()||row.c, p:$('d-p').value.trim(), d:$('d-d').value.trim(),
+    cat:$('d-cat').value, s:newS, r:$('d-r').value.trim(), rsp:$('d-rsp').value.trim(),
+    phone:$('d-phone').value.trim(), email:$('d-email').value.trim(),
+    projStart:$('d-projStart').value, src:$('d-src').value.trim(),
+  };
+  try{
+    const ok=await P.savePipelineRow(row,fields);
+    if(ok){
+      Object.assign(row,fields);
+      delete CHANGES[drawerKey];
+      updateCounts();renderDash();renderPipe('','','');
+      toast('✓ Saved','success');closeDrawer();
+    }else toast('⚠ Save failed','error');
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ── Contact Drawer ──
+function openContactDrawer(safeId){
+  const id=safeId.replace(/__SQ__/g,"'");
+  const row=DATA_CONTACTS.find(r=>r.id===id||((r.firstName+' '+r.lastName).trim()===id));
+  if(!row) return;
+  drawerKey=id;
+  const name=((row.firstName||'')+' '+(row.lastName||'')).trim();
+  // Build linked opps list
+  const linkedList=row.linkedOpps?row.linkedOpps.split(';').filter(Boolean).map(opp=>{
+    const oppTrimmed=opp.trim();
+    return `<div class="linked-opp-item">
+      <span class="linked-opp-link" onclick="openOppFromContact('${oppTrimmed.replace(/'/g,'__SQ__')}')">${oppTrimmed}</span>
+    </div>`;
+  }).join(''):'<div style="color:var(--slate2);font-size:.77rem">No linked opportunities</div>';
+
+  const body=`
+    <div class="field-row">
+      <div class="field-group"><label>First Name</label><input id="dc-fn" value="${esc(row.firstName||'')}"></div>
+      <div class="field-group"><label>Last Name</label><input id="dc-ln" value="${esc(row.lastName||'')}"></div>
+    </div>
+    <div class="field-group"><label>Company</label><input id="dc-co" value="${esc(row.company||'')}"></div>
+    <div class="field-row">
+      <div class="field-group"><label>Email</label><input id="dc-em" type="email" value="${esc(row.email||'')}"></div>
+      <div class="field-group"><label>Phone</label><input id="dc-ph" value="${esc(row.phone||'')}"></div>
+    </div>
+    <div class="field-group"><label>Web / LinkedIn</label><input id="dc-web" value="${esc(row.web||'')}"></div>
+    <div class="field-group"><label>Source</label><input id="dc-src" value="${esc(row.src||'')}"></div>
+    <div class="field-group"><label>Linked Opportunities</label>
+      <div class="linked-opps">${linkedList}</div>
+    </div>
+    <div style="font-size:.7rem;color:var(--slate);margin-top:8px">${row.id||''} · Created ${row.createdDate||'—'} · Updated ${row.updDate||'—'}</div>`;
+  const foot=`<button class="sbtn sbtn-p" onclick="saveContactDrawer()" style="flex:1">✓ Save</button>
+    <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('contact','','${esc(name)}')">+ Task</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+  openDrawer(name||'Contact',body,foot,'contact',id);
+}
+
+async function saveContactDrawer(){
+  const id=drawerKey;
+  const row=DATA_CONTACTS.find(r=>r.id===id||((r.firstName+' '+r.lastName).trim()===id));
+  if(!row) return;
+  toast('Saving…','info');
+  const fields={
+    firstName:$('dc-fn').value.trim(), lastName:$('dc-ln').value.trim(),
+    company:$('dc-co').value.trim(), email:$('dc-em').value.trim(),
+    phone:$('dc-ph').value.trim(), web:$('dc-web').value.trim(),
+    src:$('dc-src').value.trim(), linkedOpps:row.linkedOpps||'',
+    createdDate:row.createdDate,
+  };
+  try{
+    const ok=await P.saveContactRow(row,fields);
+    if(ok){Object.assign(row,fields);renderContacts('','');toast('✓ Saved','success');closeDrawer();}
+    else toast('⚠ Save failed','error');
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ── New Contact Drawer ──
+function openNewContactDrawer(){
+  const body=`
+    <div class="field-row">
+      <div class="field-group"><label>First Name</label><input id="dc-fn" value=""></div>
+      <div class="field-group"><label>Last Name</label><input id="dc-ln" value=""></div>
+    </div>
+    <div class="field-group"><label>Company</label><input id="dc-co" value=""></div>
+    <div class="field-row">
+      <div class="field-group"><label>Email</label><input id="dc-em" type="email" value=""></div>
+      <div class="field-group"><label>Phone</label><input id="dc-ph" value=""></div>
+    </div>
+    <div class="field-group"><label>Web / LinkedIn</label><input id="dc-web" value=""></div>
+    <div class="field-group"><label>Source</label><input id="dc-src" value="Dashboard"></div>`;
+  const foot=`<button class="sbtn sbtn-p" onclick="createContactDrawer()" style="flex:1">+ Create Contact</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+  openDrawer('New Contact',body,foot,'new-contact',null);
+}
+
+async function createContactDrawer(){
+  toast('Creating…','info');
+  const fields={
+    firstName:$('dc-fn').value.trim(), lastName:$('dc-ln').value.trim(),
+    company:$('dc-co').value.trim(), email:$('dc-em').value.trim(),
+    phone:$('dc-ph').value.trim(), web:$('dc-web').value.trim(),
+    src:$('dc-src').value.trim()||'Dashboard',
+  };
+  if(!fields.firstName&&!fields.lastName){toast('Enter at least a name','error');return;}
+  try{
+    await P.createContact(fields);
+    // Reload contacts
+    const j=await P.loadSheet(activeCfg.sheets.contacts);
+    DATA_CONTACTS=P.parseContacts(j);
+    updateCounts();renderContacts('','');
+    toast('✓ Contact created','success');closeDrawer();
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ── Task Drawer ──
+function openTaskDrawer(safeId){
+  const id=safeId.replace(/__SQ__/g,"'");
+  const row=DATA_TASKS.find(r=>r.id===id);
+  if(!row) return;
+  drawerKey=id;
+  const body=buildTaskForm(row);
+  const foot=`<button class="sbtn sbtn-p" onclick="saveTaskDrawer()" style="flex:1">✓ Save Task</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+  openDrawer(row.id+' · '+row.type,body,foot,'task',id);
+}
+
+function openNewTask(context,linkedOpp,linkedContact){
+  closeDrawer();
+  drawerKey=null;
+  const preOpp=(linkedOpp||'').replace(/__SQ__/g,"'");
+  const preCont=(linkedContact||'').replace(/__SQ__/g,"'");
+  const body=buildTaskForm(null,preOpp,preCont);
+  const foot=`<button class="sbtn sbtn-p" onclick="createTaskDrawer()" style="flex:1">+ Create Task</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+  openDrawer('New Task',body,foot,'new-task',null);
+}
+
+function openNewTaskFromContext(){
+  if(drawerType==='pipeline'){
+    const [c,p]=drawerKey.split('|||');
+    const row=DATA_PIPE.find(r=>r.c===c&&r.p===p);
+    openNewTask('opp',row?esc(row.c+(row.p?' · '+row.p:'')):'','');
+  } else if(drawerType==='contact'){
+    const row=DATA_CONTACTS.find(r=>r.id===drawerKey||((r.firstName+' '+r.lastName).trim()===drawerKey));
+    const name=row?((row.firstName||'')+' '+(row.lastName||'')).trim():'';
+    openNewTask('contact','',name);
+  }
+}
+
+function buildTaskForm(row,preOpp,preCont){
+  const oppOptions=DATA_PIPE.map(r=>{
+    const label=r.c+(r.p?' · '+r.p:'');
+    const sel=row?row.linkedOpp===label:(preOpp&&preOpp===label);
+    return `<option value="${esc(label)}"${sel?' selected':''}>${label}</option>`;
+  }).join('');
+  const contOptions=DATA_CONTACTS.map(r=>{
+    const name=((r.firstName||'')+' '+(r.lastName||'')).trim();
+    const sel=row?row.linkedContact===name:(preCont&&preCont===name);
+    return `<option value="${esc(name)}"${sel?' selected':''}>${name}</option>`;
+  }).join('');
+  const typeOpts=TASK_TYPES.map(t=>`<option${row?.type===t?' selected':''}>${t}</option>`).join('');
+  const prioOpts=PRIORITIES.map(p=>`<option${(row?.priority||'Medium')===p?' selected':''}>${p}</option>`).join('');
+  const statOpts=TASK_STATUSES.map(s=>`<option${(row?.status||'Open')===s?' selected':''}>${s}</option>`).join('');
+  return `
+    <div class="field-row">
+      <div class="field-group"><label>Task Type</label><select id="dt-type">${typeOpts}</select></div>
+      <div class="field-group"><label>Priority</label><select id="dt-prio">${prioOpts}</select></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Status</label><select id="dt-status">${statOpts}</select></div>
+      <div class="field-group"><label>Due Date</label><input id="dt-due" type="date" value="${row?.dueDate||''}"></div>
+    </div>
+    <div class="field-group"><label>Responsible</label>
+      <input id="dt-resp" value="${esc(row?.responsible||window.CURRENT_USER_NAME||'')}" list="owners-list-t" autocomplete="off">
+      <datalist id="owners-list-t">${(window.OWNERS||[]).map(o=>`<option value="${o}">`).join('')}</datalist>
+    </div>
+    <div class="field-group"><label>Linked Opportunity</label>
+      <select id="dt-opp"><option value="">— None —</option>${oppOptions}</select>
+    </div>
+    <div class="field-group"><label>Linked Contact</label>
+      <select id="dt-cont"><option value="">— None —</option>${contOptions}</select>
+    </div>
+    <div class="field-group"><label>Notes</label><textarea id="dt-notes">${esc(row?.notes||'')}</textarea></div>
+    ${row?`<div style="font-size:.7rem;color:var(--slate);margin-top:4px">${row.id} · Created ${row.createdDate||'—'}</div>`:''}`;
+}
+
+async function saveTaskDrawer(){
+  const id=drawerKey;
+  const row=DATA_TASKS.find(r=>r.id===id);
+  if(!row) return;
+  toast('Saving…','info');
+  const fields={
+    type:$('dt-type').value, priority:$('dt-prio').value, status:$('dt-status').value,
+    dueDate:$('dt-due').value, responsible:$('dt-resp').value.trim(),
+    linkedOpp:$('dt-opp').value, linkedContact:$('dt-cont').value, notes:$('dt-notes').value.trim(),
+  };
+  try{
+    const ok=await P.saveTaskRow(row,fields);
+    if(ok){Object.assign(row,fields);renderTasks('','','');toast('✓ Saved','success');closeDrawer();}
+    else toast('⚠ Save failed','error');
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+async function createTaskDrawer(){
+  toast('Creating…','info');
+  const fields={
+    type:$('dt-type').value, priority:$('dt-prio').value, status:'Open',
+    dueDate:$('dt-due').value, responsible:$('dt-resp').value.trim(),
+    linkedOpp:$('dt-opp').value, linkedContact:$('dt-cont').value, notes:$('dt-notes').value.trim(),
+  };
+  try{
+    await P.createTask(fields);
+    const j=await P.loadSheet(activeCfg.sheets.tasks);
+    DATA_TASKS=P.parseTasks(j);
+    updateCounts();renderTasks('','','');
+    toast('✓ Task created','success');closeDrawer();
+    // Navigate to tasks
+    UI.nav('tasks',null);
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ── New drawer dispatcher ──
+function openNewDrawer(){
+  const active=document.querySelector('.page.active');
+  if(active?.id==='page-contacts') openNewContactDrawer();
+  else if(active?.id==='page-tasks') openNewTask('','','');
+  else if(active?.id==='page-companies') openNewCompanyDrawer();
+}
+
+function openNewCompanyDrawer(){
+  const body=`
+    <div class="field-row">
+      <div class="field-group"><label>Company Name</label><input id="dco-name" value=""></div>
+      <div class="field-group"><label>Type</label><select id="dco-type">
+        <option>Customer</option><option>Partnership</option><option>Both</option>
+      </select></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Industry</label><input id="dco-ind" value=""></div>
+      <div class="field-group"><label>Country</label><input id="dco-cou" value=""></div>
+    </div>
+    <div class="field-group"><label>Website</label><input id="dco-web" value=""></div>
+    <div class="field-group"><label>Owner</label><input id="dco-own" value="${window.CURRENT_USER_NAME||''}" list="owners-list" autocomplete="off"></div>
+    <div class="field-group"><label>Notes</label><textarea id="dco-notes"></textarea></div>`;
+  const foot=`<button class="sbtn sbtn-p" onclick="createCompanyDrawer()" style="flex:1">+ Create Company</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+  openDrawer('New Company',body,foot,'new-company',null);
+}
+
+async function createCompanyDrawer(){
+  const name=$('dco-name').value.trim();
+  if(!name){toast('Company name required','error');return;}
+  toast('Creating…','info');
+  const today=new Date().toISOString().slice(0,10);
+  const newId=`CO-${String(DATA_COMPANIES.length+1).padStart(3,'0')}`;
+  const fields={
+    name, type:$('dco-type').value,
+    website:$('dco-web').value.trim(), industry:$('dco-ind').value.trim(),
+    country:$('dco-cou').value.trim(), owner:$('dco-own').value.trim(),
+    notes:$('dco-notes').value.trim(),
+  };
+  try{
+    await P.appendRow(activeCfg.sheets.companies,
+      [[newId,fields.name,fields.type,fields.website,fields.industry,fields.country,fields.owner,fields.notes,today,today]]
+    );
+    const j=await P.loadSheet(activeCfg.sheets.companies);
+    DATA_COMPANIES=P.parseCompanies(j);
+    updateCounts();renderCompanies('','');
+    toast('✓ Company created','success');closeDrawer();
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ════════════════════════════════════════════════════════════════
+// CROSS-NAVIGATION
+// ════════════════════════════════════════════════════════════════
+function openContactFromPipeline(safeContact){
+  const name=safeContact.replace(/__SQ__/g,"'");
+  const row=DATA_CONTACTS.find(r=>((r.firstName+' '+r.lastName).trim()===name)||r.id===name);
+  if(row){
+    UI.nav('contacts',null);
+    const id=(row.id||((row.firstName+' '+row.lastName).trim())).replace(/'/g,'__SQ__');
+    setTimeout(()=>openContactDrawer(id),100);
+  } else {
+    // Contact not found — open contacts page filtered
+    UI.nav('contacts',null);
+    setTimeout(()=>{const el=$('cq');if(el){el.value=name;renderContacts(name,'');}},100);
+  }
+}
+
+function openContactFromTask(safeName){
+  const name=safeName.replace(/__SQ__/g,"'");
+  if(!name||name==='—') return;
+  openContactFromPipeline(safeName);
+}
+
+function openOppFromContact(safeOpp){
+  const opp=safeOpp.replace(/__SQ__/g,"'");
+  closeDrawer();
+  // Find the opportunity
+  const parts=opp.split(' · ');
+  const c=parts[0]||'', p=parts.slice(1).join(' · ')||'';
+  const row=DATA_PIPE.find(r=>r.c===c&&(r.p===p||!p));
+  if(row){
+    UI.nav('pipeline',null);
+    setTimeout(()=>{
+      const el=$('f-q');if(el){el.value=c;renderPipe(c,'','');}
+      setTimeout(()=>openPipeDrawer((row.c+'|||'+row.p).replace(/'/g,'__SQ__')),200);
+    },100);
+  }
+}
+
+function openOppFromTask(safeOpp){openOppFromContact(safeOpp);}
+
+// ════════════════════════════════════════════════════════════════
+// CONFLICT DETECTION
+// ════════════════════════════════════════════════════════════════
+function showConflict({field,liveVal,ourVal,client,project}){
+  conflictData={liveVal,ourVal};
+  $('conflict-details').innerHTML=`
+    <div style="margin-bottom:8px"><b>Record:</b> ${client}${project?' · '+project:''}</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="flex:1;padding:8px;background:var(--amber-t);border-radius:6px;border:1px solid var(--amber-l)">
+        <div style="font-size:.65rem;font-weight:600;color:var(--amber);text-transform:uppercase;margin-bottom:3px">Excel (current)</div>
+        <div style="font-weight:600">${liveVal}</div>
+      </div>
+      <div style="color:var(--slate2)">vs</div>
+      <div style="flex:1;padding:8px;background:var(--blue-t);border-radius:6px;border:1px solid var(--blue-l)">
+        <div style="font-size:.65rem;font-weight:600;color:var(--blue);text-transform:uppercase;margin-bottom:3px">Your change</div>
+        <div style="font-weight:600">${ourVal}</div>
+      </div>
+    </div>`;
+  $('conflict-mo').classList.add('open');
+}
+
+function closeConflict(){$('conflict-mo').classList.remove('open');conflictData=null;}
+
+function useTheirVersion(){
+  if(!conflictData) return;
+  const sel=$('d-s');if(sel) sel.value=conflictData.liveVal;
+  const [c,p]=drawerKey.split('|||');
+  const row=DATA_PIPE.find(r=>r.c===c&&r.p===p);
+  if(row) row.s=conflictData.liveVal;
+  closeConflict();
+  toast('Updated to Excel version','info');
+}
+
+// ════════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════════
+const $=id=>document.getElementById(id);
+function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function badge(s){const m={Running:'s-running',Bidding:'s-bidding',Pipeline:'s-pipeline',Prospect:'s-prospect',Done:'s-done',Cancelled:'s-cancelled'};return `<span class="sb2 ${m[s]||'s-prospect'}">${s||'—'}</span>`;}
+function compTypeBadge(t){
+  const m={Customer:'background:#dcfce7;color:#166534;border:1px solid #bbf7d0',Partnership:'background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8',Both:'background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe'};
+  return t?`<span class="cb" style="${m[t]||''}">${t}</span>`:'—';
+}
+function catBadge(c){const m={Project:'cat-project',Partnership:'cat-partnership',Prospect:'cat-prospect',Pipeline:'cat-pipeline'};return `<span class="cb ${m[c]||''}">${c||'—'}</span>`;}
+function taskStatusBadge(s){const m={Open:'ts-open',Done:'ts-done',Cancelled:'ts-cancelled'};return `<span class="sb2 ${m[s]||'ts-open'}">${s||'Open'}</span>`;}
+function prioBadge(p){const m={High:'pri-high',Medium:'pri-medium',Low:'pri-low'};return p?`<span class="${m[p]||'pri-medium'}">${p}</span>`:'—';}
+function chip(cls,txt){const el=$('chip-src');el.className='chip '+cls;el.textContent=txt;}
+function showErr(msg){const el=$('login-err');el.textContent='⚠ '+msg;el.style.display='block';}
+function toast(msg,type='info'){
+  const area=$('toasts'),t=document.createElement('div');
+  t.className=`toast t-${type}`;t.textContent=msg;area.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},4000);
+}
+
+// ════════════════════════════════════════════════════════════════
+// GOOGLE PROVIDER (simplified — same interface)
+// ════════════════════════════════════════════════════════════════
+// Already defined above as GglProvider stub
+
+// ════════════════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════════════════
+(async()=>{
+  try{
+    const user=await P.tryAutoLogin();
+    if(user){UI._onLogin(user);return;}
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
