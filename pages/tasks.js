@@ -54,7 +54,7 @@ function renderTasks(q, fs, fr) {
         <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openContactFromTask('${(r.linkedContact || '').replace(/'/g, '__SQ__')}')">${r.linkedContact || '—'}</span></td>
         <td style="font-size:.75rem;${dueCls}">${r.dueDate || '—'}${isOverdue ? ' ⚠' : ''}</td>
         <td>${taskStatusBadge(r.status)}</td>
-        <td style="font-size:.75rem">${r.responsible || '—'}</td>
+        <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.responsible ? `<span class="contact-link" onclick="UI.nf('',null,'${r.responsible.replace(/'/g,'__SQ__')}')">${r.responsible}</span>` : '—'}</td>
         <td style="font-size:.72rem;color:var(--slate2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
       </tr>`;
     }).join('')}</tbody>
