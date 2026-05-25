@@ -230,20 +230,11 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
       <div class="sb-user">👤 <span id="sb-user">—</span> <span class="sb-pvdr" id="sb-pvdr"></span></div>
     </div>
     <nav class="sb-nav">
-      <div class="sbg">Views</div>
-      <div class="ni active" onclick="UI.nav('dashboard',this)"><span class="ic">◉</span><span> Dashboard</span><span class="pl" id="pl-total">—</span></div>
-      <div class="ni" onclick="UI.nav('pipeline',this)"><span class="ic">⚡</span><span> All Opportunities</span><span class="pl" id="pl-all">—</span></div>
-      <div class="sbg">By Status</div>
-      <div class="ni" onclick="UI.nf('Running',this)"><span class="ic">🟢</span><span> Running</span><span class="pl" id="pl-running">—</span></div>
-      <div class="ni" onclick="UI.nf('Bidding',this)"><span class="ic">🟣</span><span> Bidding</span><span class="pl" id="pl-bidding">—</span></div>
-      <div class="ni" onclick="UI.nf('Pipeline',this)"><span class="ic">🔵</span><span> Pipeline</span><span class="pl" id="pl-pipeline">—</span></div>
-      <div class="ni" onclick="UI.nf('Prospect',this)"><span class="ic">🟡</span><span> Prospect</span><span class="pl" id="pl-prospect">—</span></div>
-      <div class="ni" onclick="UI.nf('Done',this)"><span class="ic">⚪</span><span> Done</span><span class="pl" id="pl-done">—</span></div>
-      <div class="ni" onclick="UI.nf('Cancelled',this)"><span class="ic">🔴</span><span> Cancelled</span><span class="pl" id="pl-cancelled">—</span></div>
-      <div class="sbg">People &amp; Tasks</div>
-      <div class="ni" onclick="UI.nav('contacts',this)"><span class="ic">👤</span><span> Contacts</span><span class="pl" id="pl-contacts">—</span></div>
-      <div class="ni" onclick="UI.nav('tasks',this)"><span class="ic">✅</span><span> Tasks</span><span class="pl" id="pl-tasks">—</span></div>
+      <div class="ni active" onclick="UI.nav('mydashboard',this)"><span class="ic">👤</span><span> My Dashboard</span><span class="pl" id="pl-myopps">—</span></div>
       <div class="ni" onclick="UI.nav('companies',this)"><span class="ic">🏢</span><span> Companies</span><span class="pl" id="pl-companies">—</span></div>
+      <div class="ni" onclick="UI.nav('pipeline',this)"><span class="ic">⚡</span><span> All Opportunities</span><span class="pl" id="pl-all">—</span></div>
+      <div class="ni" onclick="UI.nav('tasks',this)"><span class="ic">✅</span><span> Tasks</span><span class="pl" id="pl-tasks">—</span></div>
+      <div class="ni" onclick="UI.nav('contacts',this)"><span class="ic">👥</span><span> Contacts</span><span class="pl" id="pl-contacts">—</span></div>
       <div class="ni" onclick="UI.nav('owners',this)"><span class="ic">🏠</span><span> Owners</span><span class="pl" id="pl-owners">—</span></div>
     </nav>
     <div class="sb-ft">Source: <b>5C_Pipeline.xlsx</b><br>Provider: <b id="sb-pvdr-lbl">—</b><br>Loaded: <b id="sb-loaded">—</b></div>
@@ -269,7 +260,8 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
     </div>
 
     <div class="content">
-      <div class="page active" id="page-dashboard"><div id="dash-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
+      <div class="page active" id="page-mydashboard"><div id="mydash-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
+      <div class="page" id="page-dashboard"><div id="dash-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
       <div class="page" id="page-pipeline">
         <div id="pipe-out"></div>
         <div class="save-bar" id="save-bar">
@@ -338,6 +330,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
 <script src="helpers.js"></script>
 <script src="providers.js"></script>
 <script src="app.js"></script>
+<script src="pages/mydashboard.js"></script>
 <script src="pages/dashboard.js"></script>
 <script src="pages/pipeline.js"></script>
 <script src="pages/contacts.js"></script>
