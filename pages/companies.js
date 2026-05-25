@@ -67,7 +67,7 @@ function renderCompanies(q, ft) {
         <td style="font-size:.77rem">${co.country || '—'}</td>
         <td style="font-size:.75rem">${opps.length > 0 ? oppBadges : '<span style="color:var(--slate2)">—</span>'}</td>
         <td style="font-size:.77rem;color:var(--teal)">${contacts.length > 0 ? contacts.length + ' contact' + (contacts.length !== 1 ? 's' : '') : '<span style="color:var(--slate2)">—</span>'}</td>
-        <td style="font-size:.75rem">${co.owner || '—'}</td>
+        <td onclick="event.stopPropagation()" style="font-size:.75rem">${co.owner ? `<span class="contact-link" onclick="UI.nav('owners',null)">${co.owner}</span>` : '—'}</td>
         <td style="font-size:.72rem">${co.website ? `<a href="${co.website}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">${co.website.replace(/^https?:\/\//,'')}</a>` : '—'}</td>
       </tr>`;
     }).join('')}</tbody>
