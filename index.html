@@ -1269,7 +1269,7 @@ function renderCompanies(q,ft){
       const tasks=DATA_TASKS.filter(t=>t.responsible===co.owner&&t.status==='Open').length;
       const col=OC[co.owner]||'#64748b';
       const safeId=(co.id||co.name).replace(/'/g,'__SQ__');
-      return \`<div class="oc" style="padding:16px" onclick="openCompanyDrawer('${safeId}')">
+      return `<div class="oc" style="padding:16px" onclick="openCompanyDrawer('${safeId}')">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
           <div>
             <div style="font-weight:700;font-size:.88rem;color:var(--navy2)">\${co.name}</div>
@@ -1291,9 +1291,9 @@ function renderCompanies(q,ft){
             <div style="font-size:.6rem;color:var(--slate)">Tasks</div>
           </div>
         </div>
-        \${opps.length?'<div style="font-size:.72rem;color:var(--slate);margin-bottom:4px">'+opps.slice(0,2).map(o=>\`<span class="sb2 \${o.s==='Running'?'s-running':o.s==='Pipeline'?'s-pipeline':o.s==='Bidding'?'s-bidding':'s-prospect'}" style="margin-right:3px">\${o.p||o.c}</span>\`).join('')+(opps.length>2?\`<span style="color:var(--slate2)"> +\${opps.length-2} more</span>\`:'')+'</div>':''}
+        \${opps.length?'<div style="font-size:.72rem;color:var(--slate);margin-bottom:4px">'+opps.slice(0,2).map(o=>`<span class="sb2 \${o.s==='Running'?'s-running':o.s==='Pipeline'?'s-pipeline':o.s==='Bidding'?'s-bidding':'s-prospect'}" style="margin-right:3px">\${o.p||o.c}</span>`).join('')+(opps.length>2?`<span style="color:var(--slate2)"> +\${opps.length-2} more</span>`:'')+'</div>':''}
         \${co.owner?'<div style="font-size:.7rem;color:var(--slate);display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:50%;background:'+col+';display:inline-flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;color:#fff">'+co.owner.split(' ').map(w=>w[0]).join('')+'</span>'+co.owner+'</div>':''}
-      </div>\`;
+      </div>`;
     }).join('')}
   </div>`}`;
 }
