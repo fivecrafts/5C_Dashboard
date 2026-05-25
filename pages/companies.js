@@ -1,26 +1,6 @@
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
-// LOGO HELPER — Clearbit Logo API (free, no key required)
-// Falls back to initials avatar if logo not found
-// ════════════════════════════════════════════════════════════════
-function companyLogo(website, name, size = 28) {
-  const domain = (website || '').replace(/^https?:\/\/(www\.)?/, '').split('/')[0].split('?')[0];
-  const ini    = (name || '?').split(' ').map(w => w[0]).toUpperCase().join('').slice(0, 2);
-  const col    = OC[name] || '#64748b';
-
-  if (domain) {
-    return `<img src="https://logo.clearbit.com/${domain}"
-      width="${size}" height="${size}"
-      style="border-radius:6px;object-fit:contain;border:1px solid var(--border);background:#fff;vertical-align:middle"
-      onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"
-      loading="lazy">
-    <span style="display:none;width:${size}px;height:${size}px;border-radius:6px;background:${col};color:#fff;font-size:${Math.round(size*0.38)}px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0">${ini}</span>`;
-  }
-  return `<span style="display:inline-flex;width:${size}px;height:${size}px;border-radius:6px;background:${col};color:#fff;font-size:${Math.round(size*0.38)}px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0">${ini}</span>`;
-}
-
-// ════════════════════════════════════════════════════════════════
 // COMPANIES PAGE — table view (consistent with all other pages)
 // ════════════════════════════════════════════════════════════════
 function renderCompanies(q, ft) {
@@ -145,11 +125,12 @@ function openCompanyDrawer(safeId) {
     <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('company','','')">+ Task</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
-  const logoHtml = companyLogo(co.website, co.name, 40);
+  // Pass logo-enhanced title directly to openDrawer
+  const logoHtml = companyLogo(co.website, co.name, 32);
+  const titleHtml = `<span style="display:flex;align-items:center;gap:10px">${logoHtml}<span>${esc(co.name || 'Company')}</span></span>`;
   openDrawer(co.name || 'Company', body, foot, 'company', id);
-  // Inject logo next to drawer title
-  const dh = $('drawer-title');
-  if (dh) dh.innerHTML = `<span style="display:flex;align-items:center;gap:10px">${logoHtml}<span>${co.name || 'Company'}</span></span>`;
+  // Set after openDrawer since openDrawer uses textContent
+  setTimeout(() => { const dh = $('drawer-title'); if (dh) dh.innerHTML = titleHtml; }, 0);
 }
 
 async function saveCompanyDrawer(origId) {
