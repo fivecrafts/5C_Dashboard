@@ -95,10 +95,23 @@ function cnt(s) {
   return DATA_PIPE.filter(r => (CHANGES[key(r)] ?? r.s) === s).length;
 }
 
+// ── Clearbit logo (free, no key) with initials fallback ──
+function companyLogo(website, name, size = 28) {
+  const domain = (website || '').replace(/^https?:\/\/(www\.)?/, '').split('/')[0].split('?')[0];
+  const ini    = (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const col    = (OC && OC[name]) ? OC[name] : '#64748b';
+  const avatar = `<span style="display:inline-flex;width:${size}px;height:${size}px;border-radius:6px;background:${col};color:#fff;font-size:${Math.round(size*0.38)}px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0">${ini}</span>`;
+  if (!domain) return avatar;
+  return `<img src="https://logo.clearbit.com/${domain}" width="${size}" height="${size}"
+    style="border-radius:6px;object-fit:contain;border:1px solid var(--border);background:#fff;vertical-align:middle;flex-shrink:0"
+    onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"
+    loading="lazy">${avatar.replace('display:inline-flex', 'display:none')}`;
+}
+
 // ── Company logo from name (looks up website from DATA_COMPANIES) ──
 function companyLogoFromName(name, size = 24) {
   const co = (DATA_COMPANIES || []).find(c => c.name === name);
-  if (!co) return ''; // no logo if company not in Companies sheet
+  if (!co) return '';
   return companyLogo(co.website, name, size);
 }
 
