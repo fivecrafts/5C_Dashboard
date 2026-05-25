@@ -24,7 +24,7 @@ function renderOwners() {
         <div>
           <div class="oc-name">${name}</div>
           <div class="oc-role">${o.email || ''}</div>
-          <div class="oc-role">${rows.length} opps · ${tasks} open tasks</div>
+          <div class="oc-role">${rows.length} opps · <span class="contact-link" onclick="event.stopPropagation();UI.nav('tasks',null);setTimeout(()=>renderTasks('','Open',''+name),100)" style="font-size:.67rem">${tasks} open tasks</span></div>
         </div>
       </div>
       <div class="oc-stats">
