@@ -79,12 +79,12 @@ function renderPipe(q, fs, fo) {
         ? `<span class="contact-link" onclick="openContactFromPipeline('${r.rsp.replace(/'/g, '__SQ__')}')" title="View contact profile">${r.rsp}</span>`
         : '—';
       return `<tr class="edit-row" onclick="openPipeDrawer('${safeKey}')">
-        <td><b style="font-size:.82rem;color:var(--navy2)">${r.c}</b></td>
+        <td onclick="event.stopPropagation()"><div style="display:flex;align-items:center;gap:7px">${companyLogoFromName(r.c,20)}<span class="contact-link" style="font-size:.82rem;font-weight:600" onclick="openCompanyFromName('${r.c.replace(/'/g,'__SQ__')}')" title="View company">${r.c}</span></div></td>
         <td style="font-size:.73rem;color:var(--slate)">${r.p || '—'}</td>
         <td><div class="dc" title="${(r.d || '').replace(/"/g, "'")}">${r.d || '—'}</div></td>
         <td>${catBadge(r.cat)}</td>
         <td onclick="event.stopPropagation()"><select class="ssel${changed ? ' changed' : ''}" data-key="${k}" data-orig="${r.s}" onchange="onChg(this)">${opts}</select></td>
-        <td style="font-size:.75rem">${r.r || '—'}</td>
+        <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.r ? `<span class="contact-link" onclick="UI.nf('',null,'${r.r.replace(/'/g,'__SQ__')}')">${r.r}</span>` : '—'}</td>
         <td onclick="event.stopPropagation()">${contactDisplay}</td>
       </tr>`;
     }).join('')}</tbody>
