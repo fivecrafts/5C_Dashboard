@@ -1,0 +1,372 @@
+'use strict';
+
+// ════════════════════════════════════════════════════════════════
+// PROVIDERS — data access layer
+// MsProvider: Microsoft Graph API (SharePoint / OneDrive)
+// GglProvider: Google Sheets API (stub — ready for migration)
+//
+// Both implement the same interface:
+//   tryAutoLogin()           → {name,email} | null
+//   signIn()                 → null (redirect) or {name,email}
+//   signOut()                → void
+//   loadSheet(name)          → raw JSON from API
+//   parsePipeline(json)      → Row[]
+//   parseContacts(json)      → Contact[]
+//   parseTasks(json)         → Task[]
+//   parseOwners(json)        → Owner[]
+//   parseCompanies(json)     → Company[]
+//   parseCodelists(json)     → {ListName: [values]}
+//   readCell(row, col)       → string  (for conflict detection)
+//   patchRange(sheet,addr,v) → boolean
+//   appendRow(sheet, values) → boolean
+//   savePipelineRow(row, f)  → boolean
+//   saveStatusOnly(row, s)   → boolean
+//   saveContactRow(row, f)   → boolean
+//   createContact(f)         → boolean
+//   saveTaskRow(row, f)      → boolean
+//   createTask(f)            → boolean
+// ════════════════════════════════════════════════════════════════
+
+// ── MICROSOFT ────────────────────────────────────────────────────
+const MsProvider = (() => {
+  const c = CFG.microsoft;
+  let app = null;
+
+  function boot() {
+    if (app) return;
+    app = new msal.PublicClientApplication({
+      auth: {
+        clientId: c.clientId,
+        authority: `https://login.microsoftonline.com/${c.tenantId}`,
+        redirectUri: window.location.origin + window.location.pathname.replace(/index\.html$/, ''),
+      },
+      cache: { cacheLocation: 'localStorage' },
+    });
+  }
+
+  async function token() {
+    const accs = app.getAllAccounts();
+    if (!accs.length) throw new Error('Not signed in');
+    return (await app.acquireTokenSilent({ scopes: c.scopes, account: accs[0] })).accessToken;
+  }
+
+  async function api(method, path, body) {
+    const t = await token();
+    const r = await fetch('https://graph.microsoft.com/v1.0' + path, {
+      method,
+      headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!r.ok) throw new Error('Graph HTTP ' + r.status + ' ' + path);
+    return method === 'PATCH' ? true : r.json();
+  }
+
+  function parseSheetByLetter(json) {
+    const rows = json.values || [];
+    if (rows.length < 2) return { headers: [], dataRows: [], allRows: rows };
+    return {
+      headers: rows[0].map(h => String(h).trim()),
+      dataRows: rows.slice(1),
+      allRows: rows,
+    };
+  }
+
+  function mapRow(row, headers, mapping) {
+    const rec = {};
+    Object.entries(mapping).forEach(([field, hdr]) => {
+      const idx = headers.indexOf(hdr);
+      rec[field] = idx >= 0 ? String(row[idx] ?? '').trim() : '';
+    });
+    return rec;
+  }
+
+  return {
+    async tryAutoLogin() {
+      boot();
+      await app.handleRedirectPromise().catch(() => {});
+      const accs = app.getAllAccounts();
+      return accs.length ? { name: accs[0].name, email: accs[0].username } : null;
+    },
+
+    async signIn() {
+      boot();
+      await app.loginRedirect({ scopes: c.scopes });
+      return null;
+    },
+
+    async signOut() {
+      boot();
+      await app.logoutPopup().catch(() => {});
+    },
+
+    async loadSheet(sheetName) {
+      return api('GET', `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheetName}/usedRange?$select=values`);
+    },
+
+    parsePipeline(json) {
+      const { headers, dataRows } = parseSheetByLetter(json);
+      if (!headers.length) return [];
+      const PMAP = {
+        c: 'Client Name', p: 'Project Name', d: 'Project Detail - Roles and Requirements',
+        cat: 'Category', s: 'Status', createdDate: 'Created Date', updDate: 'Updated Date',
+        r: 'Responsible', rsp: 'Contact', phone: 'Phone', email: 'Email',
+        projStart: 'Project start', src: 'Source',
+      };
+      const out = [];
+      dataRows.forEach((row, i) => {
+        const rec = mapRow(row, headers, PMAP);
+        rec._row = i + 2;
+        if (rec.c) out.push(rec);
+      });
+      return out;
+    },
+
+    parseContacts(json) {
+      const { headers, dataRows } = parseSheetByLetter(json);
+      if (!dataRows || !dataRows.length) return [];
+      const CMAP = {
+        id: 'Contact ID', firstName: 'First Name', lastName: 'Last Name',
+        email: 'Email', phone: 'Phone', web: 'Web', company: 'Company',
+        linkedOpps: 'Linked Opportunities', src: 'Source',
+        createdDate: 'Created Date', updDate: 'Updated Date',
+      };
+      return dataRows.map((row, i) => {
+        const rec = mapRow(row, headers, CMAP);
+        rec._row = i + 2;
+        return rec;
+      }).filter(r => r.firstName || r.lastName);
+    },
+
+    parseTasks(json) {
+      const { headers, dataRows } = parseSheetByLetter(json);
+      if (!dataRows || !dataRows.length) return [];
+      const TMAP = {
+        id: 'Task ID', type: 'Task Type', linkedOpp: 'Linked Opportunity',
+        linkedContact: 'Linked Contact', createdDate: 'Date Created',
+        status: 'Status', responsible: 'Responsible', dueDate: 'Due Date',
+        notes: 'Notes', priority: 'Priority',
+      };
+      // Col J (index 9) fallback if Priority header is missing in Excel
+      const hasPriority = headers.includes('Priority');
+      return dataRows.map((row, i) => {
+        const rec = mapRow(row, headers, TMAP);
+        if (!hasPriority && row[9] !== undefined) rec.priority = String(row[9] ?? '').trim();
+        rec._row = i + 2;
+        return rec;
+      }).filter(r => r.id || r.type);
+    },
+
+    parseOwners(json) {
+      const { headers, dataRows } = parseSheetByLetter(json);
+      if (!dataRows || !dataRows.length) return [];
+      const OMAP = {
+        id: 'Owner ID', firstName: 'First Name', lastName: 'Last Name',
+        displayName: 'Display Name', email: 'Email', notes: 'Notes',
+      };
+      return dataRows.map((row, i) => {
+        const rec = mapRow(row, headers, OMAP);
+        rec._row = i + 2;
+        return rec;
+      }).filter(r => r.displayName || r.firstName);
+    },
+
+    parseCompanies(json) {
+      const { headers, dataRows } = parseSheetByLetter(json);
+      if (!dataRows || !dataRows.length) return [];
+      const CMAP = {
+        id: 'Company ID', name: 'Company Name', type: 'Type',
+        website: 'Website', industry: 'Industry', country: 'Country',
+        owner: 'Owner', notes: 'Notes', createdDate: 'Created Date', updDate: 'Updated Date',
+      };
+      return dataRows.map((row, i) => {
+        const rec = mapRow(row, headers, CMAP);
+        rec._row = i + 2;
+        return rec;
+      }).filter(r => r.name || r.id);
+    },
+
+    parseCodelists(json) {
+      const { dataRows } = parseSheetByLetter(json);
+      const out = {};
+      if (!dataRows || !dataRows.length) return out;
+      dataRows.forEach(row => {
+        const listName = String(row[0] ?? '').trim();
+        const value    = String(row[1] ?? '').trim();
+        if (listName && value) {
+          if (!out[listName]) out[listName] = [];
+          out[listName].push(value);
+        }
+      });
+      return out;
+    },
+
+    async readCell(row, col) {
+      const json = await api('GET',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${c.sheets.pipeline}/range(address='${col}${row._row}')?$select=values`
+      );
+      return json?.values?.[0]?.[0] ?? null;
+    },
+
+    async patchRange(sheet, address, values) {
+      return api('PATCH',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='${address}')`,
+        { values }
+      );
+    },
+
+    async appendRow(sheet, values) {
+      const json = await api('GET',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/usedRange?$select=rowCount`
+      );
+      const nextRow = (json.rowCount || 1) + 1;
+      const colEnd  = String.fromCharCode(64 + values[0].length);
+      return api('PATCH',
+        `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${sheet}/range(address='A${nextRow}:${colEnd}${nextRow}')`,
+        { values }
+      );
+    },
+
+    async savePipelineRow(row, fields) {
+      // A:E = Client, Project, Detail, Category, Status
+      // G:L = Updated Date (auto), Responsible, Contact, Phone, Email, ProjStart
+      // M   = Source
+      const s     = CFG.microsoft.sheets.pipeline;
+      const today = new Date().toISOString().slice(0, 10);
+      const r1 = await this.patchRange(s, `A${row._row}:E${row._row}`,
+        [[fields.c, fields.p, fields.d, fields.cat, fields.s]]);
+      const r2 = await this.patchRange(s, `G${row._row}:L${row._row}`,
+        [[today, fields.r, fields.rsp, fields.phone, fields.email, fields.projStart]]);
+      const r3 = await this.patchRange(s, `M${row._row}`, [[fields.src]]);
+      return r1 && r2 && r3;
+    },
+
+    async saveStatusOnly(row, newS) {
+      const s     = CFG.microsoft.sheets.pipeline;
+      const today = new Date().toISOString().slice(0, 10);
+      const r1 = await this.patchRange(s, `E${row._row}`, [[newS]]);
+      await this.patchRange(s, `G${row._row}`, [[today]]).catch(() => {});
+      return r1;
+    },
+
+    async saveContactRow(row, fields) {
+      const s     = CFG.microsoft.sheets.contacts;
+      const today = new Date().toISOString().slice(0, 10);
+      return this.patchRange(s, `B${row._row}:K${row._row}`,
+        [[fields.firstName, fields.lastName, fields.email, fields.phone,
+          fields.web, fields.company, fields.linkedOpps, fields.src,
+          fields.createdDate || today, today]]
+      );
+    },
+
+    async createContact(fields) {
+      const s     = CFG.microsoft.sheets.contacts;
+      const today = new Date().toISOString().slice(0, 10);
+      const newId = `C-${String(DATA_CONTACTS.length + 1).padStart(3, '0')}`;
+      return this.appendRow(s, [[newId, fields.firstName, fields.lastName,
+        fields.email, fields.phone, fields.web, fields.company,
+        fields.linkedOpps || '', fields.src || 'Dashboard', today, today]]);
+    },
+
+    async saveTaskRow(row, fields) {
+      return this.patchRange(CFG.microsoft.sheets.tasks, `A${row._row}:J${row._row}`,
+        [[row.id, fields.type, fields.linkedOpp, fields.linkedContact,
+          row.createdDate, fields.status, fields.responsible,
+          fields.dueDate, fields.notes, fields.priority]]
+      );
+    },
+
+    async createTask(fields) {
+      const s     = CFG.microsoft.sheets.tasks;
+      const today = new Date().toISOString().slice(0, 10);
+      const newId = `T-${String(DATA_TASKS.length + 1).padStart(3, '0')}`;
+      return this.appendRow(s, [[newId, fields.type, fields.linkedOpp || '',
+        fields.linkedContact || '', today, fields.status || 'Open',
+        fields.responsible || '', fields.dueDate || '',
+        fields.notes || '', fields.priority || 'Medium']]);
+    },
+  };
+})();
+
+// ── GOOGLE (stub — same interface, ready for migration) ──────────
+const GglProvider = (() => {
+  const c = CFG.google;
+  let accessToken = null;
+
+  function loadGSI() {
+    return new Promise(res => {
+      if (window.google?.accounts) { res(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.onload = res;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function t() { if (!accessToken) throw new Error('Not signed in'); return accessToken; }
+
+  async function sheetsGet(r) {
+    const tk = await t();
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${c.sheetId}/values/${encodeURIComponent(r)}`,
+      { headers: { Authorization: 'Bearer ' + tk } });
+    if (!res.ok) throw new Error('Sheets ' + res.status);
+    return res.json();
+  }
+
+  async function sheetsPut(r, values) {
+    const tk = await t();
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${c.sheetId}/values/${encodeURIComponent(r)}?valueInputOption=RAW`,
+      { method: 'PUT', headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ range: r, majorDimension: 'ROWS', values }) }
+    );
+    return res.ok;
+  }
+
+  return {
+    async tryAutoLogin() { return null; },
+    async signIn() {
+      await loadGSI();
+      return new Promise((res, rej) => {
+        google.accounts.oauth2.initTokenClient({
+          client_id: c.clientId, scope: c.scopes.join(' '),
+          callback: async resp => {
+            if (resp.error) { rej(new Error(resp.error)); return; }
+            accessToken = resp.access_token;
+            const u = await (await fetch('https://www.googleapis.com/oauth2/v3/userinfo',
+              { headers: { Authorization: 'Bearer ' + accessToken } })).json();
+            res({ name: u.name, email: u.email });
+          },
+        }).requestAccessToken();
+      });
+    },
+    async signOut() { if (accessToken && window.google) google.accounts.oauth2.revoke(accessToken); accessToken = null; },
+    async loadSheet(name) { return sheetsGet(`${name}!A:Z`); },
+    parsePipeline(j)  { return MsProvider.parsePipeline(j); },
+    parseContacts(j)  { return MsProvider.parseContacts(j); },
+    parseTasks(j)     { return MsProvider.parseTasks(j); },
+    parseOwners(j)    { return MsProvider.parseOwners(j); },
+    parseCompanies(j) { return MsProvider.parseCompanies(j); },
+    parseCodelists(j) { return MsProvider.parseCodelists(j); },
+    async readCell(row, col) {
+      const j = await sheetsGet(`${c.sheets.pipeline}!${col}${row._row}`);
+      return j?.values?.[0]?.[0] ?? null;
+    },
+    async patchRange(sheet, addr, vals) { return sheetsPut(`${sheet}!${addr}`, vals); },
+    async appendRow(sheet, vals)        { return sheetsPut(`${sheet}!A:Z`, vals); },
+    async savePipelineRow(row, f)  { return MsProvider.savePipelineRow.call(this, row, f); },
+    async saveStatusOnly(row, s)   { return MsProvider.saveStatusOnly.call(this, row, s); },
+    async saveContactRow(row, f)   { return MsProvider.saveContactRow.call(this, row, f); },
+    async createContact(f)         { return MsProvider.createContact.call(this, f); },
+    async saveTaskRow(row, f)      { return MsProvider.saveTaskRow.call(this, row, f); },
+    async createTask(f)            { return MsProvider.createTask.call(this, f); },
+  };
+})();
+
+// ── REGISTRY ─────────────────────────────────────────────────────
+const PROVIDERS = { microsoft: MsProvider, google: GglProvider };
+let P         = PROVIDERS[CFG.ACTIVE] || MsProvider;
+let activeCfg = CFG[CFG.ACTIVE]       || CFG.microsoft;
+
+function setProvider(name) {
+  if (PROVIDERS[name]) { P = PROVIDERS[name]; activeCfg = CFG[name]; }
+}

@@ -1,0 +1,87 @@
+'use strict';
+
+// ════════════════════════════════════════════════════════════════
+// CONFIG — Azure, SharePoint, Google credentials & sheet names
+// To switch to Google: change ACTIVE to 'google' and fill in
+// clientId and sheetId in the google block below.
+// ════════════════════════════════════════════════════════════════
+const CFG = {
+  ACTIVE: 'microsoft',
+
+  microsoft: {
+    label:     'Microsoft',
+    badgeCls:  'pvdr-ms',
+    srcLabel:  '5C_Pipeline.xlsx',
+    clientId:  'f40e3049-3a3e-45a4-bef4-76c21ed50419',
+    tenantId:  'fivecrafts.cz',
+    driveId:   'b!sfRUpRpD1UGP25IZgoe25EIG1LQLxKZMqzutcQq84SwTUIT0yfgyRa__hqyrQ6PI',
+    fileId:    '01MIP6LSHXFSXX7HPIN5A2KEUXK6GPIPBJ',
+    scopes:    ['Files.ReadWrite','Sites.ReadWrite.All','User.Read'],
+    sheets: {
+      pipeline:  'Pipeline',
+      contacts:  'Contacts',
+      tasks:     'Tasks',
+      owners:    'Owners',
+      codelists: 'Codelists',
+      companies: 'Companies',
+    }
+  },
+
+  google: {
+    label:     'Google',
+    badgeCls:  'pvdr-google',
+    srcLabel:  '5C_Pipeline (Sheets)',
+    clientId:  'YOUR_GOOGLE_CLIENT_ID',
+    sheetId:   'YOUR_SHEET_ID',
+    scopes:    ['https://www.googleapis.com/auth/spreadsheets'],
+    statusCol: 5,
+    sheets: {
+      pipeline:  'Pipeline',
+      contacts:  'Contacts',
+      tasks:     'Tasks',
+      owners:    'Owners',
+      codelists: 'Codelists',
+      companies: 'Companies',
+    }
+  },
+};
+
+// ════════════════════════════════════════════════════════════════
+// COLUMN MAPS — verified against live Excel 2026-05-19
+// ════════════════════════════════════════════════════════════════
+const PIPE_COLS = {
+  A:'c', B:'p', C:'d', D:'cat', E:'s',
+  F:'createdDate', G:'updDate', H:'r', I:'rsp',
+  J:'phone', K:'email', L:'projStart', M:'src'
+};
+const CONT_COLS = {
+  A:'id', B:'firstName', C:'lastName', D:'email', E:'phone',
+  F:'web', G:'company', H:'linkedOpps', I:'src', J:'createdDate', K:'updDate'
+};
+const TASK_COLS = {
+  A:'id', B:'type', C:'linkedOpp', D:'linkedContact',
+  E:'createdDate', F:'status', G:'responsible', H:'dueDate', I:'notes', J:'priority'
+};
+const OWN_COLS  = { A:'id', B:'firstName', C:'lastName', D:'displayName', E:'email', F:'notes' };
+const COMP_COLS = {
+  A:'id', B:'name', C:'type', D:'website', E:'industry',
+  F:'country', G:'owner', H:'notes', I:'createdDate', J:'updDate'
+};
+
+// ════════════════════════════════════════════════════════════════
+// WORKFLOW — allowed status transitions
+// ════════════════════════════════════════════════════════════════
+const FLOW = {
+  Prospect:  ['Pipeline','Prospect','Cancelled'],
+  Pipeline:  ['Bidding','Running','Prospect','Done','Cancelled','Pipeline'],
+  Bidding:   ['Running','Done','Cancelled','Pipeline','Bidding'],
+  Running:   ['Done','Cancelled','Running','Pipeline'],
+  Done:      ['Pipeline','Prospect','Done'],
+  Cancelled: ['Prospect','Pipeline','Cancelled'],
+};
+
+// ════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════════════════════════
+const ALL_S          = ['Running','Bidding','Pipeline','Prospect','Done','Cancelled'];
+const OWNER_PALETTE  = ['#2563eb','#059669','#7c3aed','#d97706','#dc2626','#0891b2','#65a30d','#c2410c'];
