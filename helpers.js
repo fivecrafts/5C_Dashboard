@@ -82,7 +82,7 @@ function key(r) { return r.c + '|||' + r.p; }
 
 // ── Build owner color map from live data ──
 function buildOwnerColors() {
-  const owners = [...new Set(DATA_PIPE.map(r => r.r).filter(Boolean))].sort();
+  const owners = [...new Set(DATA_PIPE.map(r => r.owner).filter(Boolean))].sort();
   OC = {};
   owners.forEach((o, i) => { OC[o] = OWNER_PALETTE[i % OWNER_PALETTE.length]; });
   window.OWNERS = owners;
