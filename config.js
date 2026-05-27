@@ -49,14 +49,16 @@ const CFG = {
 // ════════════════════════════════════════════════════════════════
 // COLUMN MAPS — verified against live Excel 2026-05-19
 // ════════════════════════════════════════════════════════════════
+// Rev 17 — verified 2026-05-27
 const PIPE_COLS = {
-  A:'c', B:'p', C:'d', D:'cat', E:'s',
-  F:'createdDate', G:'updDate', H:'r', I:'rsp',
-  J:'phone', K:'email', L:'projStart', M:'src'
+  A:'pid', B:'p', C:'c', D:'d', E:'cat', F:'s',
+  G:'createdDate', H:'updDate', I:'owner', J:'contact',
+  K:'phone', L:'email', M:'projStart', N:'src', O:'coId'
 };
+// Rev 17 — col L = Company ID added
 const CONT_COLS = {
   A:'id', B:'firstName', C:'lastName', D:'email', E:'phone',
-  F:'web', G:'company', H:'linkedOpps', I:'src', J:'createdDate', K:'updDate'
+  F:'web', G:'company', H:'linkedOpps', I:'src', J:'createdDate', K:'updDate', L:'coId'
 };
 const TASK_COLS = {
   A:'id', B:'type', C:'linkedOpp', D:'linkedContact',
