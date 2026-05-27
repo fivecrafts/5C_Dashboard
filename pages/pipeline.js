@@ -14,7 +14,7 @@ function renderPipe(q, fs, fo) {
     .filter(r =>
       (!q  || (r.c + r.p + r.d + r.owner + r.contact).toLowerCase().includes(q)) &&
       (!fs || r.s === fs) &&
-      (!fo || r.r === fo)
+      (!fo || r.owner === fo)
     )
     .sort((a, b) => {
       if (SORT_COL === 's') return ((SO[a.s] ?? 9) - (SO[b.s] ?? 9)) * SORT_DIR;
@@ -84,7 +84,7 @@ function renderPipe(q, fs, fo) {
         <td><div class="dc" title="${(r.d || '').replace(/"/g, "'")}">${r.d || '—'}</div></td>
         <td>${catBadge(r.cat)}</td>
         <td onclick="event.stopPropagation()"><select class="ssel${changed ? ' changed' : ''}" data-key="${k}" data-orig="${r.s}" onchange="onChg(this)">${opts}</select></td>
-        <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.r ? `<span class="contact-link" onclick="UI.nf('',null,'${r.r.replace(/'/g,'__SQ__')}')">${r.r}</span>` : '—'}</td>
+        <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.owner ? `<span class="contact-link" onclick="UI.nf('',null,'${r.owner.replace(/'/g,'__SQ__')}')">${r.owner}</span>` : '—'}</td>
         <td onclick="event.stopPropagation()">${contactDisplay}</td>
       </tr>`;
     }).join('')}</tbody>
