@@ -52,7 +52,7 @@ function renderDash() {
 
   <div class="sect">By Owner <small>click card to filter · click stat to filter by status</small></div>
   <div class="owner-grid">${owners.map(o => {
-    const rows = DATA_PIPE.filter(r => r.r === o);
+    const rows = DATA_PIPE.filter(r => r.owner === o);
     const col  = OC[o] || '#64748b';
     const ini  = o.split(' ').map(w => w[0]).join('');
     const sq   = o.replace(/'/g, '__SQ__');
@@ -83,7 +83,7 @@ function renderDash() {
       <td style="font-size:.75rem;color:var(--slate)">${r.p || '—'}</td>
       <td>${catBadge(r.cat)}</td>
       <td>${badge(r.s)}</td>
-      <td style="font-size:.75rem">${r.r || '—'}</td>
+      <td style="font-size:.75rem">${r.owner || '—'}</td>
     </tr>`).join('')}</tbody>
   </table></div>`;
 }
