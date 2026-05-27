@@ -111,8 +111,8 @@ function companyLogo(website, name, size = 28) {
 // ── Company logo from name (looks up website from DATA_COMPANIES) ──
 function companyLogoFromName(name, size = 24) {
   const co = (DATA_COMPANIES || []).find(c => c.name === name);
-  if (!co) return '';
-  return companyLogo(co.website, name, size);
+  // Always render — Clearbit logo if website known, initials avatar otherwise
+  return companyLogo(co ? co.website : '', name, size);
 }
 
 // ── Update all sidebar count badges ──
