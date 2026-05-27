@@ -106,36 +106,45 @@ const MsProvider = (() => {
     parsePipeline(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!headers.length) return [];
-      // Rev 17 column map — verified 2026-05-27
-      const PMAP = {
-        pid:         'Pipeline ID',
-        p:           'Project Name',
-        c:           'Client',
-        d:           'Project Detail - Roles and Requirements',
-        cat:         'Category',
-        s:           'Status',
-        createdDate: 'Created Date',
-        updDate:     'Updated Date',
-        owner:       'Owner',
-        contact:     'Contact',
-        phone:       'Phone',
-        email:       'Email',
-        projStart:   'Project start',
-        src:         'Source',
-        coId:        'Company ID',
+
+      // Rev 17 fixed column indices (A=0 … O=14)
+      // Used directly to avoid header-name mismatches on HYPERLINK cells
+      const COL = {
+        pid:0, p:1, c:2, d:3, cat:4, s:5,
+        createdDate:6, updDate:7, owner:8, contact:9,
+        phone:10, email:11, projStart:12, src:13, coId:14
       };
+
+      // Helper: get cell value, strip HYPERLINK formula if present
+      function cell(row, idx) {
+        const v = String(row[idx] ?? '').trim();
+        if (v.includes('HYPERLINK')) {
+          const m = v.match(/"([^"]+)"\s*\)?\s*$/);
+          return m ? m[1] : '';
+        }
+        return v;
+      }
+
       const out = [];
       dataRows.forEach((row, i) => {
-        const rec = mapRow(row, headers, PMAP);
-        rec._row = i + 2;
-        // HYPERLINK formula cells — extract display text only
-        // Graph API returns formula text like =HYPERLINK("#...","DisplayName")
-        ['c','owner','contact'].forEach(field => {
-          if (rec[field] && rec[field].startsWith && rec[field].includes('HYPERLINK')) {
-            const m = rec[field].match(/"([^"]+)"\s*\)?\s*$/);
-            if (m) rec[field] = m[1];
-          }
-        });
+        const rec = {
+          _row:        i + 2,
+          pid:         cell(row, COL.pid),
+          p:           cell(row, COL.p),
+          c:           cell(row, COL.c),
+          d:           cell(row, COL.d),
+          cat:         cell(row, COL.cat),
+          s:           cell(row, COL.s),
+          createdDate: cell(row, COL.createdDate),
+          updDate:     cell(row, COL.updDate),
+          owner:       cell(row, COL.owner),
+          contact:     cell(row, COL.contact),
+          phone:       cell(row, COL.phone),
+          email:       cell(row, COL.email),
+          projStart:   cell(row, COL.projStart),
+          src:         cell(row, COL.src),
+          coId:        cell(row, COL.coId),
+        };
         if (rec.c || rec.pid) out.push(rec);
       });
       return out;
