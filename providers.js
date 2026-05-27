@@ -71,6 +71,20 @@ const MsProvider = (() => {
     };
   }
 
+  // Convert Excel serial date number to YYYY-MM-DD string
+  // Excel epoch = 1899-12-30 (Lotus 1-2-3 compatibility bug)
+  function excelDate(v) {
+    const s = String(v ?? '').trim();
+    if (!s) return '';
+    // Already a date string
+    if (s.includes('-') || s.includes('/')) return s;
+    // Serial number
+    const n = Number(s);
+    if (isNaN(n) || n < 1) return s;
+    const d = new Date(Date.UTC(1899, 11, 30) + n * 86400000);
+    return d.toISOString().slice(0, 10);
+  }
+
   function mapRow(row, headers, mapping) {
     const rec = {};
     Object.entries(mapping).forEach(([field, hdr]) => {
@@ -135,8 +149,8 @@ const MsProvider = (() => {
           d:           cell(row, COL.d),
           cat:         cell(row, COL.cat),
           s:           cell(row, COL.s),
-          createdDate: cell(row, COL.createdDate),
-          updDate:     cell(row, COL.updDate),
+          createdDate: excelDate(cell(row, COL.createdDate)),
+          updDate:     excelDate(cell(row, COL.updDate)),
           owner:       cell(row, COL.owner),
           contact:     cell(row, COL.contact),
           phone:       cell(row, COL.phone),
@@ -164,6 +178,8 @@ const MsProvider = (() => {
       return dataRows.map((row, i) => {
         const rec = mapRow(row, headers, CMAP);
         rec._row = i + 2;
+        rec.createdDate = excelDate(rec.createdDate);
+        rec.updDate     = excelDate(rec.updDate);
         return rec;
       }).filter(r => r.firstName || r.lastName);
     },
@@ -182,7 +198,9 @@ const MsProvider = (() => {
       return dataRows.map((row, i) => {
         const rec = mapRow(row, headers, TMAP);
         if (!hasPriority && row[9] !== undefined) rec.priority = String(row[9] ?? '').trim();
-        rec._row = i + 2;
+        rec._row       = i + 2;
+        rec.createdDate = excelDate(rec.createdDate);
+        rec.dueDate     = excelDate(rec.dueDate);
         return rec;
       }).filter(r => r.id || r.type);
     },
@@ -204,14 +222,25 @@ const MsProvider = (() => {
     parseCompanies(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!dataRows || !dataRows.length) return [];
+      // Use both header-name lookup AND column-index fallback
+      // Schema: A=id, B=name, C=type, D=website, E=industry, F=country, G=owner, H=notes, I=createdDate, J=updDate
+      const COL_FALLBACK = { id:0, name:1, type:2, website:3, industry:4, country:5, owner:6, notes:7, createdDate:8, updDate:9 };
       const CMAP = {
-        id: 'Company ID', name: 'Company Name', type: 'Type',
-        website: 'Website', industry: 'Industry', country: 'Country',
-        owner: 'Owner', notes: 'Notes', createdDate: 'Created Date', updDate: 'Updated Date',
+        id:'Company ID', name:'Company Name', type:'Type',
+        website:'Website', industry:'Industry', country:'Country',
+        owner:'Owner', notes:'Notes', createdDate:'Created Date', updDate:'Updated Date',
       };
       return dataRows.map((row, i) => {
         const rec = mapRow(row, headers, CMAP);
-        rec._row = i + 2;
+        // Fallback: if header-based lookup returned empty, try column index
+        Object.entries(COL_FALLBACK).forEach(([field, idx]) => {
+          if (!rec[field] && row[idx] !== undefined) {
+            rec[field] = String(row[idx] ?? '').trim();
+          }
+        });
+        rec._row        = i + 2;
+        rec.createdDate = excelDate(rec.createdDate);
+        rec.updDate     = excelDate(rec.updDate);
         return rec;
       }).filter(r => r.name || r.id);
     },
