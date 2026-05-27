@@ -8,7 +8,7 @@ function renderMyDashboard() {
   const today   = new Date().toISOString().slice(0, 10);
   const SO      = { Running:0, Bidding:1, Pipeline:2, Prospect:3, Done:4, Cancelled:5 };
 
-  const myOpps  = DATA_PIPE.filter(r => r.r === me).sort((a,b) => (SO[a.s]??9)-(SO[b.s]??9));
+  const myOpps  = DATA_PIPE.filter(r => r.owner === me).sort((a,b) => (SO[a.s]??9)-(SO[b.s]??9));
   const myTasks = DATA_TASKS.filter(t => t.responsible === me && t.status === 'Open')
                     .sort((a,b) => (a.dueDate||'9999') < (b.dueDate||'9999') ? -1 : 1);
   const myComp  = DATA_COMPANIES.filter(c => c.owner === me);
@@ -56,8 +56,8 @@ function renderMyDashboard() {
     <thead><tr><th>Client</th><th>Project</th><th>Category</th><th>Status</th><th>Contact</th><th>Updated</th></tr></thead>
     <tbody>${myOpps.map(r => {
       const safeKey = (r.c+'|||'+r.p).replace(/'/g,'__SQ__');
-      const contactDisplay = r.rsp
-        ? `<span class="contact-link" onclick="event.stopPropagation();openContactFromPipeline('${r.rsp.replace(/'/g,'__SQ__')}')">${r.rsp}</span>`
+      const contactDisplay = r.contact
+        ? `<span class="contact-link" onclick="event.stopPropagation();openContactFromPipeline('${r.contact.replace(/'/g,'__SQ__')}')">${r.contact}</span>`
         : '—';
       return `<tr class="edit-row" onclick="openPipeDrawer('${safeKey}')">
         <td><div style="display:flex;align-items:center;gap:7px">${companyLogoFromName(r.c, 20)}
