@@ -13,7 +13,7 @@ function renderOwners() {
   </div>
   <div class="owner-grid">${DATA_OWNERS.map(o => {
     const name  = o.displayName || ((o.firstName || '') + ' ' + (o.lastName || '')).trim();
-    const rows  = DATA_PIPE.filter(r => r.r === name);
+    const rows  = DATA_PIPE.filter(r => r.owner === name);
     const col   = OC[name] || '#64748b';
     const ini   = name.split(' ').map(w => w[0]).join('');
     const tasks = DATA_TASKS.filter(t => t.responsible === name && t.status === 'Open').length;
