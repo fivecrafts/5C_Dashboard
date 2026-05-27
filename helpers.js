@@ -97,7 +97,11 @@ function cnt(s) {
 
 // ── Clearbit logo (free, no key) with initials fallback ──
 function companyLogo(website, name, size = 28) {
-  const domain = (website || '').replace(/^https?:\/\/(www\.)?/, '').split('/')[0].split('?')[0];
+  // Strip protocol and www. regardless of whether http:// is present
+  const domain = (website || '')
+    .replace(/^https?:\/\//, '')   // strip https:// or http://
+    .replace(/^www\./, '')           // strip www. (with or without protocol)
+    .split('/')[0].split('?')[0];    // strip path and query
   const ini    = (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   const col    = (OC && OC[name]) ? OC[name] : '#64748b';
   const avatar = `<span style="display:inline-flex;width:${size}px;height:${size}px;border-radius:6px;background:${col};color:#fff;font-size:${Math.round(size*0.38)}px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0">${ini}</span>`;
