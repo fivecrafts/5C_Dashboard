@@ -46,7 +46,12 @@ const App = {
       else if (id === 'tasks')       renderTasks('', '', '');
       else if (id === 'owners')      renderOwners();
       else if (id === 'companies')   renderCompanies('', '');
-    } else renderMyDashboard();
+    } else {
+      renderMyDashboard();
+    }
+    // Always refresh mydashboard badge count
+    const myOppEl = $('pl-myopps');
+    if (myOppEl) myOppEl.textContent = DATA_PIPE.filter(r => r.owner === (window.CURRENT_USER_NAME||'')).length;
   },
 
   discard() { CHANGES = {}; updateCounts(); renderPipe('', '', ''); toast('Discarded', 'info'); },
@@ -113,7 +118,12 @@ const UI = {
     pb.className   = 'sb-pvdr ' + activeCfg.badgeCls;
     const mc = $('my-opps-chip');
     if (mc) { mc.textContent = '👤 My opps'; mc.style.display = 'inline-flex'; }
-    App.loadAll();
+    // loadAll will render the active page, but also explicitly ensure
+    // My Dashboard renders with the correct user name now set
+    App.loadAll().then(() => {
+      const active = document.querySelector('.page.active');
+      if (active && active.id === 'page-mydashboard') renderMyDashboard();
+    }).catch(() => {});
   },
 
   nav(id, el) {
