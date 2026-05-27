@@ -12,7 +12,7 @@ function renderPipe(q, fs, fo) {
   const SO = { Running:0, Bidding:1, Pipeline:2, Prospect:3, Done:4, Cancelled:5 };
   const filtered = DATA_PIPE
     .filter(r =>
-      (!q  || (r.c + r.p + r.d + r.r + r.rsp).toLowerCase().includes(q)) &&
+      (!q  || (r.c + r.p + r.d + r.owner + r.contact).toLowerCase().includes(q)) &&
       (!fs || r.s === fs) &&
       (!fo || r.r === fo)
     )
@@ -24,7 +24,7 @@ function renderPipe(q, fs, fo) {
     });
 
   const nch    = Object.keys(CHANGES).length;
-  const cols   = ['c','p','d','cat','s','r','rsp'];
+  const cols   = ['c','p','d','cat','s','owner','contact'];
   const labels = ['Client','Project / Scope','Detail','Category','Status','Owner','Contact'];
 
   $('pipe-out').innerHTML = `
@@ -75,8 +75,8 @@ function renderPipe(q, fs, fo) {
         `<option value="${s}"${cur === s ? ' selected' : ''}${!allowed.includes(s) && s !== r.s ? ' disabled style="color:#ccc"' : ''}>${s}</option>`
       ).join('');
       const safeKey = k.replace(/'/g, '__SQ__');
-      const contactDisplay = r.rsp
-        ? `<span class="contact-link" onclick="openContactFromPipeline('${r.rsp.replace(/'/g, '__SQ__')}')" title="View contact profile">${r.rsp}</span>`
+      const contactDisplay = r.contact
+        ? `<span class="contact-link" onclick="openContactFromPipeline('${r.contact.replace(/'/g, '__SQ__')}')" title="View contact profile">${r.contact}</span>`
         : '—';
       return `<tr class="edit-row" onclick="openPipeDrawer('${safeKey}')">
         <td onclick="event.stopPropagation()"><div style="display:flex;align-items:center;gap:7px">${companyLogoFromName(r.c,20)}<span class="contact-link" style="font-size:.82rem;font-weight:600" onclick="openCompanyFromName('${r.c.replace(/'/g,'__SQ__')}')" title="View company">${r.c}</span></div></td>
@@ -136,10 +136,10 @@ function openPipeDrawer(safeKey) {
     </div>
     <div class="field-row">
       <div class="field-group"><label>Responsible</label>
-        <input id="d-r" value="${esc(row.r)}" list="owners-list" autocomplete="off">
+        <input id="d-r" value="${esc(row.owner)}" list="owners-list" autocomplete="off">
         <datalist id="owners-list">${(window.OWNERS || []).map(o => `<option value="${o}">`).join('')}</datalist>
       </div>
-      <div class="field-group"><label>Contact</label><input id="d-rsp" value="${esc(row.rsp)}"></div>
+      <div class="field-group"><label>Contact</label><input id="d-rsp" value="${esc(row.contact)}"></div>
     </div>
     <div class="field-row">
       <div class="field-group"><label>Phone</label><input id="d-phone" value="${esc(row.phone || '')}"></div>
@@ -164,7 +164,7 @@ async function savePipeDrawer(forceOverwrite = false) {
 
   if (!forceOverwrite) {
     try {
-      const live = await P.readCell(row, 'E');
+      const live = await P.readCell(row, 'F'); // Rev 17: Status=col F
       if (live && live !== row.s) {
         showConflict({ field:'Status', liveVal:live, ourVal:newS, client:row.c, project:row.p });
         return;
@@ -179,12 +179,13 @@ async function savePipeDrawer(forceOverwrite = false) {
     d:         $('d-d').value.trim(),
     cat:       $('d-cat').value,
     s:         newS,
-    r:         $('d-r').value.trim(),
-    rsp:       $('d-rsp').value.trim(),
+    owner:     $('d-r').value.trim(),
+    contact:   $('d-rsp').value.trim(),
     phone:     $('d-phone').value.trim(),
     email:     $('d-email').value.trim(),
     projStart: $('d-projStart').value,
     src:       $('d-src').value.trim(),
+    coId:      row.coId || '',
   };
   try {
     const ok = await P.savePipelineRow(row, fields);
