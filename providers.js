@@ -106,17 +106,37 @@ const MsProvider = (() => {
     parsePipeline(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!headers.length) return [];
+      // Rev 17 column map — verified 2026-05-27
       const PMAP = {
-        c: 'Client Name', p: 'Project Name', d: 'Project Detail - Roles and Requirements',
-        cat: 'Category', s: 'Status', createdDate: 'Created Date', updDate: 'Updated Date',
-        r: 'Responsible', rsp: 'Contact', phone: 'Phone', email: 'Email',
-        projStart: 'Project start', src: 'Source',
+        pid:         'Pipeline ID',
+        p:           'Project Name',
+        c:           'Client',
+        d:           'Project Detail - Roles and Requirements',
+        cat:         'Category',
+        s:           'Status',
+        createdDate: 'Created Date',
+        updDate:     'Updated Date',
+        owner:       'Owner',
+        contact:     'Contact',
+        phone:       'Phone',
+        email:       'Email',
+        projStart:   'Project start',
+        src:         'Source',
+        coId:        'Company ID',
       };
       const out = [];
       dataRows.forEach((row, i) => {
         const rec = mapRow(row, headers, PMAP);
         rec._row = i + 2;
-        if (rec.c) out.push(rec);
+        // HYPERLINK formula cells — extract display text only
+        // Graph API returns formula text like =HYPERLINK("#...","DisplayName")
+        ['c','owner','contact'].forEach(field => {
+          if (rec[field] && rec[field].startsWith && rec[field].includes('HYPERLINK')) {
+            const m = rec[field].match(/"([^"]+)"\s*\)?\s*$/);
+            if (m) rec[field] = m[1];
+          }
+        });
+        if (rec.c || rec.pid) out.push(rec);
       });
       return out;
     },
@@ -124,11 +144,13 @@ const MsProvider = (() => {
     parseContacts(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!dataRows || !dataRows.length) return [];
+      // Rev 17 — col L = Company ID added
       const CMAP = {
         id: 'Contact ID', firstName: 'First Name', lastName: 'Last Name',
         email: 'Email', phone: 'Phone', web: 'Web', company: 'Company',
         linkedOpps: 'Linked Opportunities', src: 'Source',
         createdDate: 'Created Date', updDate: 'Updated Date',
+        coId: 'Company ID',
       };
       return dataRows.map((row, i) => {
         const rec = mapRow(row, headers, CMAP);
@@ -201,6 +223,7 @@ const MsProvider = (() => {
     },
 
     async readCell(row, col) {
+      // Col F = Status (rev 17)
       const json = await api('GET',
         `/drives/${c.driveId}/items/${c.fileId}/workbook/worksheets/${c.sheets.pipeline}/range(address='${col}${row._row}')?$select=values`
       );
@@ -227,44 +250,55 @@ const MsProvider = (() => {
     },
 
     async savePipelineRow(row, fields) {
-      // A:E = Client, Project, Detail, Category, Status
-      // G:L = Updated Date (auto), Responsible, Contact, Phone, Email, ProjStart
-      // M   = Source
+      // Rev 17 column map:
+      // A=Pipeline ID (immutable — never write)
+      // B=Project, C=Client, D=Detail, E=Category, F=Status
+      // G=Created (never write), H=Updated Date (auto), I=Owner, J=Contact
+      // K=Phone, L=Email, M=ProjStart, N=Source, O=Company ID (FK)
       const s     = CFG.microsoft.sheets.pipeline;
       const today = new Date().toISOString().slice(0, 10);
-      const r1 = await this.patchRange(s, `A${row._row}:E${row._row}`,
-        [[fields.c, fields.p, fields.d, fields.cat, fields.s]]);
-      const r2 = await this.patchRange(s, `G${row._row}:L${row._row}`,
-        [[today, fields.r, fields.rsp, fields.phone, fields.email, fields.projStart]]);
-      const r3 = await this.patchRange(s, `M${row._row}`, [[fields.src]]);
+      // Write B:N (all editable cols except A=PipelineID and G=CreatedDate)
+      // Split: B:F (project→status), then H:N (updDate→source)
+      const r1 = await this.patchRange(s, `B${row._row}:F${row._row}`,
+        [[fields.p, fields.c, fields.d, fields.cat, fields.s]]);
+      const r2 = await this.patchRange(s, `H${row._row}:N${row._row}`,
+        [[today, fields.owner, fields.contact, fields.phone, fields.email, fields.projStart, fields.src]]);
+      // Write Company ID to hidden col O
+      const r3 = fields.coId
+        ? await this.patchRange(s, `O${row._row}`, [[fields.coId]])
+        : true;
       return r1 && r2 && r3;
     },
 
     async saveStatusOnly(row, newS) {
+      // Rev 17: Status=col F, Updated Date=col H
       const s     = CFG.microsoft.sheets.pipeline;
       const today = new Date().toISOString().slice(0, 10);
-      const r1 = await this.patchRange(s, `E${row._row}`, [[newS]]);
-      await this.patchRange(s, `G${row._row}`, [[today]]).catch(() => {});
+      const r1 = await this.patchRange(s, `F${row._row}`, [[newS]]);
+      await this.patchRange(s, `H${row._row}`, [[today]]).catch(() => {});
       return r1;
     },
 
     async saveContactRow(row, fields) {
+      // Rev 17: col L = Company ID added
       const s     = CFG.microsoft.sheets.contacts;
       const today = new Date().toISOString().slice(0, 10);
-      return this.patchRange(s, `B${row._row}:K${row._row}`,
+      return this.patchRange(s, `B${row._row}:L${row._row}`,
         [[fields.firstName, fields.lastName, fields.email, fields.phone,
           fields.web, fields.company, fields.linkedOpps, fields.src,
-          fields.createdDate || today, today]]
+          fields.createdDate || today, today, fields.coId || '']]
       );
     },
 
     async createContact(fields) {
+      // Rev 17: 12 cols A-L including Company ID in col L
       const s     = CFG.microsoft.sheets.contacts;
       const today = new Date().toISOString().slice(0, 10);
       const newId = `C-${String(DATA_CONTACTS.length + 1).padStart(3, '0')}`;
       return this.appendRow(s, [[newId, fields.firstName, fields.lastName,
         fields.email, fields.phone, fields.web, fields.company,
-        fields.linkedOpps || '', fields.src || 'Dashboard', today, today]]);
+        fields.linkedOpps || '', fields.src || 'Dashboard', today, today,
+        fields.coId || '']]);
     },
 
     async saveTaskRow(row, fields) {
