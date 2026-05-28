@@ -50,13 +50,19 @@ const MsProvider = (() => {
     return (await app.acquireTokenSilent({ scopes: c.scopes, account: accs[0] })).accessToken;
   }
 
-  async function api(method, path, body) {
+  async function api(method, path, body, attempt = 0) {
     const t = await token();
     const r = await fetch('https://graph.microsoft.com/v1.0' + path, {
       method,
       headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
     });
+    // Retry on 503 (service unavailable) or 429 (rate limit) with backoff
+    if ((r.status === 503 || r.status === 429) && attempt < 3) {
+      const wait = (attempt + 1) * 1500; // 1.5s, 3s, 4.5s
+      await new Promise(res => setTimeout(res, wait));
+      return api(method, path, body, attempt + 1);
+    }
     if (!r.ok) throw new Error('Graph HTTP ' + r.status + ' ' + path);
     return method === 'PATCH' ? true : r.json();
   }
@@ -71,18 +77,23 @@ const MsProvider = (() => {
     };
   }
 
-  // Convert Excel serial date number to YYYY-MM-DD string
-  // Excel epoch = 1899-12-30 (Lotus 1-2-3 compatibility bug)
+  // Convert Excel date value to YYYY-MM-DD string
+  // Handles: ISO strings, US format (m/d/yyyy), serial numbers, '###' overflow
   function excelDate(v) {
     const s = String(v ?? '').trim();
-    if (!s) return '';
-    // Already a date string
-    if (s.includes('-') || s.includes('/')) return s;
-    // Serial number
+    if (!s || s.startsWith('#')) return '';  // empty or '###...' overflow
+    // Already ISO format: 2026-05-24
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    // US format: 5/19/2026 or 05/19/2026
+    const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (us) return `${us[3]}-${us[1].padStart(2,'0')}-${us[2].padStart(2,'0')}`;
+    // Excel serial number
     const n = Number(s);
-    if (isNaN(n) || n < 1) return s;
-    const d = new Date(Date.UTC(1899, 11, 30) + n * 86400000);
-    return d.toISOString().slice(0, 10);
+    if (!isNaN(n) && n > 1) {
+      const d = new Date(Date.UTC(1899, 11, 30) + n * 86400000);
+      return d.toISOString().slice(0, 10);
+    }
+    return s;
   }
 
   function mapRow(row, headers, mapping) {
