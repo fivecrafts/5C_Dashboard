@@ -7,12 +7,17 @@ const App = {
   async loadAll() {
     chip('ch-b', '⟳ Loading…');
     try {
-      const [pj, cj, tj, oj, clj, compj] = await Promise.all([
+      // Load in two waves to avoid Graph 503 burst errors
+      // Wave 1: small/critical sheets
+      const [pj, oj, clj] = await Promise.all([
         P.loadSheet(activeCfg.sheets.pipeline),
-        P.loadSheet(activeCfg.sheets.contacts),
-        P.loadSheet(activeCfg.sheets.tasks),
         P.loadSheet(activeCfg.sheets.owners),
         P.loadSheet(activeCfg.sheets.codelists),
+      ]);
+      // Wave 2: larger sheets
+      const [cj, tj, compj] = await Promise.all([
+        P.loadSheet(activeCfg.sheets.contacts),
+        P.loadSheet(activeCfg.sheets.tasks),
         P.loadSheet(activeCfg.sheets.companies).catch(() => ({ values: [] })),
       ]);
       DATA_PIPE      = P.parsePipeline(pj);
