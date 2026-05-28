@@ -44,6 +44,7 @@ function renderCompanies(q, ft) {
       <th>ID</th>
       <th>Company</th>
       <th>Type</th>
+      <th>Priority</th>
       <th>Industry</th>
       <th>Country</th>
       <th>Opportunities</th>
@@ -63,6 +64,7 @@ function renderCompanies(q, ft) {
         <td style="font-size:.7rem;color:var(--slate2)">${co.id || '—'}</td>
         <td><div style="display:flex;align-items:center;gap:8px">${companyLogo(co.website, co.name, 28)}<div><b style="color:var(--navy2)">${co.name || '—'}</b>${co.notes ? `<div class="dc" style="margin-top:1px" title="${(co.notes||'').replace(/"/g,"'")}">${co.notes}</div>` : ''}</div></div></td>
         <td>${compTypeBadge(co.type)}</td>
+        <td>${prioBadge(co.prio)}</td>
         <td style="font-size:.77rem">${co.industry || '—'}</td>
         <td style="font-size:.77rem">${co.country || '—'}</td>
         <td style="font-size:.75rem">${opps.length > 0 ? oppBadges : '<span style="color:var(--slate2)">—</span>'}</td>
@@ -107,13 +109,18 @@ function openCompanyDrawer(safeId) {
         ${['Customer','Partnership','Both'].map(t => `<option${co.type === t ? ' selected' : ''}>${t}</option>`).join('')}
       </select></div>
     </div>
+    <div class="field-group"><label>Priority</label><select id="dco-prio">
+      ${PRIORITIES.map(p => `<option${(co.prio||'Medium')===p?' selected':''}>${p}</option>`).join('')}
+    </select></div>
     <div class="field-row">
       <div class="field-group"><label>Industry</label><input id="dco-ind" value="${esc(co.industry || '')}"></div>
       <div class="field-group"><label>Country</label><input id="dco-cou" value="${esc(co.country || '')}"></div>
     </div>
     <div class="field-group"><label>Website</label><input id="dco-web" value="${esc(co.website || '')}"></div>
     <div class="field-group"><label>Owner</label>
-      <input id="dco-own" value="${esc(co.owner || '')}" list="owners-list" autocomplete="off">
+      <select id="dco-own">
+        ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();return `<option value="${n}"${(co.owner||'')=== n?' selected':''}>${n}</option>`;}).join('')}
+      </select>
     </div>
     <div class="field-group"><label>Notes</label><textarea id="dco-notes">${esc(co.notes || '')}</textarea></div>
     <div class="field-group"><label>Opportunities (${opps.length})</label><div class="linked-opps">${oppList}</div></div>
@@ -140,18 +147,22 @@ async function saveCompanyDrawer(origId) {
   const fields = {
     name:     $('dco-name').value.trim(),
     type:     $('dco-type').value,
+    prio:     $('dco-prio').value,
+    website:  $('dco-web').value.trim(),
     industry: $('dco-ind').value.trim(),
     country:  $('dco-cou').value.trim(),
-    website:  $('dco-web').value.trim(),
     owner:    $('dco-own').value.trim(),
     notes:    $('dco-notes').value.trim(),
   };
   try {
     const today = new Date().toISOString().slice(0, 10);
+    // Rev 19: B:K (11 cols), prio at col D
     const ok = await P.patchRange(
       activeCfg.sheets.companies,
-      `B${co._row}:J${co._row}`,
-      [[fields.name, fields.type, fields.website, fields.industry, fields.country, fields.owner, fields.notes, co.createdDate || today, today]]
+      `B${co._row}:K${co._row}`,
+      [[fields.name, fields.type, fields.prio || 'Medium', fields.website,
+        fields.industry, fields.country, fields.owner, fields.notes,
+        co.createdDate || today, today]]
     );
     if (ok) { Object.assign(co, fields); renderCompanies('', ''); toast('✓ Saved', 'success'); closeDrawer(); }
     else toast('⚠ Save failed', 'error');
@@ -171,9 +182,12 @@ function openNewCompanyDrawer() {
       <div class="field-group"><label>Industry</label><input id="dco-ind" value=""></div>
       <div class="field-group"><label>Country</label><input id="dco-cou" value=""></div>
     </div>
+    <div class="field-group"><label>Priority</label><select id="dco-prio"><option>Medium</option><option>Critical</option><option>High</option><option>Low</option></select></div>
     <div class="field-group"><label>Website</label><input id="dco-web" value=""></div>
     <div class="field-group"><label>Owner</label>
-      <input id="dco-own" value="${window.CURRENT_USER_NAME || ''}" list="owners-list" autocomplete="off">
+      <select id="dco-own">
+        ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();return `<option value="${n}"${(window.CURRENT_USER_NAME||'')=== n?' selected':''}>${n}</option>`;}).join('')}
+      </select>
     </div>
     <div class="field-group"><label>Notes</label><textarea id="dco-notes"></textarea></div>`;
   const foot = `
@@ -198,9 +212,11 @@ async function createCompanyDrawer() {
     notes:    $('dco-notes').value.trim(),
   };
   try {
+    // Rev 19: 11 cols A:K, prio at col D
     await P.appendRow(activeCfg.sheets.companies,
-      [[newId, fields.name, fields.type, fields.website, fields.industry,
-        fields.country, fields.owner, fields.notes, today, today]]
+      [[newId, fields.name, fields.type, fields.prio || 'Medium',
+        fields.website, fields.industry, fields.country,
+        fields.owner, fields.notes, today, today]]
     );
     const j = await P.loadSheet(activeCfg.sheets.companies);
     DATA_COMPANIES = P.parseCompanies(j);
