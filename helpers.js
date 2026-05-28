@@ -48,7 +48,7 @@ function taskStatusBadge(s) {
 
 // ── Priority badge ──
 function prioBadge(p) {
-  const m = { High:'pri-high', Medium:'pri-medium', Low:'pri-low' };
+  const m = { Critical:'pri-critical', High:'pri-high', Medium:'pri-medium', Low:'pri-low' };
   return p ? `<span class="${m[p] || 'pri-medium'}">${p}</span>` : '—';
 }
 
