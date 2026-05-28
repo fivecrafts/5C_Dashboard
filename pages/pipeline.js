@@ -24,8 +24,8 @@ function renderPipe(q, fs, fo) {
     });
 
   const nch    = Object.keys(CHANGES).length;
-  const cols   = ['c','p','d','cat','s','owner','contact'];
-  const labels = ['Client','Project / Scope','Detail','Category','Status','Owner','Contact'];
+  const cols   = ['c','p','d','cat','s','prio','owner','contact'];
+  const labels = ['Client','Project / Scope','Detail','Category','Status','Priority','Owner','Contact'];
 
   $('pipe-out').innerHTML = `
   <div class="legend" style="margin-bottom:14px;">
@@ -83,6 +83,7 @@ function renderPipe(q, fs, fo) {
         <td style="font-size:.73rem;color:var(--slate)">${r.p || '—'}</td>
         <td><div class="dc" title="${(r.d || '').replace(/"/g, "'")}">${r.d || '—'}</div></td>
         <td>${catBadge(r.cat)}</td>
+        <td>${prioBadge(r.prio)}</td>
         <td onclick="event.stopPropagation()"><select class="ssel${changed ? ' changed' : ''}" data-key="${k}" data-orig="${r.s}" onchange="onChg(this)">${opts}</select></td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.owner ? `<span class="contact-link" onclick="UI.nf('',null,'${r.owner.replace(/'/g,'__SQ__')}')">${r.owner}</span>` : '—'}</td>
         <td onclick="event.stopPropagation()">${contactDisplay}</td>
@@ -132,12 +133,16 @@ function openPipeDrawer(safeKey) {
       <div class="field-group"><label>Status</label><select id="d-s">
         ${ALL_S.map(s => `<option value="${s}"${row.s === s ? ' selected' : ''}${!allowed.includes(s) && s !== row.s ? ' disabled style="color:#ccc"' : ''}>${s}</option>`).join('')}
       </select></div>
-      <div class="field-group"><label>Project Start</label><input id="d-projStart" type="date" value="${row.projStart || ''}"></div>
+      <div class="field-group"><label>Priority</label><select id="d-prio">
+        ${PRIORITIES.map(p => `<option${(row.prio||'Medium')===p?' selected':''}>${p}</option>`).join('')}
+      </select></div>
     </div>
+    <div class="field-group"><label>Project Start</label><input id="d-projStart" type="date" value="${row.projStart || ''}"></div>
     <div class="field-row">
-      <div class="field-group"><label>Responsible</label>
-        <input id="d-r" value="${esc(row.owner)}" list="owners-list" autocomplete="off">
-        <datalist id="owners-list">${(window.OWNERS || []).map(o => `<option value="${o}">`).join('')}</datalist>
+      <div class="field-group"><label>Owner</label>
+        <select id="d-r">
+          ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();return `<option value="${n}"${(row.owner||'')=== n?' selected':''}>${n}</option>`;}).join('')}
+        </select>
       </div>
       <div class="field-group"><label>Contact</label><input id="d-rsp" value="${esc(row.contact)}"></div>
     </div>
@@ -179,6 +184,7 @@ async function savePipeDrawer(forceOverwrite = false) {
     d:         $('d-d').value.trim(),
     cat:       $('d-cat').value,
     s:         newS,
+    prio:      $('d-prio').value,
     owner:     $('d-r').value.trim(),
     contact:   $('d-rsp').value.trim(),
     phone:     $('d-phone').value.trim(),
