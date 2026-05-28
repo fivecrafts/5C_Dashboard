@@ -132,12 +132,12 @@ const MsProvider = (() => {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!headers.length) return [];
 
-      // Rev 17 fixed column indices (A=0 … O=14)
-      // Used directly to avoid header-name mismatches on HYPERLINK cells
+      // Rev 19 fixed column indices (A=0 … P=15)
+      // G=Priority inserted at index 6; all subsequent shift +1
       const COL = {
-        pid:0, p:1, c:2, d:3, cat:4, s:5,
-        createdDate:6, updDate:7, owner:8, contact:9,
-        phone:10, email:11, projStart:12, src:13, coId:14
+        pid:0, p:1, c:2, d:3, cat:4, s:5, prio:6,
+        createdDate:7, updDate:8, owner:9, contact:10,
+        phone:11, email:12, projStart:13, src:14, coId:15
       };
 
       // Helper: get cell value, strip HYPERLINK formula if present
@@ -160,6 +160,7 @@ const MsProvider = (() => {
           d:           cell(row, COL.d),
           cat:         cell(row, COL.cat),
           s:           cell(row, COL.s),
+          prio:        cell(row, COL.prio),
           createdDate: excelDate(cell(row, COL.createdDate)),
           updDate:     excelDate(cell(row, COL.updDate)),
           owner:       cell(row, COL.owner),
@@ -204,14 +205,25 @@ const MsProvider = (() => {
         status: 'Status', responsible: 'Responsible', dueDate: 'Due Date',
         notes: 'Notes', priority: 'Priority',
       };
-      // Col J (index 9) fallback if Priority header is missing in Excel
-      const hasPriority = headers.includes('Priority');
+      // Rev 19: Linked Company col E(4) inserted; Priority now at col K(10)
+      // Use column indices directly for reliability
+      const TCOL = { id:0, type:1, linkedOpp:2, linkedContact:3, linkedCompany:4,
+                     createdDate:5, status:6, responsible:7, dueDate:8, notes:9, priority:10 };
       return dataRows.map((row, i) => {
-        const rec = mapRow(row, headers, TMAP);
-        if (!hasPriority && row[9] !== undefined) rec.priority = String(row[9] ?? '').trim();
-        rec._row       = i + 2;
-        rec.createdDate = excelDate(rec.createdDate);
-        rec.dueDate     = excelDate(rec.dueDate);
+        const rec = {
+          _row:          i + 2,
+          id:            String(row[TCOL.id]          ?? '').trim(),
+          type:          String(row[TCOL.type]         ?? '').trim(),
+          linkedOpp:     String(row[TCOL.linkedOpp]    ?? '').trim(),
+          linkedContact: String(row[TCOL.linkedContact] ?? '').trim(),
+          linkedCompany: String(row[TCOL.linkedCompany] ?? '').trim(),
+          createdDate:   excelDate(String(row[TCOL.createdDate] ?? '').trim()),
+          status:        String(row[TCOL.status]       ?? '').trim(),
+          responsible:   String(row[TCOL.responsible]  ?? '').trim(),
+          dueDate:       excelDate(String(row[TCOL.dueDate] ?? '').trim()),
+          notes:         String(row[TCOL.notes]        ?? '').trim(),
+          priority:      String(row[TCOL.priority]     ?? '').trim(),
+        };
         return rec;
       }).filter(r => r.id || r.type);
     },
@@ -233,11 +245,11 @@ const MsProvider = (() => {
     parseCompanies(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!dataRows || !dataRows.length) return [];
-      // Use both header-name lookup AND column-index fallback
-      // Schema: A=id, B=name, C=type, D=website, E=industry, F=country, G=owner, H=notes, I=createdDate, J=updDate
-      const COL_FALLBACK = { id:0, name:1, type:2, website:3, industry:4, country:5, owner:6, notes:7, createdDate:8, updDate:9 };
+      // Rev 19: Priority col D(3) inserted; website→E(4), industry→F(5)…
+      // Schema: A=id, B=name, C=type, D=prio, E=website, F=industry, G=country, H=owner, I=notes, J=createdDate, K=updDate
+      const COL_FALLBACK = { id:0, name:1, type:2, prio:3, website:4, industry:5, country:6, owner:7, notes:8, createdDate:9, updDate:10 };
       const CMAP = {
-        id:'Company ID', name:'Company Name', type:'Type',
+        id:'Company ID', name:'Company Name', type:'Type', prio:'Priority',
         website:'Website', industry:'Industry', country:'Country',
         owner:'Owner', notes:'Notes', createdDate:'Created Date', updDate:'Updated Date',
       };
@@ -308,13 +320,14 @@ const MsProvider = (() => {
       const today = new Date().toISOString().slice(0, 10);
       // Write B:N (all editable cols except A=PipelineID and G=CreatedDate)
       // Split: B:F (project→status), then H:N (updDate→source)
-      const r1 = await this.patchRange(s, `B${row._row}:F${row._row}`,
-        [[fields.p, fields.c, fields.d, fields.cat, fields.s]]);
-      const r2 = await this.patchRange(s, `H${row._row}:N${row._row}`,
+      // Rev 19: B:G = project→priority, I:O = updDate→src, P = coId
+      const r1 = await this.patchRange(s, `B${row._row}:G${row._row}`,
+        [[fields.p, fields.c, fields.d, fields.cat, fields.s, fields.prio || 'Medium']]);
+      const r2 = await this.patchRange(s, `I${row._row}:O${row._row}`,
         [[today, fields.owner, fields.contact, fields.phone, fields.email, fields.projStart, fields.src]]);
-      // Write Company ID to hidden col O
+      // Write Company ID to hidden col P
       const r3 = fields.coId
-        ? await this.patchRange(s, `O${row._row}`, [[fields.coId]])
+        ? await this.patchRange(s, `P${row._row}`, [[fields.coId]])
         : true;
       return r1 && r2 && r3;
     },
@@ -323,8 +336,9 @@ const MsProvider = (() => {
       // Rev 17: Status=col F, Updated Date=col H
       const s     = CFG.microsoft.sheets.pipeline;
       const today = new Date().toISOString().slice(0, 10);
+      // Rev 19: Status=F (unchanged), Updated Date=I (was H)
       const r1 = await this.patchRange(s, `F${row._row}`, [[newS]]);
-      await this.patchRange(s, `H${row._row}`, [[today]]).catch(() => {});
+      await this.patchRange(s, `I${row._row}`, [[today]]).catch(() => {});
       return r1;
     },
 
@@ -336,6 +350,17 @@ const MsProvider = (() => {
         [[fields.firstName, fields.lastName, fields.email, fields.phone,
           fields.web, fields.company, fields.linkedOpps, fields.src,
           fields.createdDate || today, today, fields.coId || '']]
+      );
+    },
+
+    async saveCompanyRow(row, fields) {
+      // Rev 19: 11 cols B:K, prio at D(col 3)
+      const s     = CFG.microsoft.sheets.companies;
+      const today = new Date().toISOString().slice(0, 10);
+      return this.patchRange(s, `B${row._row}:K${row._row}`,
+        [[fields.name, fields.type, fields.prio || 'Medium',
+          fields.website, fields.industry, fields.country,
+          fields.owner, fields.notes, fields.createdDate || today, today]]
       );
     },
 
@@ -351,19 +376,23 @@ const MsProvider = (() => {
     },
 
     async saveTaskRow(row, fields) {
-      return this.patchRange(CFG.microsoft.sheets.tasks, `A${row._row}:J${row._row}`,
+      // Rev 19: 11 cols A:K, linkedCompany at col E
+      return this.patchRange(CFG.microsoft.sheets.tasks, `A${row._row}:K${row._row}`,
         [[row.id, fields.type, fields.linkedOpp, fields.linkedContact,
+          fields.linkedCompany || '',
           row.createdDate, fields.status, fields.responsible,
           fields.dueDate, fields.notes, fields.priority]]
       );
     },
 
     async createTask(fields) {
+      // Rev 19: 11 cols, linkedCompany at col E
       const s     = CFG.microsoft.sheets.tasks;
       const today = new Date().toISOString().slice(0, 10);
       const newId = `T-${String(DATA_TASKS.length + 1).padStart(3, '0')}`;
       return this.appendRow(s, [[newId, fields.type, fields.linkedOpp || '',
-        fields.linkedContact || '', today, fields.status || 'Open',
+        fields.linkedContact || '', fields.linkedCompany || '',
+        today, fields.status || 'Open',
         fields.responsible || '', fields.dueDate || '',
         fields.notes || '', fields.priority || 'Medium']]);
     },
