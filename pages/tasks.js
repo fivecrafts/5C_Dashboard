@@ -41,7 +41,7 @@ function renderTasks(q, fs, fr) {
     <span class="cnt">${filtered.length}/${DATA_TASKS.length}</span>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>ID</th><th>Type</th><th>Priority</th><th>Linked Opportunity</th><th>Linked Contact</th><th>Due Date</th><th>Status</th><th>Responsible</th><th>Notes</th></tr></thead>
+    <thead><tr><th>ID</th><th>Type</th><th>Priority</th><th>Linked Opportunity</th><th>Linked Contact</th><th>Linked Company</th><th>Due Date</th><th>Status</th><th>Responsible</th><th>Notes</th></tr></thead>
     <tbody>${filtered.map(r => {
       const isOverdue = r.status === 'Open' && r.dueDate && r.dueDate < today;
       const safeId    = (r.id || '').replace(/'/g, '__SQ__');
@@ -52,6 +52,7 @@ function renderTasks(q, fs, fr) {
         <td>${prioBadge(r.priority)}</td>
         <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openOppFromTask('${(r.linkedOpp || '').replace(/'/g, '__SQ__')}')">${r.linkedOpp || '—'}</span></td>
         <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openContactFromTask('${(r.linkedContact || '').replace(/'/g, '__SQ__')}')">${r.linkedContact || '—'}</span></td>
+        <td style="font-size:.73rem">${r.linkedCompany ? `<span class="contact-link" onclick="event.stopPropagation();openCompanyFromName('${r.linkedCompany.replace(/'/g,'__SQ__')}')">${r.linkedCompany}</span>` : '—'}</td>
         <td style="font-size:.75rem;${dueCls}">${r.dueDate || '—'}${isOverdue ? ' ⚠' : ''}</td>
         <td>${taskStatusBadge(r.status)}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.responsible ? `<span class="contact-link" onclick="UI.nf('',null,'${r.responsible.replace(/'/g,'__SQ__')}')">${r.responsible}</span>` : '—'}</td>
@@ -89,14 +90,21 @@ function buildTaskForm(row, preOpp, preCont) {
       <div class="field-group"><label>Due Date</label><input id="dt-due" type="date" value="${row?.dueDate || ''}"></div>
     </div>
     <div class="field-group"><label>Responsible</label>
-      <input id="dt-resp" value="${esc(row?.responsible || window.CURRENT_USER_NAME || '')}" list="owners-list-t" autocomplete="off">
-      <datalist id="owners-list-t">${(window.OWNERS || []).map(o => `<option value="${o}">`).join('')}</datalist>
+      <select id="dt-resp">
+        ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();const cur=row?.responsible||window.CURRENT_USER_NAME||'';return `<option value="${n}"${cur===n?' selected':''}>${n}</option>`;}).join('')}
+      </select>
     </div>
     <div class="field-group"><label>Linked Opportunity</label>
       <select id="dt-opp"><option value="">— None —</option>${oppOptions}</select>
     </div>
     <div class="field-group"><label>Linked Contact</label>
       <select id="dt-cont"><option value="">— None —</option>${contOptions}</select>
+    </div>
+    <div class="field-group"><label>Linked Company</label>
+      <select id="dt-comp">
+        <option value="">— None —</option>
+        ${(DATA_COMPANIES||[]).map(co => `<option value="${esc(co.id)}"${(row?.linkedCompany||'')===(co.id||co.name)?' selected':''}>${co.name}</option>`).join('')}
+      </select>
     </div>
     <div class="field-group"><label>Notes</label><textarea id="dt-notes">${esc(row?.notes || '')}</textarea></div>
     ${row ? `<div style="font-size:.7rem;color:var(--slate);margin-top:4px">${row.id} · Created ${row.createdDate || '—'}</div>` : ''}`;
@@ -122,7 +130,9 @@ async function saveTaskDrawer() {
   const fields = {
     type: $('dt-type').value, priority: $('dt-prio').value, status: $('dt-status').value,
     dueDate: $('dt-due').value, responsible: $('dt-resp').value.trim(),
-    linkedOpp: $('dt-opp').value, linkedContact: $('dt-cont').value, notes: $('dt-notes').value.trim(),
+    linkedOpp: $('dt-opp').value, linkedContact: $('dt-cont').value,
+    linkedCompany: $('dt-comp') ? $('dt-comp').value : '',
+    notes: $('dt-notes').value.trim(),
   };
   try {
     const ok = await P.saveTaskRow(row, fields);
@@ -148,7 +158,9 @@ async function createTaskDrawer() {
   const fields = {
     type: $('dt-type').value, priority: $('dt-prio').value, status: 'Open',
     dueDate: $('dt-due').value, responsible: $('dt-resp').value.trim(),
-    linkedOpp: $('dt-opp').value, linkedContact: $('dt-cont').value, notes: $('dt-notes').value.trim(),
+    linkedOpp: $('dt-opp').value, linkedContact: $('dt-cont').value,
+    linkedCompany: $('dt-comp') ? $('dt-comp').value : '',
+    notes: $('dt-notes').value.trim(),
   };
   try {
     await P.createTask(fields);
