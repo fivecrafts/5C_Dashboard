@@ -49,25 +49,27 @@ const CFG = {
 // ════════════════════════════════════════════════════════════════
 // COLUMN MAPS — verified against live Excel 2026-05-19
 // ════════════════════════════════════════════════════════════════
-// Rev 17 — verified 2026-05-27
+// Rev 19 — Priority col G inserted, all subsequent shift +1
 const PIPE_COLS = {
-  A:'pid', B:'p', C:'c', D:'d', E:'cat', F:'s',
-  G:'createdDate', H:'updDate', I:'owner', J:'contact',
-  K:'phone', L:'email', M:'projStart', N:'src', O:'coId'
+  A:'pid', B:'p', C:'c', D:'d', E:'cat', F:'s', G:'prio',
+  H:'createdDate', I:'updDate', J:'owner', K:'contact',
+  L:'phone', M:'email', N:'projStart', O:'src', P:'coId'
 };
-// Rev 17 — col L = Company ID added
+// Rev 19 — Contacts unchanged from rev 16
 const CONT_COLS = {
   A:'id', B:'firstName', C:'lastName', D:'email', E:'phone',
   F:'web', G:'company', H:'linkedOpps', I:'src', J:'createdDate', K:'updDate', L:'coId'
 };
+// Rev 19 — Linked Company col E inserted, all subsequent shift +1
 const TASK_COLS = {
-  A:'id', B:'type', C:'linkedOpp', D:'linkedContact',
-  E:'createdDate', F:'status', G:'responsible', H:'dueDate', I:'notes', J:'priority'
+  A:'id', B:'type', C:'linkedOpp', D:'linkedContact', E:'linkedCompany',
+  F:'createdDate', G:'status', H:'responsible', I:'dueDate', J:'notes', K:'priority'
 };
 const OWN_COLS  = { A:'id', B:'firstName', C:'lastName', D:'displayName', E:'email', F:'notes' };
+// Rev 19 — Priority col D inserted, all subsequent shift +1
 const COMP_COLS = {
-  A:'id', B:'name', C:'type', D:'website', E:'industry',
-  F:'country', G:'owner', H:'notes', I:'createdDate', J:'updDate'
+  A:'id', B:'name', C:'type', D:'prio', E:'website', F:'industry',
+  G:'country', H:'owner', I:'notes', J:'createdDate', K:'updDate'
 };
 
 // ════════════════════════════════════════════════════════════════
