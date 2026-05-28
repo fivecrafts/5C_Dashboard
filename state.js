@@ -15,7 +15,7 @@ let DATA_COMPANIES = [];
 // ── Codelists (populated from Codelists sheet, with fallbacks) ──
 let TASK_TYPES    = ['Organize Meet','Send Pitchdeck','Organize Call','Followup Call','Send Contract','Send Proposal','LinkedIn Connect','Other'];
 let TASK_STATUSES = ['Open','Done','Cancelled'];
-let PRIORITIES    = ['High','Medium','Low'];
+let PRIORITIES    = ['Critical','High','Medium','Low']; // rev 19: Critical added
 
 // ── Pipeline pending changes (key = "client|||project" → newStatus) ──
 let CHANGES = {};
