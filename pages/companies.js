@@ -50,6 +50,7 @@ function renderCompanies(q, ft) {
       <th>Opportunities</th>
       <th>Contacts</th>
       <th>Owner</th>
+      <th>Notes</th>
       <th>Website</th>
     </tr></thead>
     <tbody>${filtered.map(co => {
@@ -62,13 +63,14 @@ function renderCompanies(q, ft) {
       ).join('') + (opps.length > 2 ? `<span style="font-size:.68rem;color:var(--slate2)"> +${opps.length - 2}</span>` : '');
       return `<tr class="edit-row" onclick="openCompanyDrawer('${safeId}')">
         <td style="font-size:.7rem;color:var(--slate2)">${co.id || '—'}</td>
-        <td><div style="display:flex;align-items:center;gap:8px">${companyLogo(co.website, co.name, 28)}<div><b style="color:var(--navy2)">${co.name || '—'}</b>${co.notes ? `<div class="dc" style="margin-top:1px" title="${(co.notes||'').replace(/"/g,"'")}">${co.notes}</div>` : ''}</div></div></td>
+        <td><div style="display:flex;align-items:center;gap:8px">${companyLogo(co.website, co.name, 28)}<b style="color:var(--navy2)">${co.name || '—'}</b></div></td>
         <td>${compTypeBadge(co.type)}</td>
         <td>${prioBadge(co.prio)}</td>
         <td style="font-size:.77rem">${co.industry || '—'}</td>
         <td style="font-size:.77rem">${co.country || '—'}</td>
         <td style="font-size:.75rem">${opps.length > 0 ? oppBadges : '<span style="color:var(--slate2)">—</span>'}</td>
         <td style="font-size:.77rem;color:var(--teal)">${contacts.length > 0 ? contacts.length + ' contact' + (contacts.length !== 1 ? 's' : '') : '<span style="color:var(--slate2)">—</span>'}</td>
+        <td style="font-size:.75rem;color:var(--slate);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(co.notes||'').replace(/"/g,"'")}">${co.notes || '—'}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${co.owner ? `<span class="contact-link" onclick="UI.nav('owners',null)">${co.owner}</span>` : '—'}</td>
         <td style="font-size:.72rem">${co.website ? `<a href="${co.website}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">${co.website.replace(/^https?:\/\//,'')}</a>` : '—'}</td>
       </tr>`;
