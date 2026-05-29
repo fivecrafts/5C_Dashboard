@@ -24,8 +24,8 @@ function renderPipe(q, fs, fo) {
     });
 
   const nch    = Object.keys(CHANGES).length;
-  const cols   = ['c','p','d','cat','s','prio','owner','contact'];
-  const labels = ['Client','Project / Scope','Detail','Category','Status','Priority','Owner','Contact'];
+  const cols   = ['c','p','d','cat','prio','s','owner','contact'];
+  const labels = ['Client','Project / Scope','Detail','Category','Priority','Status','Owner','Contact'];
 
   $('pipe-out').innerHTML = `
   <div class="legend" style="margin-bottom:14px;">
