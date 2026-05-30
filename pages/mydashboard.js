@@ -5,13 +5,26 @@
 // ════════════════════════════════════════════════════════════════
 function renderMyDashboard() {
   const me      = window.CURRENT_USER_NAME || '';
+  const myEmail = (window.CURRENT_USER_EMAIL || '').toLowerCase().split('@')[0];
   const today   = new Date().toISOString().slice(0, 10);
   const SO      = { Running:0, Bidding:1, Pipeline:2, Prospect:3, Done:4, Cancelled:5 };
 
-  const myOpps  = DATA_PIPE.filter(r => r.owner === me).sort((a,b) => (SO[a.s]??9)-(SO[b.s]??9));
-  const myTasks = DATA_TASKS.filter(t => t.responsible === me && t.status === 'Open')
+  // Match owner by display name (case-insensitive) OR email prefix
+  function isMe(val) {
+    if (!val) return false;
+    const v = val.trim().toLowerCase();
+    if (me && v === me.trim().toLowerCase()) return true;
+    if (myEmail && v.replace(/[^a-z]/g,'').includes(myEmail.replace(/[^a-z]/g,''))) return true;
+    // Also match via DATA_OWNERS email
+    const o = DATA_OWNERS.find(o => (o.displayName||'').toLowerCase() === v);
+    if (o && o.email && myEmail && o.email.toLowerCase().split('@')[0] === myEmail) return true;
+    return false;
+  }
+
+  const myOpps  = DATA_PIPE.filter(r => isMe(r.owner)).sort((a,b) => (SO[a.s]??9)-(SO[b.s]??9));
+  const myTasks = DATA_TASKS.filter(t => isMe(t.responsible) && t.status === 'Open')
                     .sort((a,b) => (a.dueDate||'9999') < (b.dueDate||'9999') ? -1 : 1);
-  const myComp  = DATA_COMPANIES.filter(c => c.owner === me);
+  const myComp  = DATA_COMPANIES.filter(c => isMe(c.owner));
   const overdue = myTasks.filter(t => t.dueDate && t.dueDate < today).length;
 
   $('mydash-out').innerHTML = `
