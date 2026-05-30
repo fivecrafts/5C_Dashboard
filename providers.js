@@ -132,12 +132,11 @@ const MsProvider = (() => {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!headers.length) return [];
 
-      // Rev 19 fixed column indices (A=0 … P=15)
-      // G=Priority inserted at index 6; all subsequent shift +1
+      // Rev 22 — 13 cols A–M (Category removed, Phone+Email removed)
       const COL = {
-        pid:0, p:1, c:2, d:3, cat:4, s:5, prio:6,
-        createdDate:7, updDate:8, owner:9, contact:10,
-        phone:11, email:12, projStart:13, src:14, coId:15
+        pid:0, p:1, c:2, d:3, s:4, prio:5,
+        createdDate:6, updDate:7, owner:8, contact:9,
+        projStart:10, src:11, coId:12
       };
 
       // Helper: get cell value, strip HYPERLINK formula if present
@@ -165,8 +164,6 @@ const MsProvider = (() => {
           updDate:     excelDate(cell(row, COL.updDate)),
           owner:       cell(row, COL.owner),
           contact:     cell(row, COL.contact),
-          phone:       cell(row, COL.phone),
-          email:       cell(row, COL.email),
           projStart:   cell(row, COL.projStart),
           src:         cell(row, COL.src),
           coId:        cell(row, COL.coId),
@@ -320,25 +317,34 @@ const MsProvider = (() => {
       const today = new Date().toISOString().slice(0, 10);
       // Write B:N (all editable cols except A=PipelineID and G=CreatedDate)
       // Split: B:F (project→status), then H:N (updDate→source)
-      // Rev 19: B:G = project→priority, I:O = updDate→src, P = coId
-      const r1 = await this.patchRange(s, `B${row._row}:G${row._row}`,
-        [[fields.p, fields.c, fields.d, fields.cat, fields.s, fields.prio || 'Medium']]);
-      const r2 = await this.patchRange(s, `I${row._row}:O${row._row}`,
-        [[today, fields.owner, fields.contact, fields.phone, fields.email, fields.projStart, fields.src]]);
-      // Write Company ID to hidden col P
+      // Rev 22: B:F = p,c,d,s,prio | H:L = updDate,owner,contact,projStart,src | M = coId
+      // G = createdDate (immutable — never write)
+      const r1 = await this.patchRange(s, `B${row._row}:F${row._row}`,
+        [[fields.p, fields.c, fields.d, fields.s, fields.prio || 'Medium']]);
+      const r2 = await this.patchRange(s, `H${row._row}:L${row._row}`,
+        [[today, fields.owner, fields.contact, fields.projStart, fields.src]]);
+      // Write Company ID to hidden col M
       const r3 = fields.coId
-        ? await this.patchRange(s, `P${row._row}`, [[fields.coId]])
+        ? await this.patchRange(s, `M${row._row}`, [[fields.coId]])
         : true;
       return r1 && r2 && r3;
     },
 
     async saveStatusOnly(row, newS) {
-      // Rev 17: Status=col F, Updated Date=col H
+      // Rev 22: Status=E, Updated Date=H
       const s     = CFG.microsoft.sheets.pipeline;
       const today = new Date().toISOString().slice(0, 10);
-      // Rev 19: Status=F (unchanged), Updated Date=I (was H)
-      const r1 = await this.patchRange(s, `F${row._row}`, [[newS]]);
-      await this.patchRange(s, `I${row._row}`, [[today]]).catch(() => {});
+      const r1 = await this.patchRange(s, `E${row._row}`, [[newS]]);
+      await this.patchRange(s, `H${row._row}`, [[today]]).catch(() => {});
+      return r1;
+    },
+
+    async savePriorityOnly(row, newP) {
+      // Rev 22: Priority=F, Updated Date=H
+      const s     = CFG.microsoft.sheets.pipeline;
+      const today = new Date().toISOString().slice(0, 10);
+      const r1 = await this.patchRange(s, `F${row._row}`, [[newP]]);
+      await this.patchRange(s, `H${row._row}`, [[today]]).catch(() => {});
       return r1;
     },
 
