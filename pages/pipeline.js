@@ -61,8 +61,8 @@ function renderPipe(q, fs, fo) {
     });
 
   const nch    = Object.keys(CHANGES).length;
-  const cols   = ['c','p','d','cat','prio','s','owner','contact'];
-  const labels = ['Client','Project / Scope','Detail','Category','Priority','Status','Owner','Contact'];
+  const cols   = ['c','p','d','prio','s','owner','contact'];
+  const labels = ['Client','Project / Scope','Detail','Priority','Status','Owner','Contact'];
 
   $('pipe-out').innerHTML = `
   <div class="legend" style="margin-bottom:14px;">
@@ -73,14 +73,8 @@ function renderPipe(q, fs, fo) {
           s==='Running'?'green':s==='Bidding'?'purple':s==='Pipeline'?'blue':s==='Prospect'?'amber':s==='Done'?'slate2':'red'
         })"></span>${s}</span>`).join('')}
       </div></div>
-      <div class="legend-section"><h4>Category &amp; Actions</h4>
-        <div class="legend-items">
-          <span class="cb cat-project">Project</span>
-          <span class="cb cat-partnership">Partnership</span>
-          <span class="cb cat-pipeline">Pipeline</span>
-          <span class="cb cat-prospect">Prospect</span>
-        </div>
-        <div style="font-size:.68rem;color:var(--slate);margin-top:6px">Click row to edit all fields · Click contact name to view profile</div>
+      <div class="legend-section"><h4>Actions</h4>
+        <div style="font-size:.68rem;color:var(--slate);margin-top:4px">Click row to edit all fields · Click Client name for Company · Click Contact name for profile</div>
       </div>
     </div>
   </div>
@@ -119,7 +113,6 @@ function renderPipe(q, fs, fo) {
         <td onclick="event.stopPropagation()"><div style="display:flex;align-items:center;gap:7px">${companyLogoFromName(r.c,20)}<span class="contact-link" style="font-size:.82rem;font-weight:600" onclick="openCompanyFromName('${r.c.replace(/'/g,'__SQ__')}')" title="View company">${r.c}</span></div></td>
         <td style="font-size:.73rem;color:var(--slate)">${r.p || '—'}</td>
         <td><div class="dc" title="${(r.d || '').replace(/"/g, "'")}">${r.d || '—'}</div></td>
-        <td>${catBadge(r.cat)}</td>
         <td onclick="event.stopPropagation()">${buildPrioDrop(r, k, safeKey)}</td>
         <td onclick="event.stopPropagation()">${buildStatusDrop(r, k, safeKey)}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.owner ? `<span class="contact-link" onclick="UI.nf('',null,'${r.owner.replace(/'/g,'__SQ__')}')">${r.owner}</span>` : '—'}</td>
@@ -182,12 +175,7 @@ function openPipeDrawer(safeKey) {
   const allowed = FLOW[row.s] || ALL_S;
 
   const body = `
-    <div class="field-row">
-      <div class="field-group"><label>Client Name</label><input id="d-c" value="${esc(row.c)}"></div>
-      <div class="field-group"><label>Category</label><select id="d-cat">
-        ${['Project','Partnership','Prospect','Pipeline'].map(v => `<option${row.cat === v ? ' selected' : ''}>${v}</option>`).join('')}
-      </select></div>
-    </div>
+    <div class="field-group"><label>Client Name</label><input id="d-c" value="${esc(row.c)}"></div>
     <div class="field-group"><label>Project / Scope</label><input id="d-p" value="${esc(row.p)}"></div>
     <div class="field-group"><label>Detail / Roles &amp; Requirements</label><textarea id="d-d">${esc(row.d)}</textarea></div>
     <div class="field-row">
@@ -207,10 +195,7 @@ function openPipeDrawer(safeKey) {
       </div>
       <div class="field-group"><label>Contact</label><input id="d-rsp" value="${esc(row.contact)}"></div>
     </div>
-    <div class="field-row">
-      <div class="field-group"><label>Phone</label><input id="d-phone" value="${esc(row.phone || '')}"></div>
-      <div class="field-group"><label>Email</label><input id="d-email" type="email" value="${esc(row.email || '')}"></div>
-    </div>
+
     <div class="field-group"><label>Source</label><input id="d-src" value="${esc(row.src || '')}"></div>
     <div style="font-size:.7rem;color:var(--slate);margin-top:4px">Row ${row._row} · Created ${row.createdDate || '—'} · Updated ${row.updDate || '—'}</div>`;
 
@@ -230,7 +215,7 @@ async function savePipeDrawer(forceOverwrite = false) {
 
   if (!forceOverwrite) {
     try {
-      const live = await P.readCell(row, 'F'); // Rev 17: Status=col F
+      const live = await P.readCell(row, 'E'); // Rev 22: Status=col E
       if (live && live !== row.s) {
         showConflict({ field:'Status', liveVal:live, ourVal:newS, client:row.c, project:row.p });
         return;
@@ -243,13 +228,10 @@ async function savePipeDrawer(forceOverwrite = false) {
     c:         $('d-c').value.trim() || row.c,
     p:         $('d-p').value.trim(),
     d:         $('d-d').value.trim(),
-    cat:       $('d-cat').value,
     s:         newS,
     prio:      $('d-prio').value,
     owner:     $('d-r').value.trim(),
     contact:   $('d-rsp').value.trim(),
-    phone:     $('d-phone').value.trim(),
-    email:     $('d-email').value.trim(),
     projStart: $('d-projStart').value,
     src:       $('d-src').value.trim(),
     coId:      row.coId || '',
