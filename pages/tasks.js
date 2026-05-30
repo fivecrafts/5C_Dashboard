@@ -23,7 +23,7 @@ async function saveTaskPrio(safeId, newP) {
     const ok = await P.patchRange(activeCfg.sheets.tasks, `K${row._row}`, [[newP]]);
     if (ok) {
       row.priority = newP;
-      renderTasks(undefined, undefined, undefined);
+      renderTasks();
       toast(`✓ Priority → ${newP}`, 'success');
     } else toast('⚠ Save failed', 'error');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
@@ -32,14 +32,25 @@ async function saveTaskPrio(safeId, newP) {
 // ════════════════════════════════════════════════════════════════
 // TASKS PAGE — table with overdue detection, create/edit drawer
 // ════════════════════════════════════════════════════════════════
-function renderTasks(q, fs, fr) {
-  q = q || ''; fs = fs || ''; fr = fr || '';
+function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
+  if (q     === undefined) { const el=$('tq');     q     = el?el.value:''; }
+  if (fs    === undefined) { const el=$('tfs');    fs    = el?el.value:''; }
+  if (fr    === undefined) { const el=$('tfr');    fr    = el?el.value:''; }
+  if (ftype === undefined) { const el=$('tft');    ftype = el?el.value:''; }
+  if (fprio === undefined) { const el=$('tfprio'); fprio = el?el.value:''; }
+  if (fcomp === undefined) { const el=$('tfcomp'); fcomp = el?el.value:''; }
+  q='';fs=fs||'';fr=fr||'';ftype=ftype||'';fprio=fprio||'';fcomp=fcomp||'';
+
   const today = new Date().toISOString().slice(0, 10);
   const filtered = DATA_TASKS.filter(r => {
     const overdue  = r.status === 'Open' && r.dueDate && r.dueDate < today;
     const fsMatch  = !fs || (fs === 'Overdue' ? overdue : r.status === fs);
-    return (!q  || (r.type + r.linkedOpp + r.linkedContact + r.notes).toLowerCase().includes(q.toLowerCase())) &&
-           fsMatch && (!fr || r.responsible === fr);
+    return (!q     || (r.type + r.linkedOpp + r.linkedContact + r.notes).toLowerCase().includes(q.toLowerCase())) &&
+           fsMatch &&
+           (!fr    || r.responsible === fr) &&
+           (!ftype || r.type === ftype) &&
+           (!fprio || (r.priority||'Medium') === fprio) &&
+           (!fcomp || r.linkedCompany === fcomp);
   });
   const open      = DATA_TASKS.filter(t => t.status === 'Open').length;
   const done      = DATA_TASKS.filter(t => t.status === 'Done').length;
@@ -55,17 +66,29 @@ function renderTasks(q, fs, fr) {
     <div class="kpi k-over" onclick="renderTasks('','Overdue','')"><div class="lbl">Overdue</div><div class="val">${overdue}</div><div class="sub">Past due date</div></div>
   </div>
   <div class="filter-bar">
-    <input type="text" id="tq" placeholder="🔍  Search type, opportunity, contact…" value="${q}" oninput="renderTasks(this.value,undefined,undefined)">
-    <select id="tfs" onchange="renderTasks(undefined,this.value,undefined)">
+    <input type="text" id="tq" placeholder="🔍  Search…" value="${q}" oninput="renderTasks(this.value)">
+    <select id="tfs" onchange="renderTasks(undefined,this.value)">
       <option value="">All Statuses</option>
-      <option value="Open"${fs === 'Open' ? ' selected' : ''}>Open</option>
-      <option value="Done"${fs === 'Done' ? ' selected' : ''}>Done</option>
-      <option value="Cancelled"${fs === 'Cancelled' ? ' selected' : ''}>Cancelled</option>
-      <option value="Overdue"${fs === 'Overdue' ? ' selected' : ''}>Overdue</option>
+      <option value="Open"${fs==='Open'?' selected':''}>Open</option>
+      <option value="Done"${fs==='Done'?' selected':''}>Done</option>
+      <option value="Cancelled"${fs==='Cancelled'?' selected':''}>Cancelled</option>
+      <option value="Overdue"${fs==='Overdue'?' selected':''}>Overdue</option>
+    </select>
+    <select id="tft" onchange="renderTasks(undefined,undefined,undefined,this.value)">
+      <option value="">All Types</option>
+      ${TASK_TYPES.map(t=>`<option value="${t}"${ftype===t?' selected':''}>${t}</option>`).join('')}
+    </select>
+    <select id="tfprio" onchange="renderTasks(undefined,undefined,undefined,undefined,this.value)">
+      <option value="">All Priorities</option>
+      ${PRIORITIES.map(p=>`<option value="${p}"${fprio===p?' selected':''}>${p}</option>`).join('')}
+    </select>
+    <select id="tfcomp" onchange="renderTasks(undefined,undefined,undefined,undefined,undefined,this.value)">
+      <option value="">All Companies</option>
+      ${DATA_COMPANIES.map(c=>`<option value="${c.id}"${fcomp===c.id?' selected':''}>${c.name}</option>`).join('')}
     </select>
     <select id="tfr" onchange="renderTasks(undefined,undefined,this.value)">
       <option value="">All Owners</option>
-      ${(window.OWNERS || []).map(o => `<option${fr === o ? ' selected' : ''}>${o}</option>`).join('')}
+      ${(window.OWNERS||[]).map(o=>`<option${fr===o?' selected':''}>${o}</option>`).join('')}
     </select>
     <span class="cnt">${filtered.length}/${DATA_TASKS.length}</span>
   </div>
@@ -165,7 +188,7 @@ async function saveTaskDrawer() {
   };
   try {
     const ok = await P.saveTaskRow(row, fields);
-    if (ok) { Object.assign(row, fields); renderTasks('', '', ''); toast('✓ Saved', 'success'); closeDrawer(); }
+    if (ok) { Object.assign(row, fields); renderTasks('', '', '', '', '', ''); toast('✓ Saved', 'success'); closeDrawer(); }
     else toast('⚠ Save failed', 'error');
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
@@ -195,7 +218,7 @@ async function createTaskDrawer() {
     await P.createTask(fields);
     const j = await P.loadSheet(activeCfg.sheets.tasks);
     DATA_TASKS = P.parseTasks(j);
-    updateCounts(); renderTasks('', '', '');
+    updateCounts(); renderTasks('', '', '', '', '', '');
     toast('✓ Task created', 'success'); closeDrawer();
     UI.nav('tasks', null);
   } catch (e) { toast('Error: ' + e.message, 'error'); }
