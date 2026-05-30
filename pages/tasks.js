@@ -1,6 +1,35 @@
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
+// TASKS INLINE PRIORITY DROPDOWN
+// ════════════════════════════════════════════════════════════════
+function buildTaskPrioDrop(r) {
+  const menuId = 'tp-' + (r.id || '').replace(/'/g,'__SQ__');
+  const cur    = r.priority || 'Medium';
+  const safeId = (r.id || '').replace(/'/g,'__SQ__');
+  const opts   = PRIORITIES.map(p => {
+    const safeP = p.replace(/'/g,'');
+    return `<div class="cdrop-opt${cur===p?' active':''}" onclick="closeDrop();saveTaskPrio('${safeId}','${safeP}')">${prioDot(p)}<span>${p}</span></div>`;
+  }).join('');
+  return `<div class="cdrop" onclick="event.stopPropagation()"><div class="cdrop-trigger" onclick="event.stopPropagation();openDrop('${menuId}',this)">${prioDot(cur)}<span>${cur}</span><span class="arr">▾</span></div><div class="cdrop-menu" id="${menuId}">${opts}</div></div>`;
+}
+
+async function saveTaskPrio(safeId, newP) {
+  const id  = safeId.replace(/__SQ__/g,"'");
+  const row = DATA_TASKS.find(r => r.id === id);
+  if (!row || row.priority === newP) return;
+  try {
+    // Rev 19: Priority at col K (index 10)
+    const ok = await P.patchRange(activeCfg.sheets.tasks, `K${row._row}`, [[newP]]);
+    if (ok) {
+      row.priority = newP;
+      renderTasks(undefined, undefined, undefined);
+      toast(`✓ Priority → ${newP}`, 'success');
+    } else toast('⚠ Save failed', 'error');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════════════════════
 // TASKS PAGE — table with overdue detection, create/edit drawer
 // ════════════════════════════════════════════════════════════════
 function renderTasks(q, fs, fr) {
@@ -49,7 +78,7 @@ function renderTasks(q, fs, fr) {
       return `<tr class="edit-row" onclick="openTaskDrawer('${safeId}')">
         <td style="font-size:.7rem;color:var(--slate2)">${r.id || '—'}</td>
         <td style="font-size:.78rem;font-weight:500">${r.type || '—'}</td>
-        <td>${prioBadge(r.priority)}</td>
+        <td onclick="event.stopPropagation()">${buildTaskPrioDrop(r)}</td>
         <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openOppFromTask('${(r.linkedOpp || '').replace(/'/g, '__SQ__')}')">${r.linkedOpp || '—'}</span></td>
         <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openContactFromTask('${(r.linkedContact || '').replace(/'/g, '__SQ__')}')">${r.linkedContact || '—'}</span></td>
         <td style="font-size:.73rem">${r.linkedCompany ? `<span class="contact-link" onclick="event.stopPropagation();openCompanyFromName('${r.linkedCompany.replace(/'/g,'__SQ__')}')">${r.linkedCompany}</span>` : '—'}</td>
