@@ -132,6 +132,7 @@ const UI = {
     const name = user.name || user.email.split('@')[0];
     $('sb-user').textContent = name;
     window.CURRENT_USER_NAME = name;
+    window.CURRENT_USER_EMAIL = user.email || '';
     const pb = $('sb-pvdr');
     pb.textContent = activeCfg.label;
     pb.className   = 'sb-pvdr ' + activeCfg.badgeCls;
