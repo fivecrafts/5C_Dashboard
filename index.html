@@ -244,12 +244,13 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
       <div class="sb-user">👤 <span id="sb-user">—</span> <span class="sb-pvdr" id="sb-pvdr"></span></div>
     </div>
     <nav class="sb-nav">
+      <div class="ni" onclick="UI.nav('owners',this)"><span class="ic" style="font-size:.68rem;font-weight:700">5C</span><span> 5C Dashboard</span><span class="pl" id="pl-owners">—</span></div>
       <div class="ni active" onclick="UI.nav('mydashboard',this)"><span class="ic">👤</span><span> My Dashboard</span><span class="pl" id="pl-myopps">—</span></div>
       <div class="ni" onclick="UI.nav('companies',this)"><span class="ic">🏢</span><span> Companies</span><span class="pl" id="pl-companies">—</span></div>
       <div class="ni" onclick="UI.nav('pipeline',this)"><span class="ic">⚡</span><span> All Opportunities</span><span class="pl" id="pl-all">—</span></div>
       <div class="ni" onclick="UI.nav('tasks',this)"><span class="ic">✅</span><span> Tasks</span><span class="pl" id="pl-tasks">—</span></div>
       <div class="ni" onclick="UI.nav('contacts',this)"><span class="ic">👥</span><span> Contacts</span><span class="pl" id="pl-contacts">—</span></div>
-      <div class="ni" onclick="UI.nav('owners',this)"><span class="ic" style="font-size:.7rem">5C</span><span> Five Crafts</span><span class="pl" id="pl-owners">—</span></div>
+
     </nav>
     <div class="sb-ft">Source: <b>5C_Pipeline.xlsx</b><br>Provider: <b id="sb-pvdr-lbl">—</b><br>Loaded: <b id="sb-loaded">—</b></div>
     <button class="signout-btn" onclick="UI.signOut()">↩ Sign out</button>
