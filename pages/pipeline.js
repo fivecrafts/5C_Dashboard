@@ -1,6 +1,43 @@
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
+// DROPDOWN BUILDERS — called from renderPipe template literal
+// Using functions avoids nested template literal parsing issues
+// ════════════════════════════════════════════════════════════════
+function buildStatusDrop(r, k, safeKey) {
+  const menuId = 'sm-' + safeKey;
+  const cur    = CHANGES[k] !== undefined ? CHANGES[k] : r.s;
+  const isChg  = CHANGES[k] !== undefined;
+  const allowed = FLOW[r.s] || ALL_S;
+  const opts = ALL_S.map(s => {
+    const dis = !allowed.includes(s) && s !== r.s;
+    const active = cur === s ? ' active' : '';
+    const disabled = dis ? ' disabled' : '';
+    const safeS = s.replace(/'/g, '');
+    const safeK = k.replace(/'/g, '__SQ__');
+    const safeOrig = r.s.replace(/'/g, '');
+    return `<div class="cdrop-opt${active}${disabled}" onclick="closeDrop();onChgDirect('${safeK}','${safeOrig}','${safeS}')">${statusDot(s)}<span>${s}</span></div>`;
+  }).join('');
+  const changed = isChg ? ' changed' : '';
+  return `<div class="cdrop" onclick="event.stopPropagation()"><div class="cdrop-trigger${changed}" onclick="event.stopPropagation();openDrop('${menuId}',this)">${statusDot(cur)}<span>${cur}</span><span class="arr">▾</span></div><div class="cdrop-menu" id="${menuId}">${opts}</div></div>`;
+}
+
+function buildPrioDrop(r, k, safeKey) {
+  const menuId = 'pm-' + safeKey;
+  const cur    = PRIO_CHANGES[k] !== undefined ? PRIO_CHANGES[k] : (r.prio || 'Medium');
+  const isChg  = PRIO_CHANGES[k] !== undefined;
+  const origP  = (r.prio || 'Medium').replace(/'/g, '');
+  const opts = PRIORITIES.map(p => {
+    const active = cur === p ? ' active' : '';
+    const safeP  = p.replace(/'/g, '');
+    const safeK  = k.replace(/'/g, '__SQ__');
+    return `<div class="cdrop-opt${active}" onclick="closeDrop();onPrioChgDirect('${safeK}','${origP}','${safeP}')">${prioDot(p)}<span>${p}</span></div>`;
+  }).join('');
+  const changed = isChg ? ' changed' : '';
+  return `<div class="cdrop" onclick="event.stopPropagation()"><div class="cdrop-trigger${changed}" onclick="event.stopPropagation();openDrop('${menuId}',this)">${prioDot(cur)}<span>${cur}</span><span class="arr">▾</span></div><div class="cdrop-menu" id="${menuId}">${opts}</div></div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
 // PIPELINE PAGE — sortable table, status dropdowns, edit drawer
 // ════════════════════════════════════════════════════════════════
 function renderPipe(q, fs, fo) {
@@ -83,46 +120,8 @@ function renderPipe(q, fs, fo) {
         <td style="font-size:.73rem;color:var(--slate)">${r.p || '—'}</td>
         <td><div class="dc" title="${(r.d || '').replace(/"/g, "'")}">${r.d || '—'}</div></td>
         <td>${catBadge(r.cat)}</td>
-        <td onclick="event.stopPropagation()">
-          ${(()=>{
-            const menuId='pm-'+safeKey;
-            const curP=PRIO_CHANGES[k]??r.prio||'Medium';
-            const isPChg=PRIO_CHANGES[k]!==undefined;
-            return `<div class="cdrop" onclick="event.stopPropagation()">
-              <div class="cdrop-trigger${isPChg?' changed':''}" onclick="event.stopPropagation();openDrop('${menuId}',this)">
-                ${prioDot(curP)}<span>${curP}</span><span class="arr">▾</span>
-              </div>
-              <div class="cdrop-menu" id="${menuId}">
-                ${PRIORITIES.map(p=>`<div class="cdrop-opt${curP===p?' active':''}"
-                  onclick="closeDrop();onPrioChgDirect('${k}','${r.prio||'Medium'}','${p}')">
-                  ${prioDot(p)}<span>${p}</span>
-                </div>`).join('')}
-              </div>
-            </div>`;
-          })()}
-        </td>
-        <td onclick="event.stopPropagation()">
-          ${(()=>{
-            const menuId='sm-'+safeKey;
-            const cur=CHANGES[k]??r.s;
-            const isChg=CHANGES[k]!==undefined;
-            return `<div class="cdrop" onclick="event.stopPropagation()">
-              <div class="cdrop-trigger${isChg?' changed':''}" onclick="event.stopPropagation();openDrop('${menuId}',this)">
-                ${statusDot(cur)}<span>${cur}</span><span class="arr">▾</span>
-              </div>
-              <div class="cdrop-menu" id="${menuId}">
-                ${ALL_S.map(s=>{
-                  const allowed=FLOW[r.s]||ALL_S;
-                  const dis=!allowed.includes(s)&&s!==r.s;
-                  return `<div class="cdrop-opt${cur===s?' active':''}${dis?' disabled':''}"
-                    onclick="closeDrop();onChgDirect('${k}','${r.s}','${s}',this)">
-                    ${statusDot(s)}<span>${s}</span>
-                  </div>`;
-                }).join('')}
-              </div>
-            </div>`;
-          })()}
-        </td>
+        <td onclick="event.stopPropagation()">${buildPrioDrop(r, k, safeKey)}</td>
+        <td onclick="event.stopPropagation()">${buildStatusDrop(r, k, safeKey)}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.owner ? `<span class="contact-link" onclick="UI.nf('',null,'${r.owner.replace(/'/g,'__SQ__')}')">${r.owner}</span>` : '—'}</td>
         <td onclick="event.stopPropagation()">${contactDisplay}</td>
       </tr>`;
