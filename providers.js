@@ -467,6 +467,7 @@ const GglProvider = (() => {
     async appendRow(sheet, vals)        { return sheetsPut(`${sheet}!A:Z`, vals); },
     async savePipelineRow(row, f)  { return MsProvider.savePipelineRow.call(this, row, f); },
     async saveStatusOnly(row, s)   { return MsProvider.saveStatusOnly.call(this, row, s); },
+    async savePriorityOnly(row, p)  { return MsProvider.savePriorityOnly.call(this, row, p); },
     async saveContactRow(row, f)   { return MsProvider.saveContactRow.call(this, row, f); },
     async createContact(f)         { return MsProvider.createContact.call(this, f); },
     async saveTaskRow(row, f)      { return MsProvider.saveTaskRow.call(this, row, f); },
