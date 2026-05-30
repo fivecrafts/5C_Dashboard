@@ -158,7 +158,7 @@ function updateCounts() {
   ALL_S.forEach(s => { const el = $('pl-' + s.toLowerCase()); if (el) el.textContent = cnt(s); });
   $('pl-total').textContent = $('pl-all').textContent = DATA_PIPE.length;
   const myOppEl = $('pl-myopps');
-  if (myOppEl) myOppEl.textContent = DATA_PIPE.filter(r => r.owner === (window.CURRENT_USER_NAME||'')).length;
+  if (myOppEl) myOppEl.textContent = DATA_PIPE.filter(r => r.owner && window.CURRENT_USER_NAME && r.owner.trim().toLowerCase() === window.CURRENT_USER_NAME.trim().toLowerCase()).length;
   $('pl-contacts').textContent = DATA_CONTACTS.length;
   const plComp = $('pl-companies'); if (plComp) plComp.textContent = DATA_COMPANIES.length;
   $('pl-tasks').textContent = DATA_TASKS.filter(t => t.status === 'Open').length + ' open';
