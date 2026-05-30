@@ -156,15 +156,18 @@ function prioDot(p) {
 
 // ── Update all sidebar count badges ──
 function updateCounts() {
-  ALL_S.forEach(s => { const el = $('pl-' + s.toLowerCase()); if (el) el.textContent = cnt(s); });
-  $('pl-total').textContent = $('pl-all').textContent = DATA_PIPE.length;
-  const myOppEl = $('pl-myopps');
-  if (myOppEl) myOppEl.textContent = DATA_PIPE.filter(r => r.owner && window.CURRENT_USER_NAME && r.owner.trim().toLowerCase() === window.CURRENT_USER_NAME.trim().toLowerCase()).length;
-  $('pl-contacts').textContent = DATA_CONTACTS.length;
-  const plComp = $('pl-companies'); if (plComp) plComp.textContent = DATA_COMPANIES.length;
-  $('pl-tasks').textContent = DATA_TASKS.filter(t => t.status === 'Open').length + ' open';
-  $('pl-owners').textContent = DATA_OWNERS.length;
+  // Guard every element — some sidebar items may not exist in all layouts
+  const s_ = (id, val) => { const el = $(id); if (el) el.textContent = val; };
+  ALL_S.forEach(s => s_('pl-' + s.toLowerCase(), cnt(s)));
+  s_('pl-total',    DATA_PIPE.length);
+  s_('pl-all',      DATA_PIPE.length);
+  s_('pl-myopps',   DATA_PIPE.filter(r => r.owner && window.CURRENT_USER_NAME &&
+    r.owner.trim().toLowerCase() === window.CURRENT_USER_NAME.trim().toLowerCase()).length);
+  s_('pl-contacts', DATA_CONTACTS.length);
+  s_('pl-companies',DATA_COMPANIES.length);
+  s_('pl-tasks',    DATA_TASKS.filter(t => t.status === 'Open').length + ' open');
+  s_('pl-owners',   DATA_OWNERS.length);
   const n = Object.keys(CHANGES).length + Object.keys(PRIO_CHANGES).length;
-  $('chg-n').textContent = n;
-  $('chip-chg').style.display = n > 0 ? 'inline-flex' : 'none';
+  s_('chg-n', n);
+  const chip = $('chip-chg'); if (chip) chip.style.display = n > 0 ? 'inline-flex' : 'none';
 }
