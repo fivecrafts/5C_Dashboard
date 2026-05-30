@@ -129,7 +129,7 @@ function updateCounts() {
   const plComp = $('pl-companies'); if (plComp) plComp.textContent = DATA_COMPANIES.length;
   $('pl-tasks').textContent = DATA_TASKS.filter(t => t.status === 'Open').length + ' open';
   $('pl-owners').textContent = DATA_OWNERS.length;
-  const n = Object.keys(CHANGES).length;
+  const n = Object.keys(CHANGES).length + Object.keys(PRIO_CHANGES).length;
   $('chg-n').textContent = n;
   $('chip-chg').style.display = n > 0 ? 'inline-flex' : 'none';
 }
