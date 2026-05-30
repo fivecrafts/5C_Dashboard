@@ -31,7 +31,7 @@ function renderOwners() {
           ${FC_LOGO_SVG}
         </div>
         <div>
-          <div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:1.1rem;color:#fff;letter-spacing:.3px">Five Crafts</div>
+          <div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:1.1rem;color:#fff;letter-spacing:.3px">5C Dashboard</div>
           <div style="font-size:.72rem;color:rgba(255,255,255,.6);margin-top:2px">Business Development Dashboard · ${new Date().getFullYear()}</div>
         </div>
       </div>
