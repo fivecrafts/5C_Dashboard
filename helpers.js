@@ -119,6 +119,40 @@ function companyLogoFromName(name, size = 24) {
   return companyLogo(co ? co.website : '', name, size);
 }
 
+// ── Custom styled dropdown (status + priority inline editing) ──
+let _openDrop = null;
+
+function closeDrop() {
+  if (_openDrop) {
+    _openDrop.classList.remove('open');
+    _openDrop = null;
+  }
+}
+document.addEventListener('click', closeDrop);
+
+function openDrop(menuId, triggerEl) {
+  if (_openDrop && _openDrop.id !== menuId) closeDrop();
+  const menu = document.getElementById(menuId);
+  if (!menu) return;
+  // Position menu below trigger
+  const rect = triggerEl.getBoundingClientRect();
+  menu.style.top  = (rect.bottom + 4) + 'px';
+  menu.style.left = rect.left + 'px';
+  menu.classList.toggle('open');
+  _openDrop = menu.classList.contains('open') ? menu : null;
+}
+
+// Build status badge HTML (inline, no ::before dot — uses coloured dot span)
+function statusDot(s) {
+  const cols = {Running:'var(--green)',Bidding:'var(--purple)',Pipeline:'var(--blue)',
+                Prospect:'var(--amber)',Done:'var(--slate2)',Cancelled:'var(--red)'};
+  return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[s]||'#ccc'};display:inline-block;flex-shrink:0"></span>`;
+}
+function prioDot(p) {
+  const cols = {Critical:'#9d174d',High:'#991b1b',Medium:'#92400e',Low:'#065f46'};
+  return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[p]||'#ccc'};display:inline-block;flex-shrink:0"></span>`;
+}
+
 // ── Update all sidebar count badges ──
 function updateCounts() {
   ALL_S.forEach(s => { const el = $('pl-' + s.toLowerCase()); if (el) el.textContent = cnt(s); });
