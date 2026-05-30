@@ -1,6 +1,35 @@
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
+// COMPANIES INLINE PRIORITY DROPDOWN
+// ════════════════════════════════════════════════════════════════
+function buildCoPrioDrop(co, safeId) {
+  const menuId = 'cop-' + safeId;
+  const cur    = co.prio || 'Medium';
+  const opts   = PRIORITIES.map(p => {
+    const safeP  = p.replace(/'/g, '');
+    return `<div class="cdrop-opt${cur===p?' active':''}" onclick="closeDrop();saveCoPrio('${safeId}','${safeP}')">${prioDot(p)}<span>${p}</span></div>`;
+  }).join('');
+  return `<div class="cdrop" onclick="event.stopPropagation()"><div class="cdrop-trigger" onclick="event.stopPropagation();openDrop('${menuId}',this)">${prioDot(cur)}<span>${cur}</span><span class="arr">▾</span></div><div class="cdrop-menu" id="${menuId}">${opts}</div></div>`;
+}
+
+async function saveCoPrio(safeId, newP) {
+  const id = safeId.replace(/__SQ__/g, "'");
+  const co = DATA_COMPANIES.find(r => r.id === id || r.name === id);
+  if (!co || co.prio === newP) return;
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const ok = await P.patchRange(activeCfg.sheets.companies, `D${co._row}`, [[newP]]);
+    if (ok) {
+      co.prio = newP;
+      await P.patchRange(activeCfg.sheets.companies, `K${co._row}`, [[today]]).catch(()=>{});
+      renderCompanies(undefined, undefined);
+      toast(`✓ Priority → ${newP}`, 'success');
+    } else toast('⚠ Save failed', 'error');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════════════════════
 // COMPANIES PAGE — table view (consistent with all other pages)
 // ════════════════════════════════════════════════════════════════
 function renderCompanies(q, ft) {
@@ -65,14 +94,14 @@ function renderCompanies(q, ft) {
         <td style="font-size:.7rem;color:var(--slate2)">${co.id || '—'}</td>
         <td><div style="display:flex;align-items:center;gap:8px">${companyLogo(co.website, co.name, 28)}<b style="color:var(--navy2)">${co.name || '—'}</b></div></td>
         <td>${compTypeBadge(co.type)}</td>
-        <td>${prioBadge(co.prio)}</td>
+        <td onclick="event.stopPropagation()">${buildCoPrioDrop(co, safeId)}</td>
         <td style="font-size:.77rem">${co.industry || '—'}</td>
         <td style="font-size:.77rem">${co.country || '—'}</td>
         <td style="font-size:.75rem">${opps.length > 0 ? oppBadges : '<span style="color:var(--slate2)">—</span>'}</td>
         <td style="font-size:.77rem;color:var(--teal)">${contacts.length > 0 ? contacts.length + ' contact' + (contacts.length !== 1 ? 's' : '') : '<span style="color:var(--slate2)">—</span>'}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${co.owner ? `<span class="contact-link" onclick="UI.nav('owners',null)">${co.owner}</span>` : '—'}</td>
         <td style="font-size:.75rem;color:var(--slate);min-width:200px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(co.notes||'').replace(/"/g,"'")}">${co.notes || '—'}</td>
-        <td style="font-size:.72rem">${co.website ? `<a href="${co.website}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">${co.website.replace(/^https?:\/\//,'')}</a>` : '—'}</td>
+        <td style="font-size:.72rem">${co.website ? `<a href="${co.website.match(/^https?:\/\//) ? co.website : 'https://' + co.website}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">${co.website.replace(/^https?:\/\/(www\.)?/,'')}</a>` : '—'}</td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`}`;
