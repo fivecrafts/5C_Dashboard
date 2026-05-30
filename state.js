@@ -16,6 +16,9 @@ let DATA_COMPANIES = [];
 let TASK_TYPES    = ['Organize Meet','Send Pitchdeck','Organize Call','Followup Call','Send Contract','Send Proposal','LinkedIn Connect','Other'];
 let TASK_STATUSES = ['Open','Done','Cancelled'];
 let PRIORITIES    = ['Critical','High','Medium','Low']; // rev 19: Critical added
+const INDUSTRIES  = ['Banking','Payments','Card Issuing','Card Acquiring','Crypto/Web3',
+  'Lending','Insurance','Legal/Compliance','Consulting/Advisory','Software/Dev studio',
+  'Identity/KYC','Analytics','Telco','Retail/POS','Government','Education','Other'];
 
 // ── Pipeline pending changes (key = "client|||project" → newStatus) ──
 let CHANGES = {};
