@@ -49,11 +49,12 @@ const CFG = {
 // ════════════════════════════════════════════════════════════════
 // COLUMN MAPS — verified against live Excel 2026-05-19
 // ════════════════════════════════════════════════════════════════
-// Rev 19 — Priority col G inserted, all subsequent shift +1
+// Rev 22 — Category removed (E), Phone+Email removed (rev 20)
+// Pipeline now 13 cols A–M
 const PIPE_COLS = {
-  A:'pid', B:'p', C:'c', D:'d', E:'cat', F:'s', G:'prio',
-  H:'createdDate', I:'updDate', J:'owner', K:'contact',
-  L:'phone', M:'email', N:'projStart', O:'src', P:'coId'
+  A:'pid', B:'p', C:'c', D:'d', E:'s', F:'prio',
+  G:'createdDate', H:'updDate', I:'owner', J:'contact',
+  K:'projStart', L:'src', M:'coId'
 };
 // Rev 19 — Contacts unchanged from rev 16
 const CONT_COLS = {
