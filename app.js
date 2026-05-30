@@ -37,9 +37,9 @@ const App = {
     CHANGES = {};
     LOAD_TIME = Date.now();
     buildOwnerColors();
-    $('sb-loaded').textContent  = new Date().toLocaleTimeString();
-    $('sb-pvdr-lbl').textContent = activeCfg.label;
-    updateCounts();
+    const sbLoaded = $('sb-loaded'); if (sbLoaded) sbLoaded.textContent = new Date().toLocaleTimeString();
+    const sbPvdr = $('sb-pvdr-lbl'); if (sbPvdr) sbPvdr.textContent = activeCfg.label;
+    try { updateCounts(); } catch(e) { console.warn('updateCounts error:', e); }
     // Re-render active page
     const active = document.querySelector('.page.active');
     if (active) {
@@ -141,9 +141,17 @@ const UI = {
     // loadAll will render the active page, but also explicitly ensure
     // My Dashboard renders with the correct user name now set
     App.loadAll().then(() => {
-      const active = document.querySelector('.page.active');
-      if (active && active.id === 'page-mydashboard') renderMyDashboard();
-    }).catch(() => {});
+      // Explicitly re-render My Dashboard after data is loaded
+      // (handles the case where the active page check runs before DOM settles)
+      setTimeout(() => {
+        const active = document.querySelector('.page.active');
+        if (!active || active.id === 'page-mydashboard') renderMyDashboard();
+      }, 50);
+    }).catch((e) => {
+      console.error('loadAll failed:', e);
+      // Still try to render My Dashboard with whatever data loaded
+      setTimeout(() => renderMyDashboard(), 100);
+    });
   },
 
   nav(id, el) {
