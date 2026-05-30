@@ -84,14 +84,45 @@ function renderPipe(q, fs, fo) {
         <td><div class="dc" title="${(r.d || '').replace(/"/g, "'")}">${r.d || '—'}</div></td>
         <td>${catBadge(r.cat)}</td>
         <td onclick="event.stopPropagation()">
-          <select class="ssel${PRIO_CHANGES[key(r)] !== undefined ? ' changed' : ''}"
-            data-pkey="${key(r)}" data-porig="${r.prio||'Medium'}"
-            onchange="onPrioChg(this)"
-            style="min-width:82px">
-            ${PRIORITIES.map(p => `<option value="${p}"${(PRIO_CHANGES[key(r)]??r.prio||'Medium')===p?' selected':''}>${p}</option>`).join('')}
-          </select>
+          ${(()=>{
+            const menuId='pm-'+safeKey;
+            const curP=PRIO_CHANGES[k]??r.prio||'Medium';
+            const isPChg=PRIO_CHANGES[k]!==undefined;
+            return `<div class="cdrop" onclick="event.stopPropagation()">
+              <div class="cdrop-trigger${isPChg?' changed':''}" onclick="event.stopPropagation();openDrop('${menuId}',this)">
+                ${prioDot(curP)}<span>${curP}</span><span class="arr">▾</span>
+              </div>
+              <div class="cdrop-menu" id="${menuId}">
+                ${PRIORITIES.map(p=>`<div class="cdrop-opt${curP===p?' active':''}"
+                  onclick="closeDrop();onPrioChgDirect('${k}','${r.prio||'Medium'}','${p}')">
+                  ${prioDot(p)}<span>${p}</span>
+                </div>`).join('')}
+              </div>
+            </div>`;
+          })()}
         </td>
-        <td onclick="event.stopPropagation()"><select class="ssel${changed ? ' changed' : ''}" data-key="${k}" data-orig="${r.s}" onchange="onChg(this)">${opts}</select></td>
+        <td onclick="event.stopPropagation()">
+          ${(()=>{
+            const menuId='sm-'+safeKey;
+            const cur=CHANGES[k]??r.s;
+            const isChg=CHANGES[k]!==undefined;
+            return `<div class="cdrop" onclick="event.stopPropagation()">
+              <div class="cdrop-trigger${isChg?' changed':''}" onclick="event.stopPropagation();openDrop('${menuId}',this)">
+                ${statusDot(cur)}<span>${cur}</span><span class="arr">▾</span>
+              </div>
+              <div class="cdrop-menu" id="${menuId}">
+                ${ALL_S.map(s=>{
+                  const allowed=FLOW[r.s]||ALL_S;
+                  const dis=!allowed.includes(s)&&s!==r.s;
+                  return `<div class="cdrop-opt${cur===s?' active':''}${dis?' disabled':''}"
+                    onclick="closeDrop();onChgDirect('${k}','${r.s}','${s}',this)">
+                    ${statusDot(s)}<span>${s}</span>
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>`;
+          })()}
+        </td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.owner ? `<span class="contact-link" onclick="UI.nf('',null,'${r.owner.replace(/'/g,'__SQ__')}')">${r.owner}</span>` : '—'}</td>
         <td onclick="event.stopPropagation()">${contactDisplay}</td>
       </tr>`;
@@ -106,7 +137,24 @@ function onChg(sel) {
   const k = sel.dataset.key, orig = sel.dataset.orig, nv = sel.value;
   if (nv === orig) delete CHANGES[k]; else CHANGES[k] = nv;
   sel.className = 'ssel' + (CHANGES[k] !== undefined ? ' changed' : '');
-  const n = Object.keys(CHANGES).length;
+  _refreshBar();
+}
+
+function onChgDirect(k, orig, nv, el) {
+  if (nv === orig) delete CHANGES[k]; else CHANGES[k] = nv;
+  _refreshBar();
+  // Re-render just this row's status cell
+  renderPipe(undefined, undefined, undefined);
+}
+
+function onPrioChgDirect(k, orig, nv) {
+  if (nv === orig) delete PRIO_CHANGES[k]; else PRIO_CHANGES[k] = nv;
+  _refreshBar();
+  renderPipe(undefined, undefined, undefined);
+}
+
+function _refreshBar() {
+  const n = Object.keys(CHANGES).length + Object.keys(PRIO_CHANGES).length;
   $('chg-n').textContent = n;
   $('chip-chg').style.display = n > 0 ? 'inline-flex' : 'none';
   $('save-bar').className = 'save-bar' + (n > 0 ? ' on' : '');
@@ -117,11 +165,7 @@ function onPrioChg(sel) {
   const k = sel.dataset.pkey, orig = sel.dataset.porig, nv = sel.value;
   if (nv === orig) delete PRIO_CHANGES[k]; else PRIO_CHANGES[k] = nv;
   sel.className = 'ssel' + (PRIO_CHANGES[k] !== undefined ? ' changed' : '');
-  const n = Object.keys(CHANGES).length + Object.keys(PRIO_CHANGES).length;
-  $('chg-n').textContent = n;
-  $('chip-chg').style.display = n > 0 ? 'inline-flex' : 'none';
-  $('save-bar').className = 'save-bar' + (n > 0 ? ' on' : '');
-  $('chg-count').textContent = n + (n === 1 ? ' change' : ' changes');
+  _refreshBar();
 }
 
 function sortBy(col) {
