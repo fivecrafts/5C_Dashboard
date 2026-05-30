@@ -46,7 +46,7 @@ const App = {
       const id = active.id.replace('page-', '');
       if      (id === 'mydashboard') renderMyDashboard();
       else if (id === 'dashboard')   renderDash();
-      else if (id === 'pipeline')    renderPipe('', '', '');
+      else if (id === 'pipeline')    renderPipe('', '', '', '');
       else if (id === 'contacts')    renderContacts('', '');
       else if (id === 'tasks')       renderTasks('', '', '');
       else if (id === 'owners')      renderOwners();
@@ -59,7 +59,7 @@ const App = {
     if (myOppEl) myOppEl.textContent = DATA_PIPE.filter(r => r.owner === (window.CURRENT_USER_NAME||'')).length;
   },
 
-  discard() { CHANGES = {}; PRIO_CHANGES = {}; updateCounts(); renderPipe('', '', ''); toast('Discarded', 'info'); },
+  discard() { CHANGES = {}; PRIO_CHANGES = {}; updateCounts(); renderPipe('', '', '', ''); toast('Discarded', 'info'); },
 
   openModal() {
     const statusRows = Object.entries(CHANGES).map(([k, ns]) => {
@@ -98,7 +98,7 @@ const App = {
       if (ok) { row.prio = newP; saved++; } else failed++;
     }
     CHANGES = {}; PRIO_CHANGES = {};
-    updateCounts(); renderPipe('', '', ''); renderDash();
+    updateCounts(); renderPipe('', '', '', ''); renderDash();
     if (failed === 0) toast(`✓ ${saved} change${saved > 1 ? 's' : ''} saved`, 'success');
     else toast(`⚠ ${saved} saved · ${failed} failed`, 'error');
   },
@@ -162,7 +162,7 @@ const UI = {
     else nb.style.display = 'none';
     if      (id === 'mydashboard') renderMyDashboard();
     else if (id === 'dashboard')   renderDash();
-    else if (id === 'pipeline')    renderPipe('', '', '');
+    else if (id === 'pipeline')    renderPipe('', '', '', '');
     else if (id === 'contacts')    renderContacts('', '');
     else if (id === 'tasks')       renderTasks('', '', '');
     else if (id === 'owners')      renderOwners();
@@ -176,7 +176,7 @@ const UI = {
     $('tb-t').textContent = 'All Opportunities';
     owner = owner ? owner.replace(/__SQ__/g, "'") : '';
     $('tb-s').textContent = 'Filtered: ' + [status, owner].filter(Boolean).join(' · ');
-    renderPipe('', status, owner);
+    renderPipe('', status, '', owner);
   },
 };
 
@@ -289,7 +289,7 @@ function openOppFromContact(safeOpp) {
   if (row) {
     UI.nav('pipeline', null);
     setTimeout(() => {
-      const el = $('f-q'); if (el) { el.value = c; renderPipe(c, '', ''); }
+      const el = $('f-q'); if (el) { el.value = c; renderPipe(c, '', '', ''); }
       setTimeout(() => openPipeDrawer((row.c + '|||' + row.p).replace(/'/g, '__SQ__')), 200);
     }, 100);
   }
