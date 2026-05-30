@@ -149,8 +149,9 @@ function statusDot(s) {
   return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[s]||'#ccc'};display:inline-block;flex-shrink:0"></span>`;
 }
 function prioDot(p) {
-  const cols = {Critical:'#9d174d',High:'#991b1b',Medium:'#92400e',Low:'#065f46'};
-  return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[p]||'#ccc'};display:inline-block;flex-shrink:0"></span>`;
+  // Bright colours matching the badge styles — visible in dropdown
+  const cols = {Critical:'#db2777',High:'#dc2626',Medium:'#d97706',Low:'#059669'};
+  return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[p]||'#94a3b8'};display:inline-block;flex-shrink:0"></span>`;
 }
 
 // ── Update all sidebar count badges ──
