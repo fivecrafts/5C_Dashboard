@@ -40,17 +40,19 @@ function buildPrioDrop(r, k, safeKey) {
 // ════════════════════════════════════════════════════════════════
 // PIPELINE PAGE — sortable table, status dropdowns, edit drawer
 // ════════════════════════════════════════════════════════════════
-function renderPipe(q, fs, fo) {
+function renderPipe(q, fs, fp, fo) {
   if (q  === undefined) { const el = $('f-q'); q  = el ? el.value.toLowerCase() : ''; }
   if (fs === undefined) { const el = $('f-s'); if (el) fs = el.value; }
+  if (fp === undefined) { const el = $('f-p'); if (el) fp = el.value; }
   if (fo === undefined) { const el = $('f-o'); if (el) fo = el.value; }
-  q = q || ''; fs = fs || ''; fo = fo || '';
+  q = q || ''; fs = fs || ''; fp = fp || ''; fo = fo || '';
 
   const SO = { Running:0, Bidding:1, Pipeline:2, Prospect:3, Done:4, Cancelled:5 };
   const filtered = DATA_PIPE
     .filter(r =>
       (!q  || (r.c + r.p + r.d + r.owner + r.contact).toLowerCase().includes(q)) &&
       (!fs || r.s === fs) &&
+      (!fp || (r.prio||'Medium') === fp) &&
       (!fo || r.owner === fo)
     )
     .sort((a, b) => {
@@ -80,12 +82,16 @@ function renderPipe(q, fs, fo) {
   </div>
 
   <div class="filter-bar">
-    <input type="text" id="f-q" placeholder="🔍  Search…" value="${q}" oninput="renderPipe(this.value,undefined,undefined)">
-    <select id="f-s" onchange="renderPipe(undefined,this.value,undefined)">
+    <input type="text" id="f-q" placeholder="🔍  Search…" value="${q}" oninput="renderPipe(this.value,undefined,undefined,undefined)">
+    <select id="f-s" onchange="renderPipe(undefined,this.value,undefined,undefined)">
       <option value="">All Statuses</option>
       ${ALL_S.map(s => `<option value="${s}"${fs === s ? ' selected' : ''}>${s}</option>`).join('')}
     </select>
-    <select id="f-o" onchange="renderPipe(undefined,undefined,this.value)">
+    <select id="f-p" onchange="renderPipe(undefined,undefined,this.value,undefined)">
+      <option value="">All Priorities</option>
+      ${PRIORITIES.map(p => `<option value="${p}"${fp === p ? ' selected' : ''}>${p}</option>`).join('')}
+    </select>
+    <select id="f-o" onchange="renderPipe(undefined,undefined,undefined,this.value)">
       <option value="">All Owners</option>
       ${(window.OWNERS || []).map(o => `<option${fo === o ? ' selected' : ''}>${o}</option>`).join('')}
     </select>
@@ -136,13 +142,13 @@ function onChgDirect(k, orig, nv, el) {
   if (nv === orig) delete CHANGES[k]; else CHANGES[k] = nv;
   _refreshBar();
   // Re-render just this row's status cell
-  renderPipe(undefined, undefined, undefined);
+  renderPipe(undefined, undefined, undefined, undefined);
 }
 
 function onPrioChgDirect(k, orig, nv) {
   if (nv === orig) delete PRIO_CHANGES[k]; else PRIO_CHANGES[k] = nv;
   _refreshBar();
-  renderPipe(undefined, undefined, undefined);
+  renderPipe(undefined, undefined, undefined, undefined);
 }
 
 function _refreshBar() {
@@ -162,7 +168,7 @@ function onPrioChg(sel) {
 
 function sortBy(col) {
   if (SORT_COL === col) SORT_DIR *= -1; else { SORT_COL = col; SORT_DIR = 1; }
-  renderPipe('', '', '');
+  renderPipe('', '', '', '');
 }
 
 // ── Pipeline Edit Drawer ──────────────────────────────────────
@@ -241,7 +247,7 @@ async function savePipeDrawer(forceOverwrite = false) {
     if (ok) {
       Object.assign(row, fields);
       delete CHANGES[drawerKey];
-      updateCounts(); renderDash(); renderPipe('', '', '');
+      updateCounts(); renderDash(); renderPipe('', '', '', '');
       toast('✓ Saved', 'success'); closeDrawer();
     } else toast('⚠ Save failed', 'error');
   } catch (e) { toast('Error: ' + e.message, 'error'); }
