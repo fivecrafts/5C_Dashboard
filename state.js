@@ -19,6 +19,7 @@ let PRIORITIES    = ['Critical','High','Medium','Low']; // rev 19: Critical adde
 
 // ── Pipeline pending changes (key = "client|||project" → newStatus) ──
 let CHANGES = {};
+let PRIO_CHANGES = {};  // pending priority edits, same pattern as CHANGES
 
 // ── Owner color map (built dynamically from DATA_PIPE) ──
 let OC = {};
