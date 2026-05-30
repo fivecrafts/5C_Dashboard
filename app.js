@@ -159,8 +159,8 @@ const UI = {
     document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
     $('page-' + id).classList.add('active');
     if (el) el.classList.add('active');
-    const titles = { mydashboard:'My Dashboard', dashboard:'Overview', pipeline:'All Opportunities', contacts:'Contacts', tasks:'Tasks', owners:'Owners', companies:'Companies' };
-    const subs   = { mydashboard:'Your companies · opportunities · tasks', dashboard:'Five Crafts BD · all data', pipeline:'Edit status · confirm to write back', contacts:'Contact database', tasks:'Tasks & follow-ups', owners:'Account managers', companies:'Company profiles' };
+    const titles = { mydashboard:'My Dashboard', dashboard:'Overview', pipeline:'All Opportunities', contacts:'Contacts', tasks:'Tasks', owners:'Five Crafts', companies:'Companies' };
+    const subs   = { mydashboard:'Your companies · opportunities · tasks', dashboard:'Five Crafts BD · all data', pipeline:'Edit status · confirm to write back', contacts:'Contact database', tasks:'Tasks & follow-ups', owners:'Team · Opportunities · Companies', companies:'Company profiles' };
     $('tb-t').textContent = titles[id] || id;
     $('tb-s').textContent = subs[id]   || '';
     const nb = $('topbar-new-btn');
