@@ -1,7 +1,7 @@
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
-// OWNERS PAGE — owner cards with BD flow visual + companies section
+// OWNERS PAGE
 // ════════════════════════════════════════════════════════════════
 function renderOwners() {
   const today = new Date().toISOString().slice(0,10);
@@ -9,125 +9,176 @@ function renderOwners() {
   $('owners-out').innerHTML = `
   <div class="kpi-row">
     <div class="kpi k-tot"><div class="lbl">Owners</div><div class="val">${DATA_OWNERS.length}</div><div class="sub">Account managers</div></div>
-    <div class="kpi k-run"><div class="lbl">Running</div><div class="val">${cnt('Running')}</div><div class="sub">Active projects</div></div>
+    <div class="kpi k-run"><div class="lbl">Running</div><div class="val">${cnt('Running')}</div><div class="sub">Active</div></div>
     <div class="kpi k-pip"><div class="lbl">Pipeline</div><div class="val">${cnt('Pipeline')}</div><div class="sub">Active BD</div></div>
-    <div class="kpi k-pro"><div class="lbl">Prospect</div><div class="val">${cnt('Prospect')}</div><div class="sub">Early stage</div></div>
-    <div class="kpi k-bid"><div class="lbl">Bidding</div><div class="val">${cnt('Bidding')}</div><div class="sub">Proposals out</div></div>
+    <div class="kpi k-pro"><div class="lbl">Prospect</div><div class="val">${cnt('Prospect')}</div><div class="sub">Early</div></div>
+    <div class="kpi k-bid"><div class="lbl">Bidding</div><div class="val">${cnt('Bidding')}</div><div class="sub">Proposals</div></div>
     <div class="kpi k-done"><div class="lbl">Done</div><div class="val">${cnt('Done')}</div><div class="sub">Completed</div></div>
+    <div class="kpi k-can"><div class="lbl">Cancelled</div><div class="val">${cnt('Cancelled')}</div><div class="sub">Archived</div></div>
   </div>
 
   ${DATA_OWNERS.map(o => {
-    const name  = o.displayName || ((o.firstName||'')+' '+(o.lastName||'')).trim();
-    const rows  = DATA_PIPE.filter(r => r.owner === name);
-    const col   = OC[name] || '#64748b';
-    const ini   = name.split(' ').map(w=>w[0]).join('');
-    const tasks = DATA_TASKS.filter(t => t.responsible===name && t.status==='Open').length;
-    const overdue = DATA_TASKS.filter(t => t.responsible===name && t.status==='Open' && t.dueDate && t.dueDate<today).length;
-    const sq    = name.replace(/'/g,'__SQ__');
+    const name     = o.displayName || ((o.firstName||'')+' '+(o.lastName||'')).trim();
+    const rows     = DATA_PIPE.filter(r => r.owner === name);
+    const col      = OC[name] || '#64748b';
+    const ini      = name.split(' ').map(w=>w[0]).join('');
+    const tasks    = DATA_TASKS.filter(t => t.responsible===name && t.status==='Open').length;
+    const overdue  = DATA_TASKS.filter(t => t.responsible===name && t.status==='Open' && t.dueDate && t.dueDate<today).length;
+    const sq       = name.replace(/'/g,'__SQ__');
+    const myComp   = DATA_COMPANIES.filter(c => c.owner===name);
+    const customers    = myComp.filter(c=>c.type==='Customer'||c.type==='Both');
+    const partnerCos   = myComp.filter(c=>c.type==='Partnership'||c.type==='Both');
+    const ownerId  = 'own-' + name.replace(/[^a-z0-9]/gi,'_');
 
-    // BD Flow counts for this owner
-    const flow  = ['Prospect','Pipeline','Bidding','Running','Done','Cancelled'];
-    const flowCols = {Prospect:'var(--amber)',Pipeline:'var(--blue)',Bidding:'var(--purple)',Running:'var(--green)',Done:'var(--slate2)',Cancelled:'var(--red)'};
-    const flowBg   = {Prospect:'var(--amber-t)',Pipeline:'var(--blue-t)',Bidding:'var(--purple-t)',Running:'var(--green-t)',Done:'#f1f5f9',Cancelled:'var(--red-t)'};
-    const flowCounts = flow.map(s => rows.filter(r => r.s===s).length);
-
-    // Companies for this owner
-    const myComp = DATA_COMPANIES.filter(c => c.owner===name);
-    const customers   = myComp.filter(c=>c.type==='Customer'||c.type==='Both');
-    const partnerCos  = myComp.filter(c=>c.type==='Partnership'||c.type==='Both');
+    const FLOW_STEPS = [
+      {s:'Prospect', col:'var(--amber)', bg:'var(--amber-t)', border:'var(--amber-l)'},
+      {s:'Pipeline', col:'var(--blue)',  bg:'var(--blue-t)',  border:'var(--blue-l)'},
+      {s:'Bidding',  col:'var(--purple)',bg:'var(--purple-t)',border:'var(--purple-l)'},
+      {s:'Running',  col:'var(--green)', bg:'var(--green-t)', border:'var(--green-l)'},
+      {s:'Done',     col:'var(--slate2)',bg:'#f1f5f9',        border:'var(--border)'},
+    ];
+    const cancelled = rows.filter(r=>r.s==='Cancelled').length;
 
     return `
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)">
 
-      <!-- Owner header -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-        <div style="width:44px;height:44px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:#fff;flex-shrink:0;cursor:pointer" onclick="UI.nf('',null,'${sq}')">${ini}</div>
+      <!-- ── Owner header ── -->
+      <div style="display:flex;align-items:center;gap:14px;padding:18px 20px;background:linear-gradient(135deg,#0f2540 0%,#1a3a5c 100%);cursor:pointer" onclick="UI.nf('',null,'${sq}')">
+        <div style="width:48px;height:48px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:#fff;flex-shrink:0;border:3px solid rgba(255,255,255,.2)">${ini}</div>
         <div style="flex:1">
-          <div style="font-weight:700;font-size:.95rem;color:var(--navy2)">${name}</div>
-          <div style="font-size:.73rem;color:var(--slate)">${o.email||''}</div>
+          <div style="font-weight:700;font-size:1rem;color:#fff">${name}</div>
+          <div style="font-size:.72rem;color:rgba(255,255,255,.5);margin-top:1px">${o.email||''}</div>
         </div>
-        <div style="display:flex;gap:8px">
-          <div style="text-align:center;padding:6px 10px;background:var(--blue-t);border-radius:8px;cursor:pointer" onclick="UI.nf('',null,'${sq}')">
-            <div style="font-size:1.1rem;font-weight:700;color:var(--blue)">${rows.length}</div>
-            <div style="font-size:.6rem;color:var(--slate)">Opps</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="text-align:center;padding:8px 12px;background:rgba(255,255,255,.1);border-radius:10px;border:1px solid rgba(255,255,255,.15)">
+            <div style="font-size:1.3rem;font-weight:700;color:#fff">${rows.length}</div>
+            <div style="font-size:.62rem;color:rgba(255,255,255,.6)">Opportunities</div>
           </div>
-          <div style="text-align:center;padding:6px 10px;background:${overdue>0?'var(--red-t)':'var(--amber-t)'};border-radius:8px;cursor:pointer" onclick="UI.nav('tasks',null);setTimeout(()=>renderTasks('','Open','${sq}'),100)">
-            <div style="font-size:1.1rem;font-weight:700;color:${overdue>0?'var(--red)':'var(--amber)'}">${tasks}</div>
-            <div style="font-size:.6rem;color:var(--slate)">${overdue>0?overdue+' overdue':'Tasks'}</div>
+          <div style="text-align:center;padding:8px 12px;background:rgba(255,255,255,.1);border-radius:10px;border:1px solid rgba(255,255,255,.15);cursor:pointer" onclick="event.stopPropagation();UI.nav('tasks',null);setTimeout(()=>renderTasks('','Open','${sq}'),100)">
+            <div style="font-size:1.3rem;font-weight:700;color:${overdue>0?'#fca5a5':'#fff'}">${tasks}</div>
+            <div style="font-size:.62rem;color:rgba(255,255,255,.6)">${overdue>0?overdue+' overdue':'Tasks'}</div>
           </div>
-          <div style="text-align:center;padding:6px 10px;background:var(--teal-t);border-radius:8px">
-            <div style="font-size:1.1rem;font-weight:700;color:var(--teal)">${myComp.length}</div>
-            <div style="font-size:.6rem;color:var(--slate)">Cos</div>
+          <div style="text-align:center;padding:8px 12px;background:rgba(255,255,255,.1);border-radius:10px;border:1px solid rgba(255,255,255,.15)">
+            <div style="font-size:.75rem;color:rgba(255,255,255,.7)"><span style="font-size:1rem;font-weight:700;color:#6ee7b7">${customers.length}</span> Cos · <span style="font-size:1rem;font-weight:700;color:#f9a8d4">${partnerCos.length}</span> Partners</div>
+            <div style="font-size:.62rem;color:rgba(255,255,255,.5);margin-top:2px">Companies</div>
           </div>
         </div>
       </div>
 
-      <!-- BD Flow pipeline visual -->
-      <div style="margin-bottom:14px">
-        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--slate);margin-bottom:8px">BD Flow</div>
-        <div style="display:flex;align-items:stretch;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
-          ${flow.map((s,i) => {
-            const n = flowCounts[i];
-            const isLast = i === flow.length-1;
-            return `<div onclick="UI.nf('${s}',null,'${sq}')" style="flex:${s==='Cancelled'||s==='Done'?'0.7':'1'};text-align:center;padding:8px 4px;background:${n>0?flowBg[s]:'#f8fafc'};cursor:pointer;border-right:${isLast?'none':'1px solid var(--border)'};opacity:${n===0?'0.45':'1'};transition:opacity .15s">
-              <div style="font-size:1rem;font-weight:700;color:${n>0?flowCols[s]:'var(--slate2)'}">${n}</div>
-              <div style="font-size:.58rem;color:var(--slate);margin-top:1px">${s}</div>
-            </div>`;
-          }).join('')}
+      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:16px">
+
+        <!-- ── Opportunities (BD Flow) ── -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy2)">⚡ Opportunities</div>
+            ${rows.length>0?`<button onclick="UI.nf('',null,'${sq}')" style="padding:3px 10px;border:1px solid var(--blue-l);border-radius:5px;background:var(--blue-t);color:var(--blue);font-size:.7rem;font-family:var(--font);cursor:pointer">View all ${rows.length} →</button>`:''}
+          </div>
+          <!-- BD Flow bar -->
+          ${rows.length>0?`
+          <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px">
+            ${FLOW_STEPS.map(({s,col,bg,border},i)=>{
+              const n=rows.filter(r=>r.s===s).length;
+              return `<div onclick="UI.nf('${s}',null,'${sq}')" style="flex:1;text-align:center;padding:10px 4px;background:${n>0?bg:'#f8fafc'};cursor:pointer;border-right:${i<FLOW_STEPS.length-1?'1px solid var(--border)':'none'};transition:filter .15s" onmouseover="this.style.filter='brightness(.95)'" onmouseout="this.style.filter=''">
+                <div style="font-size:1.4rem;font-weight:800;color:${n>0?col:'var(--slate2)'};line-height:1">${n}</div>
+                <div style="font-size:.62rem;color:var(--slate);margin-top:3px;font-weight:${n>0?'600':'400'}">${s}</div>
+              </div>`;
+            }).join('')}
+            <div style="flex:.6;text-align:center;padding:10px 4px;background:${cancelled>0?'var(--red-t)':'#f8fafc'};border-left:2px dashed var(--border)">
+              <div style="font-size:1.4rem;font-weight:800;color:${cancelled>0?'var(--red)':'var(--slate2)'};line-height:1">${cancelled}</div>
+              <div style="font-size:.62rem;color:var(--slate);margin-top:3px">Cancelled</div>
+            </div>
+          </div>
+          <!-- Flow arrow -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:2px;font-size:.62rem;color:var(--slate2);margin-bottom:2px">
+            ${FLOW_STEPS.map(({s},i)=>`<span style="font-weight:500">${s}</span>${i<FLOW_STEPS.length-1?'<span>→</span>':''}`).join('')}
+            <span style="margin-left:6px;padding-left:6px;border-left:1px dashed var(--slate2);color:var(--red)">✕ Cancelled</span>
+          </div>`
+          :`<div style="padding:12px;text-align:center;color:var(--slate2);font-size:.8rem;background:#f8fafc;border-radius:8px;border:1px solid var(--border)">No opportunities assigned</div>`}
         </div>
-        <!-- Flow arrows -->
-        <div style="display:flex;align-items:center;margin-top:4px;font-size:.6rem;color:var(--slate2)">
-          <span>Prospect</span><span style="flex:1;text-align:center">→</span>
-          <span>Pipeline</span><span style="flex:1;text-align:center">→</span>
-          <span>Bidding</span><span style="flex:1;text-align:center">→</span>
-          <span>Running</span><span style="flex:1;text-align:center">→</span>
-          <span>Done</span><span style="padding:0 6px">|</span>
-          <span style="color:var(--red)">Cancelled</span>
+
+        <!-- ── Companies + Partners ── -->
+        ${myComp.length>0?`
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+          <!-- Customers -->
+          <div style="background:var(--green-t);border:1px solid var(--green-l);border-radius:10px;padding:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green)">🏢 Customers</div>
+              <span style="background:var(--green);color:#fff;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:10px">${customers.length}</span>
+            </div>
+            ${customers.length>0?`
+            <div id="${ownerId}_cust">
+              ${customers.slice(0,4).map(c=>{
+                const coOpps=DATA_PIPE.filter(r=>r.c===c.name).length;
+                const safeCoId=(c.id||c.name).replace(/'/g,'__SQ__');
+                return `<div onclick="openCompanyDrawer('${safeCoId}')" style="display:flex;align-items:center;gap:6px;padding:5px 7px;background:#fff;border-radius:6px;border:1px solid var(--green-l);cursor:pointer;margin-bottom:4px" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#fff'">
+                  ${companyLogo(c.website,c.name,16)}
+                  <span style="font-size:.74rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
+                  ${coOpps>0?`<span style="font-size:.62rem;background:var(--blue-t);color:var(--blue);padding:1px 5px;border-radius:3px;white-space:nowrap">${coOpps} opp${coOpps>1?'s':''}</span>`:''}
+                  ${prioBadge(c.prio)}
+                </div>`;
+              }).join('')}
+              ${customers.length>4?`
+              <div id="${ownerId}_cust_more" style="display:none">
+                ${customers.slice(4).map(c=>{
+                  const coOpps=DATA_PIPE.filter(r=>r.c===c.name).length;
+                  const safeCoId=(c.id||c.name).replace(/'/g,'__SQ__');
+                  return `<div onclick="openCompanyDrawer('${safeCoId}')" style="display:flex;align-items:center;gap:6px;padding:5px 7px;background:#fff;border-radius:6px;border:1px solid var(--green-l);cursor:pointer;margin-bottom:4px" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#fff'">
+                    ${companyLogo(c.website,c.name,16)}
+                    <span style="font-size:.74rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
+                    ${coOpps>0?`<span style="font-size:.62rem;background:var(--blue-t);color:var(--blue);padding:1px 5px;border-radius:3px">${coOpps} opp${coOpps>1?'s':''}</span>`:''}
+                  </div>`;
+                }).join('')}
+              </div>
+              <button onclick="toggleExpand('${ownerId}_cust_more',this)" style="width:100%;padding:4px;border:1px dashed var(--green-l);border-radius:6px;background:transparent;color:var(--green);font-size:.7rem;cursor:pointer;font-family:var(--font)">+ ${customers.length-4} more</button>`:''}
+            </div>
+            `:'<div style="font-size:.73rem;color:var(--green);opacity:.6">None assigned</div>'}
+          </div>
+
+          <!-- Partners -->
+          <div style="background:var(--pink-t);border:1px solid var(--pink-l);border-radius:10px;padding:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--pink)">🤝 Partners</div>
+              <span style="background:var(--pink);color:#fff;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:10px">${partnerCos.length}</span>
+            </div>
+            ${partnerCos.length>0?`
+            <div id="${ownerId}_part">
+              ${partnerCos.slice(0,4).map(c=>{
+                const safeCoId=(c.id||c.name).replace(/'/g,'__SQ__');
+                return `<div onclick="openCompanyDrawer('${safeCoId}')" style="display:flex;align-items:center;gap:6px;padding:5px 7px;background:#fff;border-radius:6px;border:1px solid var(--pink-l);cursor:pointer;margin-bottom:4px" onmouseover="this.style.background='#fdf2f8'" onmouseout="this.style.background='#fff'">
+                  ${companyLogo(c.website,c.name,16)}
+                  <span style="font-size:.74rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
+                  ${prioBadge(c.prio)}
+                </div>`;
+              }).join('')}
+              ${partnerCos.length>4?`
+              <div id="${ownerId}_part_more" style="display:none">
+                ${partnerCos.slice(4).map(c=>{
+                  const safeCoId=(c.id||c.name).replace(/'/g,'__SQ__');
+                  return `<div onclick="openCompanyDrawer('${safeCoId}')" style="display:flex;align-items:center;gap:6px;padding:5px 7px;background:#fff;border-radius:6px;border:1px solid var(--pink-l);cursor:pointer;margin-bottom:4px" onmouseover="this.style.background='#fdf2f8'" onmouseout="this.style.background='#fff'">
+                    ${companyLogo(c.website,c.name,16)}
+                    <span style="font-size:.74rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
+                  </div>`;
+                }).join('')}
+              </div>
+              <button onclick="toggleExpand('${ownerId}_part_more',this)" style="width:100%;padding:4px;border:1px dashed var(--pink-l);border-radius:6px;background:transparent;color:var(--pink);font-size:.7rem;cursor:pointer;font-family:var(--font)">+ ${partnerCos.length-4} more</button>`:''}
+            </div>
+            `:'<div style="font-size:.73rem;color:var(--pink);opacity:.6">None assigned</div>'}
+          </div>
+
         </div>
+        `:''}
+
       </div>
-
-      <!-- Companies section -->
-      ${myComp.length > 0 ? `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-
-        <!-- Customers -->
-        <div>
-          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:6px">
-            Customers &amp; Both (${customers.length})
-          </div>
-          ${customers.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px">
-            ${customers.slice(0,6).map(c=>{
-              const coOpps = DATA_PIPE.filter(r=>r.c===c.name).length;
-              const safeCoId = (c.id||c.name).replace(/'/g,'__SQ__');
-              return `<div onclick="openCompanyDrawer('${safeCoId}')" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#f8fafc;border-radius:6px;border:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#f8fafc'">
-                ${companyLogo(c.website,c.name,18)}
-                <span style="font-size:.75rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
-                ${coOpps>0?`<span style="font-size:.65rem;background:var(--blue-t);color:var(--blue);padding:1px 5px;border-radius:3px">${coOpps}</span>`:''}
-              </div>`;
-            }).join('')}
-            ${customers.length>6?`<div style="font-size:.68rem;color:var(--slate);text-align:center;padding:2px">+${customers.length-6} more</div>`:''}
-          </div>` : '<div style="font-size:.73rem;color:var(--slate2)">—</div>'}
-        </div>
-
-        <!-- Partners -->
-        <div>
-          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--pink);margin-bottom:6px">
-            Partners (${partnerCos.length})
-          </div>
-          ${partnerCos.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px">
-            ${partnerCos.slice(0,6).map(c=>{
-              const safeCoId = (c.id||c.name).replace(/'/g,'__SQ__');
-              return `<div onclick="openCompanyDrawer('${safeCoId}')" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fdf2f8;border-radius:6px;border:1px solid #fbcfe8;cursor:pointer" onmouseover="this.style.background='#fce7f3'" onmouseout="this.style.background='#fdf2f8'">
-                ${companyLogo(c.website,c.name,18)}
-                <span style="font-size:.75rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
-              </div>`;
-            }).join('')}
-            ${partnerCos.length>6?`<div style="font-size:.68rem;color:var(--slate);text-align:center;padding:2px">+${partnerCos.length-6} more</div>`:''}
-          </div>` : '<div style="font-size:.73rem;color:var(--slate2)">—</div>'}
-        </div>
-
-      </div>` : '<div style="font-size:.73rem;color:var(--slate2)">No companies assigned</div>'}
-
     </div>`;
   }).join('')}`;
+}
+
+function toggleExpand(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? 'block' : 'none';
+  const count = btn.textContent.match(/\d+/)?.[0] || '';
+  btn.textContent = hidden ? `▲ Show less` : `+ ${count} more`;
 }
