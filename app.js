@@ -59,14 +59,19 @@ const App = {
     if (myOppEl) myOppEl.textContent = DATA_PIPE.filter(r => r.owner === (window.CURRENT_USER_NAME||'')).length;
   },
 
-  discard() { CHANGES = {}; updateCounts(); renderPipe('', '', ''); toast('Discarded', 'info'); },
+  discard() { CHANGES = {}; PRIO_CHANGES = {}; updateCounts(); renderPipe('', '', ''); toast('Discarded', 'info'); },
 
   openModal() {
-    $('mo-list').innerHTML = Object.entries(CHANGES).map(([k, ns]) => {
+    const statusRows = Object.entries(CHANGES).map(([k, ns]) => {
       const [c, p] = k.split('|||');
       const row = DATA_PIPE.find(r => r.c === c && r.p === p);
-      return `<div class="mo-row"><span class="mo-cl">${c}${p ? ' · ' + p : ''}</span>${badge(row?.s || '?')}<span style="color:var(--slate2)">→</span>${badge(ns)}</div>`;
-    }).join('');
+      return `<div class="mo-row"><span class="mo-cl">${c}${p ? ' · ' + p : ''}</span><span style="font-size:.68rem;color:var(--slate)">Status</span>${badge(row?.s || '?')}<span style="color:var(--slate2)">→</span>${badge(ns)}</div>`;
+    });
+    const prioRows = Object.entries(PRIO_CHANGES).map(([k, np]) => {
+      const [c, p] = k.split('|||');
+      return `<div class="mo-row"><span class="mo-cl">${c}${p ? ' · ' + p : ''}</span><span style="font-size:.68rem;color:var(--slate)">Priority</span><span style="color:var(--slate2)">→</span>${prioBadge(np)}</div>`;
+    });
+    $('mo-list').innerHTML = [...statusRows, ...prioRows].join('');
     $('mo').classList.add('open');
   },
 
@@ -76,6 +81,7 @@ const App = {
     this.closeMo();
     toast('Saving…', 'info');
     let saved = 0, failed = 0;
+    // Save status changes
     for (const [k, newS] of Object.entries(CHANGES)) {
       const [c, p] = k.split('|||');
       const row = DATA_PIPE.find(r => r.c === c && r.p === p);
@@ -83,7 +89,15 @@ const App = {
       const ok = await P.saveStatusOnly(row, newS);
       if (ok) { row.s = newS; saved++; } else failed++;
     }
-    CHANGES = {};
+    // Save priority changes
+    for (const [k, newP] of Object.entries(PRIO_CHANGES)) {
+      const [c, p] = k.split('|||');
+      const row = DATA_PIPE.find(r => r.c === c && r.p === p);
+      if (!row) continue;
+      const ok = await P.savePriorityOnly(row, newP);
+      if (ok) { row.prio = newP; saved++; } else failed++;
+    }
+    CHANGES = {}; PRIO_CHANGES = {};
     updateCounts(); renderPipe('', '', ''); renderDash();
     if (failed === 0) toast(`✓ ${saved} change${saved > 1 ? 's' : ''} saved`, 'success');
     else toast(`⚠ ${saved} saved · ${failed} failed`, 'error');
