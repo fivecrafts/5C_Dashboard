@@ -268,7 +268,14 @@ function openPipeDrawer(safeKey) {
   const allowed = FLOW[row.s] || ALL_S;
 
   const body = `
-    <div class="field-group"><label>Client Name</label><input id="d-c" value="${esc(row.c)}"></div>
+    <div class="field-group"><label>Client</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="d-c-logo" style="flex-shrink:0">${companyLogoFromName(row.c, 28)}</div>
+          <select id="d-c" style="flex:1" onchange="(()=>{const co=(DATA_COMPANIES||[]).find(c=>c.name===this.value);$('d-c-logo').innerHTML=co?companyLogo(co.website,co.name,28):companyLogoFromName(this.value,28);})()">
+            <option value="">— Select company —</option>
+            ${(DATA_COMPANIES||[]).map(c=>`<option value="${esc(c.name)}"${row.c===c.name?' selected':''}>${c.name}</option>`).join('')}
+          </select>
+        </div></div>
     <div class="field-group"><label>Project / Scope</label><input id="d-p" value="${esc(row.p)}"></div>
     <div class="field-group"><label>Detail / Roles &amp; Requirements</label><textarea id="d-d">${esc(row.d)}</textarea></div>
     <div class="field-row">
