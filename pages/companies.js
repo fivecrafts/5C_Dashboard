@@ -171,7 +171,8 @@ function openCompanyDrawer(safeId) {
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveCompanyDrawer('${esc(co.id||co.name)}')" style="flex:1">✓ Save</button>
-    <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('company','','')">+ Task</button>
+    <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('company','${esc(co.id||co.name)}','${esc(co.name)}')">+ Task</button>
+    <button class="sbtn" style="background:var(--purple-t);color:var(--purple);border:1px solid var(--purple-l)" onclick="openNewContactDrawer('${esc(co.name)}')">+ Contact</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   const logoHtml = companyLogo(co.website,co.name,32);
