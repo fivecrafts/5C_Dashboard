@@ -160,16 +160,19 @@ function renderMyDashboard() {
   </div>
 
   <!-- ════════════════════════════════════════ -->
-  <!-- MY COMPANIES BOARD                       -->
+  <!-- MY COMPANIES                             -->
   <!-- ════════════════════════════════════════ -->
   ${myComp.length>0?`
   <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:20px;overflow:hidden">
 
-    <!-- Section header -->
+    <!-- Section header — same style as Opportunities -->
     <div style="padding:14px 18px;background:linear-gradient(135deg,#065f46,#059669)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-weight:700;font-size:.88rem;color:#fff">🏢 My Companies</div>
-        <span style="font-size:.72rem;color:rgba(255,255,255,.6)">${myComp.length} total</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:.72rem;color:rgba(255,255,255,.6)">${myComp.length} total</span>
+          <button onclick="UI.nav('companies',null)" style="padding:3px 10px;border:1px solid rgba(255,255,255,.3);border-radius:5px;background:rgba(255,255,255,.1);color:#fff;font-size:.7rem;font-family:var(--font);cursor:pointer">View all →</button>
+        </div>
       </div>
       <!-- Summary KPI pills -->
       <div style="display:flex;gap:8px">
@@ -190,113 +193,47 @@ function renderMyDashboard() {
           <div style="font-size:.6rem;color:rgba(255,255,255,.65)">With Opps</div>
         </div>
         <div style="flex:1;text-align:center;padding:7px 8px;background:rgba(251,191,36,.15);border-radius:8px;border:1px solid rgba(251,191,36,.25)">
-          <div style="font-size:1.1rem;font-weight:700;color:#fde68a">${myComp.filter(c=>c.industry).length}</div>
-          <div style="font-size:.6rem;color:rgba(255,255,255,.65)">Industries</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#fde68a">${myComp.filter(c=>c.prio==='Critical'||c.prio==='High').length}</div>
+          <div style="font-size:.6rem;color:rgba(255,255,255,.65)">High+Crit</div>
         </div>
       </div>
     </div>
 
-    <!-- Company summary KPI row -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1px;background:var(--border);border-bottom:1px solid var(--border)">
-      ${[
-        {l:'Total',       v:myComp.length,                                    c:'var(--navy2)',  bg:'#fff'},
-        {l:'Customers',   v:customers.length,                                  c:'var(--green)',  bg:'var(--green-t)'},
-        {l:'Partners',    v:partners.length,                                   c:'var(--pink)',   bg:'var(--pink-t)'},
-        {l:'With Opps',   v:myComp.filter(c=>DATA_PIPE.some(p=>p.c===c.name)).length, c:'var(--blue)', bg:'var(--blue-t)'},
-        {l:'Critical',    v:myComp.filter(c=>c.prio==='Critical').length,      c:'var(--pink)',   bg:'var(--pink-t)'},
-        {l:'High',        v:myComp.filter(c=>c.prio==='High').length,          c:'var(--red)',    bg:'var(--red-t)'},
-        {l:'Without Web', v:myComp.filter(c=>!c.website).length,              c:'var(--slate)',  bg:'#f8fafc'},
-      ].map(({l,v,c,bg})=>`
-        <div style="text-align:center;padding:10px 6px;background:${bg}">
-          <div style="font-size:1.3rem;font-weight:800;color:${c};line-height:1">${v}</div>
-          <div style="font-size:.62rem;color:var(--slate);margin-top:2px">${l}</div>
-        </div>`).join('')}
-    </div>
-
-    <div style="padding:14px 18px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-
-        <!-- Customers column -->
-        <div>
-          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:8px;display:flex;align-items:center;gap:6px">
-            🏢 Customers &amp; Both
-            <span style="background:var(--green);color:#fff;font-size:.65rem;padding:1px 6px;border-radius:8px">${customers.length}</span>
-          </div>
-          ${customers.length>0?customers.map(co=>{
-            const opps     = DATA_PIPE.filter(r=>r.c===co.name);
-            const contacts = DATA_CONTACTS.filter(r=>r.company===co.name);
-            const safeId   = (co.id||co.name).replace(/'/g,'__SQ__');
-            return `<div onclick="openCompanyDrawer('${safeId}')" style="background:#f0fdf4;border:1px solid var(--green-l);border-radius:9px;padding:10px 12px;margin-bottom:7px;cursor:pointer" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                ${companyLogo(co.website,co.name,24)}
-                <div style="flex:1;min-width:0">
-                  <div style="font-weight:700;font-size:.82rem;color:var(--navy2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${co.name}</div>
-                  <div style="font-size:.68rem;color:var(--slate)">${co.industry||'—'} ${co.country?'· '+co.country:''}</div>
-                </div>
-                ${prioBadge(co.prio||'Medium')}
-              </div>
-              <div style="display:flex;gap:6px">
-                <div style="flex:1;text-align:center;padding:4px;background:#fff;border-radius:5px;border:1px solid var(--green-l)">
-                  <div style="font-size:.9rem;font-weight:700;color:var(--blue)">${opps.length}</div>
-                  <div style="font-size:.58rem;color:var(--slate)">Opps</div>
-                </div>
-                <div style="flex:1;text-align:center;padding:4px;background:#fff;border-radius:5px;border:1px solid var(--green-l)">
-                  <div style="font-size:.9rem;font-weight:700;color:var(--teal)">${contacts.length}</div>
-                  <div style="font-size:.58rem;color:var(--slate)">Contacts</div>
-                </div>
-                ${opps.length>0?`<div style="flex:2;padding:4px 6px;background:#fff;border-radius:5px;border:1px solid var(--green-l);overflow:hidden">
-                  <div style="font-size:.58rem;color:var(--slate);margin-bottom:2px">Latest</div>
-                  <div style="font-size:.68rem;color:var(--navy2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${opps[0].p||opps[0].c}</div>
-                </div>`:''}
-              </div>
-            </div>`;
-          }).join('')
-          :`<div style="padding:10px;text-align:center;color:var(--slate2);font-size:.78rem">None</div>`}
-        </div>
-
-        <!-- Partners column -->
-        <div>
-          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--pink);margin-bottom:8px;display:flex;align-items:center;gap:6px">
-            🤝 Partners
-            <span style="background:var(--pink);color:#fff;font-size:.65rem;padding:1px 6px;border-radius:8px">${partners.length}</span>
-          </div>
-          ${partners.length>0?partners.map(co=>{
-            const opps     = DATA_PIPE.filter(r=>r.c===co.name);
-            const contacts = DATA_CONTACTS.filter(r=>r.company===co.name);
-            const safeId   = (co.id||co.name).replace(/'/g,'__SQ__');
-            return `<div onclick="openCompanyDrawer('${safeId}')" style="background:#fdf2f8;border:1px solid var(--pink-l);border-radius:9px;padding:10px 12px;margin-bottom:7px;cursor:pointer" onmouseover="this.style.background='#fce7f3'" onmouseout="this.style.background='#fdf2f8'">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                ${companyLogo(co.website,co.name,24)}
-                <div style="flex:1;min-width:0">
-                  <div style="font-weight:700;font-size:.82rem;color:var(--navy2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${co.name}</div>
-                  <div style="font-size:.68rem;color:var(--slate)">${co.industry||'—'} ${co.country?'· '+co.country:''}</div>
-                </div>
-                ${prioBadge(co.prio||'Medium')}
-              </div>
-              <div style="display:flex;gap:6px">
-                <div style="flex:1;text-align:center;padding:4px;background:#fff;border-radius:5px;border:1px solid var(--pink-l)">
-                  <div style="font-size:.9rem;font-weight:700;color:var(--blue)">${opps.length}</div>
-                  <div style="font-size:.58rem;color:var(--slate)">Opps</div>
-                </div>
-                <div style="flex:1;text-align:center;padding:4px;background:#fff;border-radius:5px;border:1px solid var(--pink-l)">
-                  <div style="font-size:.9rem;font-weight:700;color:var(--teal)">${contacts.length}</div>
-                  <div style="font-size:.58rem;color:var(--slate)">Contacts</div>
-                </div>
-                ${opps.length>0?`<div style="flex:2;padding:4px 6px;background:#fff;border-radius:5px;border:1px solid var(--pink-l);overflow:hidden">
-                  <div style="font-size:.58rem;color:var(--slate);margin-bottom:2px">Latest</div>
-                  <div style="font-size:.68rem;color:var(--navy2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${opps[0].p||opps[0].c}</div>
-                </div>`:''}
-              </div>
-            </div>`;
-          }).join('')
-          :`<div style="padding:10px;text-align:center;color:var(--slate2);font-size:.78rem">None</div>`}
-        </div>
-
-      </div>
+    <!-- Companies table — same style as Opportunities table -->
+    <div style="border-top:1px solid var(--border)">
+      <table style="width:100%;border-collapse:collapse;background:transparent">
+        <thead><tr style="background:#f8fafc">
+          <th style="padding:7px 14px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Company</th>
+          <th style="padding:7px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Type</th>
+          <th style="padding:7px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Priority</th>
+          <th style="padding:7px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Industry</th>
+          <th style="padding:7px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Opportunities</th>
+          <th style="padding:7px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Contacts</th>
+          <th style="padding:7px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Website</th>
+        </tr></thead>
+        <tbody>${myComp.map(co => {
+          const opps     = DATA_PIPE.filter(r => r.c===co.name);
+          const contacts = DATA_CONTACTS.filter(r => r.company===co.name);
+          const safeId   = (co.id||co.name).replace(/'/g,'__SQ__');
+          const url      = co.website ? (co.website.match(/^https?:\/\//) ? co.website : 'https://'+co.website) : '';
+          const oppBadges = opps.slice(0,2).map(o =>
+            `<span onclick="event.stopPropagation();openPipeDrawer('${(o.c+'|||'+o.p).replace(/'/g,'__SQ__')}')" class="contact-link" style="font-size:.7rem;margin-right:4px">${statusDot(o.s)} ${o.p||o.c}</span>`
+          ).join('') + (opps.length>2?`<span style="font-size:.68rem;color:var(--slate2)">+${opps.length-2}</span>`:'');
+          return `<tr class="edit-row" onclick="openCompanyDrawer('${safeId}')">
+            <td style="padding:7px 14px"><div style="display:flex;align-items:center;gap:8px">${companyLogo(co.website,co.name,22)}<b style="color:var(--navy2)">${co.name}</b></div></td>
+            <td style="padding:7px 11px">${compTypeBadge(co.type)}</td>
+            <td style="padding:7px 11px" onclick="event.stopPropagation()">${buildCoPrioDrop(co,safeId)}</td>
+            <td style="padding:7px 11px;font-size:.77rem">${co.industry||'—'}</td>
+            <td style="padding:7px 11px;font-size:.75rem" onclick="event.stopPropagation()">${opps.length>0?oppBadges:'—'}</td>
+            <td style="padding:7px 11px;font-size:.77rem;color:var(--teal)">${contacts.length||'—'}</td>
+            <td style="padding:7px 11px;font-size:.72rem">${url?`<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">${co.website.replace(/^https?:\/\/(www\.)?/,'')}</a>`:'—'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
     </div>
   </div>`:``}
 
-  <!-- ════════════════════════════════════════ -->
+    <!-- ════════════════════════════════════════ -->
   <!-- MY OPEN TASKS                            -->
   <!-- ════════════════════════════════════════ -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
