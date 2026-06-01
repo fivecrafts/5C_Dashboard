@@ -61,10 +61,11 @@ const CONT_COLS = {
   A:'id', B:'firstName', C:'lastName', D:'email', E:'phone',
   F:'web', G:'company', H:'linkedOpps', I:'src', J:'createdDate', K:'updDate', L:'coId'
 };
-// Rev 19 — Linked Company col E inserted, all subsequent shift +1
+// Rev 19+ — col L = Task Name added
 const TASK_COLS = {
   A:'id', B:'type', C:'linkedOpp', D:'linkedContact', E:'linkedCompany',
-  F:'createdDate', G:'status', H:'responsible', I:'dueDate', J:'notes', K:'priority'
+  F:'createdDate', G:'status', H:'responsible', I:'dueDate', J:'notes', K:'priority',
+  L:'taskName'
 };
 const OWN_COLS  = { A:'id', B:'firstName', C:'lastName', D:'displayName', E:'email', F:'notes' };
 // Rev 19 — Priority col D inserted, all subsequent shift +1
