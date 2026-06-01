@@ -5,36 +5,29 @@
 // Using functions avoids nested template literal parsing issues
 // ════════════════════════════════════════════════════════════════
 function buildStatusDrop(r, k, safeKey) {
-  const menuId = 'sm-' + safeKey;
-  const cur    = CHANGES[k] !== undefined ? CHANGES[k] : r.s;
-  const isChg  = CHANGES[k] !== undefined;
+  const menuId  = 'sm-' + safeKey;
+  const cur     = r.s;
   const allowed = FLOW[r.s] || ALL_S;
+  const safeK   = k.replace(/'/g, '__SQ__');
   const opts = ALL_S.map(s => {
-    const dis = !allowed.includes(s) && s !== r.s;
-    const active = cur === s ? ' active' : '';
-    const disabled = dis ? ' disabled' : '';
-    const safeS = s.replace(/'/g, '');
-    const safeK = k.replace(/'/g, '__SQ__');
-    const safeOrig = r.s.replace(/'/g, '');
-    return `<div class="cdrop-opt${active}${disabled}" onclick="closeDrop();onChgDirect('${safeK}','${safeOrig}','${safeS}')">${statusDot(s)}<span>${s}</span></div>`;
+    const dis    = !allowed.includes(s) && s !== r.s;
+    const safeS  = s.replace(/'/g, '');
+    const safeOr = r.s.replace(/'/g, '');
+    return `<div class="cdrop-opt${cur===s?' active':''}${dis?' disabled':''}" data-skey="${safeK}" onclick="closeDrop();onChgDirect('${safeK}','${safeOr}','${safeS}')">${statusDot(s)}<span>${s}</span></div>`;
   }).join('');
-  const changed = isChg ? ' changed' : '';
-  return `<div class="cdrop" onclick="event.stopPropagation()"><div class="cdrop-trigger${changed}" onclick="event.stopPropagation();openDrop('${menuId}',this)">${statusDot(cur)}<span>${cur}</span><span class="arr">▾</span></div><div class="cdrop-menu" id="${menuId}">${opts}</div></div>`;
+  return `<div class="cdrop" onclick="event.stopPropagation()"><div class="cdrop-trigger" data-skey="${safeK}" onclick="event.stopPropagation();openDrop('${menuId}',this)">${statusDot(cur)}<span>${cur}</span><span class="arr">▾</span></div><div class="cdrop-menu" id="${menuId}">${opts}</div></div>`;
 }
 
 function buildPrioDrop(r, k, safeKey) {
   const menuId = 'pm-' + safeKey;
-  const cur    = PRIO_CHANGES[k] !== undefined ? PRIO_CHANGES[k] : (r.prio || 'Medium');
-  const isChg  = PRIO_CHANGES[k] !== undefined;
-  const origP  = (r.prio || 'Medium').replace(/'/g, '');
-  const opts = PRIORITIES.map(p => {
-    const active = cur === p ? ' active' : '';
-    const safeP  = p.replace(/'/g, '');
-    const safeK  = k.replace(/'/g, '__SQ__');
-    return `<div class="cdrop-opt${active}" onclick="closeDrop();onPrioChgDirect('${safeK}','${origP}','${safeP}')">${prioDot(p)}<span>${p}</span></div>`;
+  const cur    = r.prio || 'Medium';
+  const origP  = cur.replace(/'/g, '');
+  const safeK  = k.replace(/'/g, '__SQ__');
+  const opts   = PRIORITIES.map(p => {
+    const safeP = p.replace(/'/g, '');
+    return `<div class="cdrop-opt${cur===p?' active':''}" onclick="closeDrop();onPrioChgDirect('${safeK}','${origP}','${safeP}')">${prioDot(p)}<span>${p}</span></div>`;
   }).join('');
-  const changed = isChg ? ' changed' : '';
-  return `<div class="cdrop" onclick="event.stopPropagation()"><div class="cdrop-trigger${changed}" onclick="event.stopPropagation();openDrop('${menuId}',this)">${prioDot(cur)}<span>${cur}</span><span class="arr">▾</span></div><div class="cdrop-menu" id="${menuId}">${opts}</div></div>`;
+  return `<div class="cdrop" onclick="event.stopPropagation()"><div class="cdrop-trigger" onclick="event.stopPropagation();openDrop('${menuId}',this)">${prioDot(cur)}<span>${cur}</span><span class="arr">▾</span></div><div class="cdrop-menu" id="${menuId}">${opts}</div></div>`;
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -138,26 +131,43 @@ function onChg(sel) {
   _refreshBar();
 }
 
-function onChgDirect(k, orig, nv, el) {
-  if (nv === orig) delete CHANGES[k]; else CHANGES[k] = nv;
-  _refreshBar();
-  // Re-render just this row's status cell
+async function onChgDirect(k, orig, nv) {
+  if (nv === orig) return;
+  const [c, p] = k.split('|||');
+  const row = DATA_PIPE.find(r => r.c === c && r.p === p);
+  if (!row) return;
+  const trigger = document.querySelector(`[data-skey="${k}"]`);
+  if (trigger) trigger.style.opacity = '.5';
+  try {
+    const ok = await P.saveStatusOnly(row, nv);
+    if (ok) {
+      row.s = nv;
+      toast('✓ Status → ' + nv, 'success');
+    } else {
+      toast('⚠ Save failed', 'error');
+    }
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
   renderPipe(undefined, undefined, undefined, undefined);
 }
 
-function onPrioChgDirect(k, orig, nv) {
-  if (nv === orig) delete PRIO_CHANGES[k]; else PRIO_CHANGES[k] = nv;
-  _refreshBar();
+async function onPrioChgDirect(k, orig, nv) {
+  if (nv === orig) return;
+  const [c, p] = k.split('|||');
+  const row = DATA_PIPE.find(r => r.c === c && r.p === p);
+  if (!row) return;
+  try {
+    const ok = await P.savePriorityOnly(row, nv);
+    if (ok) {
+      row.prio = nv;
+      toast('✓ Priority → ' + nv, 'success');
+    } else {
+      toast('⚠ Save failed', 'error');
+    }
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
   renderPipe(undefined, undefined, undefined, undefined);
 }
 
-function _refreshBar() {
-  const n = Object.keys(CHANGES).length + Object.keys(PRIO_CHANGES).length;
-  $('chg-n').textContent = n;
-  $('chip-chg').style.display = n > 0 ? 'inline-flex' : 'none';
-  $('save-bar').className = 'save-bar' + (n > 0 ? ' on' : '');
-  $('chg-count').textContent = n + (n === 1 ? ' change' : ' changes');
-}
+function _refreshBar() {} // no-op — kept for compat
 
 function onPrioChg(sel) {
   const k = sel.dataset.pkey, orig = sel.dataset.porig, nv = sel.value;
