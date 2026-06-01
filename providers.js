@@ -396,7 +396,7 @@ const MsProvider = (() => {
       const newId = `C-${String(maxN + 1).padStart(3, '0')}`;
       return this.appendRow(s, [[newId, fields.firstName, fields.lastName,
         fields.email, fields.phone, fields.web, fields.company,
-        fields.linkedOpps || '', fields.src || 'Dashboard', today, today,
+        fields.linkedOpps || '', fields.src || 'Manual user input', today, today,
         fields.coId || '']]);
     },
 
