@@ -42,8 +42,7 @@ function renderContacts(q, fc) {
       return `<tr class="edit-row" onclick="openContactDrawer('${safeId}')">
         <td style="font-size:.7rem;color:var(--slate2)">${r.id || '—'}</td>
         <td><b style="color:var(--navy2)">${name || '—'}</b></td>
-        <td style="padding:4px 6px;vertical-align:middle">${r.company ? companyLogoFromName(r.company, 22) : ''}</td>
-        <td onclick="event.stopPropagation()" style="font-size:.77rem">${r.company ? `<span class="contact-link" onclick="openCompanyFromName('${r.company.replace(/'/g,'__SQ__')}')">${r.company}</span>` : '—'}</td>
+        <td onclick="event.stopPropagation()"><div style="display:flex;align-items:center;gap:6px">${r.company ? companyLogoFromName(r.company, 20) : ''}<span style="font-size:.77rem">${r.company ? `<span class="contact-link" onclick="openCompanyFromName('${r.company.replace(/'/g,'__SQ__')}')">${r.company}</span>` : '—'}</span></div></td>
         <td style="font-size:.75rem"><a href="mailto:${r.email}" onclick="event.stopPropagation()" style="color:var(--blue)">${r.email || '—'}</a></td>
         <td style="font-size:.75rem">${r.phone || '—'}</td>
         <td style="font-size:.75rem;color:var(--blue);cursor:pointer">${linkedCount}</td>
