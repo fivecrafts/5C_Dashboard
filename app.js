@@ -52,7 +52,7 @@ const App = {
       else if (id === 'owners')      renderOwners();
       else if (id === 'companies')   renderCompanies('', '');
     } else {
-      renderMyDashboard();
+      renderOwners();
     }
     // Always refresh mydashboard badge count
     const myOppEl = $('pl-myopps');
@@ -145,12 +145,17 @@ const UI = {
       // (handles the case where the active page check runs before DOM settles)
       setTimeout(() => {
         const active = document.querySelector('.page.active');
-        if (!active || active.id === 'page-mydashboard') renderMyDashboard();
+        if (!active || active.id === 'page-owners') renderOwners();
+      else if (active.id === 'page-mydashboard') renderMyDashboard();
       }, 50);
     }).catch((e) => {
       console.error('loadAll failed:', e);
-      // Still try to render My Dashboard with whatever data loaded
-      setTimeout(() => renderMyDashboard(), 100);
+      // Still try to render the active page with whatever data loaded
+      setTimeout(() => {
+        const active = document.querySelector('.page.active');
+        if (!active || active.id === 'page-owners') renderOwners();
+        else if (active.id === 'page-mydashboard') renderMyDashboard();
+      }, 100);
     });
   },
 
