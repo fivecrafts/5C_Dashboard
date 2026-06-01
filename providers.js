@@ -215,14 +215,15 @@ const MsProvider = (() => {
         status: 'Status', responsible: 'Responsible', dueDate: 'Due Date',
         notes: 'Notes', priority: 'Priority',
       };
-      // Rev 19: Linked Company col E(4) inserted; Priority now at col K(10)
-      // Use column indices directly for reliability
+      // Rev 19+: col L (index 11) = Task Name (free text label)
       const TCOL = { id:0, type:1, linkedOpp:2, linkedContact:3, linkedCompany:4,
-                     createdDate:5, status:6, responsible:7, dueDate:8, notes:9, priority:10 };
+                     createdDate:5, status:6, responsible:7, dueDate:8, notes:9,
+                     priority:10, taskName:11 };
       return dataRows.map((row, i) => {
         const rec = {
           _row:          i + 2,
           id:            String(row[TCOL.id]          ?? '').trim(),
+          taskName:      String(row[TCOL.taskName]     ?? '').trim(),
           type:          String(row[TCOL.type]         ?? '').trim(),
           linkedOpp:     String(row[TCOL.linkedOpp]    ?? '').trim(),
           linkedContact: String(row[TCOL.linkedContact] ?? '').trim(),
@@ -395,17 +396,18 @@ const MsProvider = (() => {
     },
 
     async saveTaskRow(row, fields) {
-      // Rev 19: 11 cols A:K, linkedCompany at col E
-      return this.patchRange(CFG.microsoft.sheets.tasks, `A${row._row}:K${row._row}`,
+      // Rev 19+: 12 cols A:L, taskName at col L (index 11)
+      return this.patchRange(CFG.microsoft.sheets.tasks, `A${row._row}:L${row._row}`,
         [[row.id, fields.type, fields.linkedOpp, fields.linkedContact,
           fields.linkedCompany || '',
           row.createdDate, fields.status, fields.responsible,
-          fields.dueDate, fields.notes, fields.priority]]
+          fields.dueDate, fields.notes, fields.priority,
+          fields.taskName || '']]
       );
     },
 
     async createTask(fields) {
-      // Rev 19: 11 cols, linkedCompany at col E
+      // Rev 19+: 12 cols A:L, taskName at col L
       const s     = CFG.microsoft.sheets.tasks;
       const today = new Date().toISOString().slice(0, 10);
       const newId = `T-${String(DATA_TASKS.length + 1).padStart(3, '0')}`;
@@ -413,7 +415,8 @@ const MsProvider = (() => {
         fields.linkedContact || '', fields.linkedCompany || '',
         today, fields.status || 'Open',
         fields.responsible || '', fields.dueDate || '',
-        fields.notes || '', fields.priority || 'Medium']]);
+        fields.notes || '', fields.priority || 'Medium',
+        fields.taskName || '']]);
     },
   };
 })();
