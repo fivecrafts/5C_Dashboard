@@ -362,6 +362,23 @@ const MsProvider = (() => {
       return r1;
     },
 
+    // Fetch M365 profile photo for a user by email
+    // Returns an object URL (blob) or null if unavailable
+    // Requires User.ReadBasic.All delegated permission
+    async loadOwnerPhoto(email) {
+      if (!email) return null;
+      try {
+        const t = await token();
+        const r = await fetch(
+          `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(email)}/photo/$value`,
+          { headers: { Authorization: 'Bearer ' + t } }
+        );
+        if (!r.ok) return null;
+        const blob = await r.blob();
+        return URL.createObjectURL(blob);
+      } catch { return null; }
+    },
+
     async saveContactRow(row, fields) {
       // Rev 17: col L = Company ID added
       const s     = CFG.microsoft.sheets.contacts;
@@ -499,6 +516,7 @@ const GglProvider = (() => {
     async savePipelineRow(row, f)  { return MsProvider.savePipelineRow.call(this, row, f); },
     async saveStatusOnly(row, s)   { return MsProvider.saveStatusOnly.call(this, row, s); },
     async savePriorityOnly(row, p)  { return MsProvider.savePriorityOnly.call(this, row, p); },
+    async loadOwnerPhoto(email)     { return null; }, // Google provider — not implemented
     async saveContactRow(row, f)   { return MsProvider.saveContactRow.call(this, row, f); },
     async createContact(f)         { return MsProvider.createContact.call(this, f); },
     async saveTaskRow(row, f)      { return MsProvider.saveTaskRow.call(this, row, f); },
