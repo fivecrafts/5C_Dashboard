@@ -33,7 +33,6 @@ async function saveCoPrio(safeId, newP) {
 // COMPANIES PAGE — table view with 4 filters
 // ════════════════════════════════════════════════════════════════
 function renderCompanies(q, ft, fown, fprio, find) {
-  // Restore filter values from inputs if called with undefined
   if (q    === undefined) { const el=$('coq');    q    = el?el.value:''; }
   if (ft   === undefined) { const el=$('coft');   ft   = el?el.value:''; }
   if (fown === undefined) { const el=$('cofown');  fown = el?el.value:''; }
@@ -51,7 +50,6 @@ function renderCompanies(q, ft, fown, fprio, find) {
   const customers = DATA_COMPANIES.filter(r => r.type==='Customer'||r.type==='Both').length;
   const partners  = DATA_COMPANIES.filter(r => r.type==='Partnership'||r.type==='Both').length;
   const withOpps  = DATA_COMPANIES.filter(r => DATA_PIPE.some(p => p.c===r.name)).length;
-
   const owners    = [...new Set(DATA_COMPANIES.map(r=>r.owner).filter(Boolean))].sort();
   const industries= [...new Set(DATA_COMPANIES.map(r=>r.industry).filter(Boolean))].sort();
 
@@ -84,13 +82,13 @@ function renderCompanies(q, ft, fown, fprio, find) {
       ${industries.map(i=>`<option value="${i}"${find===i?' selected':''}>${i}</option>`).join('')}
     </select>
     <span class="cnt">${filtered.length}/${DATA_COMPANIES.length}</span>
+    <button class="sbtn sbtn-p" onclick="openNewCompanyDrawer()" style="margin-left:auto">+ New Company</button>
   </div>
 
   ${DATA_COMPANIES.length === 0 ? `
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:32px;text-align:center;color:var(--slate)">
       <div style="font-size:2rem;margin-bottom:8px">🏢</div>
       <div style="font-weight:600;margin-bottom:4px">No companies yet</div>
-      <div style="font-size:.8rem">Add a <b>Companies</b> sheet to 5C_Pipeline.xlsx</div>
     </div>` :
   `<div class="tbl-wrap"><table>
     <thead><tr>
@@ -243,7 +241,8 @@ async function createCompanyDrawer() {
   if (!name) { toast('Company name required','error'); return; }
   toast('Creating…','info');
   const today = new Date().toISOString().slice(0,10);
-  const newId = `CO-${String(DATA_COMPANIES.length+1).padStart(3,'0')}`;
+  const maxCN = DATA_COMPANIES.reduce((m,c)=>{const n=parseInt((c.id||'').replace('CO-',''),10);return isNaN(n)?m:Math.max(m,n);},0);
+  const newId = `CO-${String(maxCN+1).padStart(3,'0')}`;
   const fields = {
     name, type:$('dco-type').value, prio:$('dco-prio').value,
     website:$('dco-web').value.trim(), industry:$('dco-ind').value,
