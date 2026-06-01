@@ -93,13 +93,14 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
     <span class="cnt">${filtered.length}/${DATA_TASKS.length}</span>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>ID</th><th>Type</th><th>Priority</th><th>Linked Opportunity</th><th>Linked Contact</th><th>Linked Company</th><th>Due Date</th><th>Status</th><th>Responsible</th><th>Notes</th></tr></thead>
+    <thead><tr><th>ID</th><th>Task Name</th><th>Type</th><th>Priority</th><th>Linked Opportunity</th><th>Linked Contact</th><th>Linked Company</th><th>Due Date</th><th>Status</th><th>Responsible</th><th>Notes</th></tr></thead>
     <tbody>${filtered.map(r => {
       const isOverdue = r.status === 'Open' && r.dueDate && r.dueDate < today;
       const safeId    = (r.id || '').replace(/'/g, '__SQ__');
       const dueCls    = isOverdue ? 'color:var(--red);font-weight:600' : 'color:var(--slate)';
       return `<tr class="edit-row" onclick="openTaskDrawer('${safeId}')">
         <td style="font-size:.7rem;color:var(--slate2)">${r.id || '—'}</td>
+        <td style="font-size:.82rem;font-weight:600;color:var(--navy2)">${r.taskName || '—'}</td>
         <td style="font-size:.78rem;font-weight:500">${r.type || '—'}</td>
         <td onclick="event.stopPropagation()">${buildTaskPrioDrop(r)}</td>
         <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openOppFromTask('${(r.linkedOpp || '').replace(/'/g, '__SQ__')}')">${r.linkedOpp || '—'}</span></td>
@@ -133,6 +134,9 @@ function buildTaskForm(row, preOpp, preCont) {
   const statOpts = TASK_STATUSES.map(s => `<option${(row?.status  || 'Open')   === s      ? ' selected' : ''}>${s}</option>`).join('');
 
   return `
+    <div class="field-group"><label>Task Name</label>
+      <input id="dt-taskname" placeholder="Short task label…" value="${esc(row?.taskName||'')}">
+    </div>
     <div class="field-row">
       <div class="field-group"><label>Task Type</label><select id="dt-type">${typeOpts}</select></div>
       <div class="field-group"><label>Priority</label><select id="dt-prio">${prioOpts}</select></div>
@@ -180,6 +184,7 @@ async function saveTaskDrawer() {
   if (!row) return;
   toast('Saving…', 'info');
   const fields = {
+    taskName: ($('dt-taskname') ? $('dt-taskname').value.trim() : ''),
     type: $('dt-type').value, priority: $('dt-prio').value, status: $('dt-status').value,
     dueDate: $('dt-due').value, responsible: $('dt-resp').value.trim(),
     linkedOpp: $('dt-opp').value, linkedContact: $('dt-cont').value,
@@ -208,6 +213,7 @@ function openNewTask(context, linkedOpp, linkedContact) {
 async function createTaskDrawer() {
   toast('Creating…', 'info');
   const fields = {
+    taskName: ($('dt-taskname') ? $('dt-taskname').value.trim() : ''),
     type: $('dt-type').value, priority: $('dt-prio').value, status: 'Open',
     dueDate: $('dt-due').value, responsible: $('dt-resp').value.trim(),
     linkedOpp: $('dt-opp').value, linkedContact: $('dt-cont').value,
