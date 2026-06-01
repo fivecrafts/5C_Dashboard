@@ -42,6 +42,7 @@ function renderContacts(q, fc) {
       return `<tr class="edit-row" onclick="openContactDrawer('${safeId}')">
         <td style="font-size:.7rem;color:var(--slate2)">${r.id || '—'}</td>
         <td><b style="color:var(--navy2)">${name || '—'}</b></td>
+        <td style="padding:4px 6px;vertical-align:middle">${r.company ? companyLogoFromName(r.company, 22) : ''}</td>
         <td onclick="event.stopPropagation()" style="font-size:.77rem">${r.company ? `<span class="contact-link" onclick="openCompanyFromName('${r.company.replace(/'/g,'__SQ__')}')">${r.company}</span>` : '—'}</td>
         <td style="font-size:.75rem"><a href="mailto:${r.email}" onclick="event.stopPropagation()" style="color:var(--blue)">${r.email || '—'}</a></td>
         <td style="font-size:.75rem">${r.phone || '—'}</td>
@@ -69,7 +70,9 @@ function openContactDrawer(safeId) {
       }).join('')
     : '<div style="color:var(--slate2);font-size:.77rem">No linked opportunities</div>';
 
+  const coLogo = row.company ? companyLogoFromName(row.company, 30) : '';
   const body = `
+    ${row.company ? `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:10px;border:1px solid var(--border)">${coLogo}<span style="font-size:.82rem;font-weight:600;color:var(--navy2)">${esc(row.company)}</span></div>` : ''}
     <div class="field-row">
       <div class="field-group"><label>First Name</label><input id="dc-fn" value="${esc(row.firstName || '')}"></div>
       <div class="field-group"><label>Last Name</label><input id="dc-ln" value="${esc(row.lastName || '')}"></div>
