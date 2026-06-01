@@ -59,7 +59,7 @@ const App = {
     if (myOppEl) myOppEl.textContent = DATA_PIPE.filter(r => r.owner === (window.CURRENT_USER_NAME||'')).length;
   },
 
-  discard() { CHANGES = {}; PRIO_CHANGES = {}; updateCounts(); renderPipe('', '', '', ''); toast('Discarded', 'info'); },
+  discard() { this.closeMo(); }, // no-op — changes save immediately
 
   openModal() {
     const statusRows = Object.entries(CHANGES).map(([k, ns]) => {
