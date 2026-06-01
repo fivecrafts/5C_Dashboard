@@ -74,7 +74,12 @@ function openContactDrawer(safeId) {
       <div class="field-group"><label>First Name</label><input id="dc-fn" value="${esc(row.firstName || '')}"></div>
       <div class="field-group"><label>Last Name</label><input id="dc-ln" value="${esc(row.lastName || '')}"></div>
     </div>
-    <div class="field-group"><label>Company</label><input id="dc-co" value="${esc(row.company || '')}"></div>
+    <div class="field-group"><label>Company</label>
+      <select id="dc-co">
+        <option value="">— None —</option>
+        ${(DATA_COMPANIES||[]).map(c=>`<option value="${esc(c.name)}"${(row.company||'')=== c.name?' selected':''}>${c.name}</option>`).join('')}
+      </select>
+    </div>
     <div class="field-row">
       <div class="field-group"><label>Email</label><input id="dc-em" type="email" value="${esc(row.email || '')}"></div>
       <div class="field-group"><label>Phone</label><input id="dc-ph" value="${esc(row.phone || '')}"></div>
@@ -118,13 +123,18 @@ async function saveContactDrawer() {
 }
 
 // ── New Contact Drawer ────────────────────────────────────────
-function openNewContactDrawer() {
+function openNewContactDrawer(prefilledCompany) {
   const body = `
     <div class="field-row">
       <div class="field-group"><label>First Name</label><input id="dc-fn" value=""></div>
       <div class="field-group"><label>Last Name</label><input id="dc-ln" value=""></div>
     </div>
-    <div class="field-group"><label>Company</label><input id="dc-co" value=""></div>
+    <div class="field-group"><label>Company</label>
+      <select id="dc-co">
+        <option value="">— None —</option>
+        ${(DATA_COMPANIES||[]).map(c=>`<option value="${esc(c.name)}"${(prefilledCompany&&prefilledCompany=== c.name)?' selected':''}>${c.name}</option>`).join('')}
+      </select>
+    </div>
     <div class="field-row">
       <div class="field-group"><label>Email</label><input id="dc-em" type="email" value=""></div>
       <div class="field-group"><label>Phone</label><input id="dc-ph" value=""></div>
