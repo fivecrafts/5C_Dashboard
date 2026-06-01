@@ -157,7 +157,6 @@ const MsProvider = (() => {
           p:           cell(row, COL.p),
           c:           cell(row, COL.c),
           d:           cell(row, COL.d),
-          cat:         cell(row, COL.cat),
           s:           cell(row, COL.s),
           prio:        cell(row, COL.prio),
           createdDate: excelDate(cell(row, COL.createdDate)),
@@ -176,23 +175,37 @@ const MsProvider = (() => {
     parseContacts(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!dataRows || !dataRows.length) return [];
-      // Rev 17 — col L = Company ID added
+      // Rev 23: Company (col G=6) and Linked Opportunities (col H=7) are HYPERLINK cells
+      // display = company name / "Client / Project Name" respectively
+      // Schema: A=id,B=firstName,C=lastName,D=email,E=phone,F=web,
+      //         G=company,H=linkedOpps,I=src,J=createdDate,K=updDate,L=coId
       const CMAP = {
-        id: 'Contact ID', firstName: 'First Name', lastName: 'Last Name',
-        email: 'Email', phone: 'Phone', web: 'Web', company: 'Company',
-        linkedOpps: 'Linked Opportunities', src: 'Source',
-        createdDate: 'Created Date', updDate: 'Updated Date',
-        coId: 'Company ID',
+        id:'Contact ID', firstName:'First Name', lastName:'Last Name',
+        email:'Email', phone:'Phone', web:'Web', company:'Company',
+        linkedOpps:'Linked Opportunities', src:'Source',
+        createdDate:'Created Date', updDate:'Updated Date', coId:'Company ID',
       };
+      const IDX = {id:0,firstName:1,lastName:2,email:3,phone:4,web:5,
+                   company:6,linkedOpps:7,src:8,createdDate:9,updDate:10,coId:11};
       return dataRows.map((row, i) => {
         const rec = mapRow(row, headers, CMAP);
-        rec._row = i + 2;
+        // Index-based fallback if header lookup returned empty
+        Object.entries(IDX).forEach(([f,idx]) => {
+          if (!rec[f] && row[idx] !== undefined) rec[f] = String(row[idx]??'').trim();
+        });
+        // Strip HYPERLINK formulas from company and linkedOpps display cells
+        ['company','linkedOpps'].forEach(f => {
+          if (rec[f] && rec[f].includes('HYPERLINK')) {
+            const m = rec[f].match(/"([^"]+)"\s*\)?\s*$/);
+            if (m) rec[f] = m[1];
+          }
+        });
+        rec._row        = i + 2;
         rec.createdDate = excelDate(rec.createdDate);
         rec.updDate     = excelDate(rec.updDate);
         return rec;
       }).filter(r => r.firstName || r.lastName);
     },
-
     parseTasks(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!dataRows || !dataRows.length) return [];
