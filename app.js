@@ -24,6 +24,19 @@ const App = {
       DATA_CONTACTS  = P.parseContacts(cj);
       DATA_TASKS     = P.parseTasks(tj);
       DATA_OWNERS    = P.parseOwners(oj);
+      // Fetch M365 profile photos in background — non-blocking
+      OWNER_PHOTOS = {};
+      DATA_OWNERS.forEach(o => {
+        if (!o.email) return;
+        const safeKey = o.email.replace(/[^a-z0-9]/gi, '_');
+        P.loadOwnerPhoto(o.email).then(url => {
+          if (!url) return;
+          OWNER_PHOTOS[o.email] = url;
+          // Update live avatar if 5C Dashboard page is open
+          const img = document.getElementById('oav-' + safeKey);
+          if (img) { img.src = url; img.style.display = 'inline-block'; const sib = img.nextElementSibling; if (sib) sib.style.display = 'none'; }
+        }).catch(() => {});
+      });
       DATA_COMPANIES = P.parseCompanies(compj);
       const cls = P.parseCodelists(clj);
       if (cls.TaskType && cls.TaskType.length) TASK_TYPES = cls.TaskType;
