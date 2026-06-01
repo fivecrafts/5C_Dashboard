@@ -106,7 +106,10 @@ function companyLogo(website, name, size = 28) {
   const col    = (OC && OC[name]) ? OC[name] : '#64748b';
   const avatar = `<span style="display:inline-flex;width:${size}px;height:${size}px;border-radius:6px;background:${col};color:#fff;font-size:${Math.round(size*0.38)}px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0">${ini}</span>`;
   if (!domain) return avatar;
-  return `<img src="https://logo.clearbit.com/${domain}" width="${size}" height="${size}"
+  // Google Favicon API — free, no key, works for any domain, reliable
+  // Clearbit (logo.clearbit.com) was deprecated after HubSpot acquisition 2023
+  const logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  return `<img src="${logoUrl}" width="${size}" height="${size}"
     style="border-radius:6px;object-fit:contain;border:1px solid var(--border);background:#fff;vertical-align:middle;flex-shrink:0"
     onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"
     loading="lazy">${avatar.replace('display:inline-flex', 'display:none')}`;
