@@ -388,7 +388,12 @@ const MsProvider = (() => {
       // Rev 17: 12 cols A-L including Company ID in col L
       const s     = CFG.microsoft.sheets.contacts;
       const today = new Date().toISOString().slice(0, 10);
-      const newId = `C-${String(DATA_CONTACTS.length + 1).padStart(3, '0')}`;
+      // Safe ID: find the highest existing C-NNN, increment from there
+      const maxN = DATA_CONTACTS.reduce((m, c) => {
+        const n = parseInt((c.id || '').replace('C-', ''), 10);
+        return isNaN(n) ? m : Math.max(m, n);
+      }, 0);
+      const newId = `C-${String(maxN + 1).padStart(3, '0')}`;
       return this.appendRow(s, [[newId, fields.firstName, fields.lastName,
         fields.email, fields.phone, fields.web, fields.company,
         fields.linkedOpps || '', fields.src || 'Dashboard', today, today,
@@ -410,7 +415,11 @@ const MsProvider = (() => {
       // Rev 19+: 12 cols A:L, taskName at col L
       const s     = CFG.microsoft.sheets.tasks;
       const today = new Date().toISOString().slice(0, 10);
-      const newId = `T-${String(DATA_TASKS.length + 1).padStart(3, '0')}`;
+      const maxTN = DATA_TASKS.reduce((m,t) => {
+        const n = parseInt((t.id||'').replace('T-',''),10);
+        return isNaN(n)?m:Math.max(m,n);
+      }, 0);
+      const newId = `T-${String(maxTN + 1).padStart(3, '0')}`;
       return this.appendRow(s, [[newId, fields.type, fields.linkedOpp || '',
         fields.linkedContact || '', fields.linkedCompany || '',
         today, fields.status || 'Open',
