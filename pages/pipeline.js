@@ -222,7 +222,7 @@ async function createContactFromOpp(pipeRowNum) {
     company:   companyName,
     email:     $('ncf-em').value.trim(),
     phone:     $('ncf-ph').value.trim(),
-    web: '', src: 'Dashboard',
+    web: '', src: 'Manual user input',
     coId: coRow ? (coRow.id || '') : '',
   };
   toast('Creating contact…','info');
