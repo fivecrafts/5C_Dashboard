@@ -23,6 +23,7 @@ const INDUSTRIES  = ['Banking','Payments','Card Issuing','Card Acquiring','Crypt
 // ── Pipeline pending changes (key = "client|||project" → newStatus) ──
 let CHANGES = {};
 let PRIO_CHANGES = {};  // pending priority edits, same pattern as CHANGES
+let OWNER_PHOTOS  = {};  // email → object URL from Graph /photo/$value
 
 // ── Owner color map (built dynamically from DATA_PIPE) ──
 let OC = {};
