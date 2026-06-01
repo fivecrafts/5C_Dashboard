@@ -97,7 +97,16 @@ function renderOwners() {
 
       <!-- Owner header -->
       <div style="display:flex;align-items:center;gap:14px;padding:18px 20px;background:linear-gradient(135deg,#0f2540 0%,#1a3a5c 100%);cursor:pointer" onclick="UI.nf('',null,'${sq}')">
-        <div style="width:48px;height:48px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:#fff;flex-shrink:0;border:3px solid rgba(255,255,255,.2)">${ini}</div>
+        ${(()=>{
+          const safeKey = (o.email||'').replace(/[^a-z0-9]/gi,'_');
+          const photoUrl = o.email && OWNER_PHOTOS[o.email];
+          const styles = 'width:48px;height:48px;border-radius:50%;flex-shrink:0;border:3px solid rgba(255,255,255,.2);object-fit:cover;cursor:pointer';
+          const iniSpan = `<span style="width:48px;height:48px;border-radius:50%;background:${col};display:${photoUrl?'none':'flex'};align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:#fff;flex-shrink:0;border:3px solid rgba(255,255,255,.2)">${ini}</span>`;
+          const imgTag  = photoUrl
+            ? `<img id="oav-${safeKey}" src="${photoUrl}" style="${styles}" alt="${ini}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">${iniSpan}`
+            : `<img id="oav-${safeKey}" src="" style="${styles};display:none" alt="${ini}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">${iniSpan}`;
+          return imgTag;
+        })()}
         <div style="flex:1">
           <div style="font-weight:700;font-size:1rem;color:#fff">${name}</div>
           <div style="font-size:.72rem;color:rgba(255,255,255,.5);margin-top:1px">${o.email||''}</div>
