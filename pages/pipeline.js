@@ -176,6 +176,83 @@ function onPrioChg(sel) {
   _refreshBar();
 }
 
+// ── Create new contact directly from Opportunity drawer ──────────
+// Creates the contact in Contacts sheet and then links it to Pipeline col J
+async function openNewContactFromOpp(pipeRow, companyName) {
+  // Resolve company name from safeKey
+  const coName = (companyName || '').replace(/__SQ__/g, "'");
+  // Build a mini-form in a confirm dialog approach:
+  // We'll open a new overlay inside the existing drawer
+  const overlay = document.createElement('div');
+  overlay.id = 'contact-mini-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--card);border-radius:14px;padding:24px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <div style="font-weight:700;font-size:.95rem;color:var(--navy2);margin-bottom:16px">+ New Contact</div>
+      <div class="field-row">
+        <div class="field-group"><label>First Name</label><input id="ncf-fn" placeholder="First…" autofocus></div>
+        <div class="field-group"><label>Last Name</label><input id="ncf-ln" placeholder="Last…"></div>
+      </div>
+      <div class="field-group"><label>Company</label>
+        <select id="ncf-co">
+          <option value="">— None —</option>
+          ${(DATA_COMPANIES||[]).map(c=>`<option value="${esc(c.name)}"${c.name===coName?' selected':''}>${c.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Email</label><input id="ncf-em" type="email" placeholder="email@…"></div>
+        <div class="field-group"><label>Phone</label><input id="ncf-ph" placeholder="+420…"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button onclick="createContactFromOpp(${pipeRow})" style="flex:1;padding:9px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:var(--font);font-weight:600;cursor:pointer">✓ Create &amp; Link</button>
+        <button onclick="document.getElementById('contact-mini-overlay').remove()" style="padding:9px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-family:var(--font);cursor:pointer">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function createContactFromOpp(pipeRowNum) {
+  const fn = $('ncf-fn').value.trim();
+  const ln = $('ncf-ln').value.trim();
+  if (!fn && !ln) { toast('Enter a name','error'); return; }
+  const companyName = $('ncf-co').value.trim();
+  const coRow = DATA_COMPANIES.find(c => c.name === companyName);
+  const fields = {
+    firstName: fn, lastName: ln,
+    company:   companyName,
+    email:     $('ncf-em').value.trim(),
+    phone:     $('ncf-ph').value.trim(),
+    web: '', src: 'Dashboard',
+    coId: coRow ? (coRow.id || '') : '',
+  };
+  toast('Creating contact…','info');
+  try {
+    await P.createContact(fields);
+    // Reload contacts
+    const j = await P.loadSheet(activeCfg.sheets.contacts);
+    DATA_CONTACTS = P.parseContacts(j);
+    // Link the new contact to the pipeline row
+    const fullName = (fn + ' ' + ln).trim();
+    const today = new Date().toISOString().slice(0,10);
+    await P.patchRange(activeCfg.sheets.pipeline, `J${pipeRowNum}`, [[fullName]]);
+    await P.patchRange(activeCfg.sheets.pipeline, `H${pipeRowNum}`, [[today]]);
+    // Update in-memory pipeline row
+    const pRow = DATA_PIPE.find(r => r._row === pipeRowNum);
+    if (pRow) pRow.contact = fullName;
+    // Update the contact select in the still-open drawer
+    const sel = $('d-rsp');
+    if (sel) {
+      const opt = document.createElement('option');
+      opt.value = fullName; opt.text = fullName + (companyName?' · '+companyName:'');
+      opt.selected = true;
+      sel.appendChild(opt);
+    }
+    document.getElementById('contact-mini-overlay')?.remove();
+    renderPipe(undefined,undefined,undefined,undefined);
+    toast(`✓ Contact ${fullName} created and linked`,'success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
 function sortBy(col) {
   if (SORT_COL === col) SORT_DIR *= -1; else { SORT_COL = col; SORT_DIR = 1; }
   renderPipe('', '', '', '');
@@ -209,7 +286,19 @@ function openPipeDrawer(safeKey) {
           ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();return `<option value="${n}"${(row.owner||'')=== n?' selected':''}>${n}</option>`;}).join('')}
         </select>
       </div>
-      <div class="field-group"><label>Contact</label><input id="d-rsp" value="${esc(row.contact)}"></div>
+      <div class="field-group"><label>Contact</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="d-rsp" style="flex:1">
+            <option value="">— None —</option>
+            ${(DATA_CONTACTS||[]).map(c=>{
+              const n=((c.firstName||'')+' '+(c.lastName||'')).trim();
+              return `<option value="${esc(n)}"${(row.contact||'')=== n?' selected':''}>${n}${c.company?' · '+c.company:''}</option>`;
+            }).join('')}
+          </select>
+          <button type="button" onclick="openNewContactFromOpp('${row._row}','${esc(row.c)}')"
+            style="padding:5px 10px;border:1px solid var(--teal-l);border-radius:6px;background:var(--teal-t);color:var(--teal);font-size:.72rem;font-family:var(--font);cursor:pointer;white-space:nowrap;flex-shrink:0">+ New</button>
+        </div>
+      </div>
     </div>
 
     <div class="field-group"><label>Source</label><input id="d-src" value="${esc(row.src || '')}"></div>
