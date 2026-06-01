@@ -199,15 +199,25 @@ async function saveTaskDrawer() {
 }
 
 // ── New task (optionally pre-filled from opp or contact) ──────
-function openNewTask(context, linkedOpp, linkedContact) {
+function openNewTask(context, linkedOpp, linkedContact, linkedCompany) {
   closeDrawer();
   drawerKey = null;
-  const preOpp  = (linkedOpp      || '').replace(/__SQ__/g, "'");
-  const preCont = (linkedContact  || '').replace(/__SQ__/g, "'");
+  const preOpp   = (linkedOpp       || '').replace(/__SQ__/g, "'");
+  const preCont  = (linkedContact   || '').replace(/__SQ__/g, "'");
+  const preCo    = (linkedCompany   || '').replace(/__SQ__/g, "'");
   const foot = `
     <button class="sbtn sbtn-p" onclick="createTaskDrawer()" style="flex:1">+ Create Task</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
   openDrawer('New Task', buildTaskForm(null, preOpp, preCont), foot, 'new-task', null);
+  // Prefill linked company after drawer renders
+  if (preCo) setTimeout(() => {
+    const sel = $('dt-comp');
+    if (sel) {
+      // Find option matching by id or name
+      const co = DATA_COMPANIES.find(c => c.id === preCo || c.name === preCo);
+      if (co) { for (const opt of sel.options) { if (opt.value === co.id) { opt.selected = true; break; } } }
+    }
+  }, 50);
 }
 
 async function createTaskDrawer() {
