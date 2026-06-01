@@ -104,16 +104,19 @@ async function saveContactDrawer() {
   const row = DATA_CONTACTS.find(r => r.id === id || ((r.firstName + ' ' + r.lastName).trim() === id));
   if (!row) return;
   toast('Saving…', 'info');
+  const companyName = $('dc-co').value.trim();
+  const coRow = DATA_COMPANIES.find(c => c.name === companyName);
   const fields = {
     firstName:  $('dc-fn').value.trim(),
     lastName:   $('dc-ln').value.trim(),
-    company:    $('dc-co').value.trim(),
+    company:    companyName,
     email:      $('dc-em').value.trim(),
     phone:      $('dc-ph').value.trim(),
     web:        $('dc-web').value.trim(),
     src:        $('dc-src').value.trim(),
     linkedOpps: row.linkedOpps || '',
     createdDate: row.createdDate,
+    coId:       coRow ? (coRow.id || '') : (row.coId || ''),
   };
   try {
     const ok = await P.saveContactRow(row, fields);
@@ -140,7 +143,7 @@ function openNewContactDrawer(prefilledCompany) {
       <div class="field-group"><label>Phone</label><input id="dc-ph" value=""></div>
     </div>
     <div class="field-group"><label>Web / LinkedIn</label><input id="dc-web" value=""></div>
-    <div class="field-group"><label>Source</label><input id="dc-src" value="Dashboard"></div>`;
+    <div class="field-group"><label>Source</label><input id="dc-src" value="Manual user input"></div>`;
   const foot = `
     <button class="sbtn sbtn-p" onclick="createContactDrawer()" style="flex:1">+ Create Contact</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
@@ -149,14 +152,18 @@ function openNewContactDrawer(prefilledCompany) {
 
 async function createContactDrawer() {
   toast('Creating…', 'info');
+  const companyName = $('dc-co').value.trim();
+  // Resolve coId from company name → col L (FK to Companies sheet)
+  const coRow = DATA_COMPANIES.find(c => c.name === companyName);
   const fields = {
     firstName: $('dc-fn').value.trim(),
     lastName:  $('dc-ln').value.trim(),
-    company:   $('dc-co').value.trim(),
+    company:   companyName,
     email:     $('dc-em').value.trim(),
     phone:     $('dc-ph').value.trim(),
     web:       $('dc-web').value.trim(),
-    src:       $('dc-src').value.trim() || 'Dashboard',
+    src:       $('dc-src').value.trim() || 'Manual user input',
+    coId:      coRow ? (coRow.id || '') : '',
   };
   if (!fields.firstName && !fields.lastName) { toast('Enter at least a name', 'error'); return; }
   try {
