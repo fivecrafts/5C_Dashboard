@@ -154,31 +154,46 @@ function renderOwners() {
               </div>`;
             }).join('')}
             <div onclick="UI.nf('Cancelled',null,'${sq}')" style="flex:.6;text-align:center;padding:7px 3px;background:${rows.filter(r=>r.s==='Cancelled').length>0?'var(--red-t)':'#f8fafc'};border-left:2px dashed var(--border);cursor:pointer;opacity:${rows.filter(r=>r.s==='Cancelled').length===0?'0.4':'1'}">
-              <div style="font-size:1.1rem;font-weight:800;color:${rows.filter(r=>r.s==='Cancelled').length>0?'var(--red)':'var(--slate2)'}">C:${rows.filter(r=>r.s==='Cancelled').length}</div>
+              <div style="font-size:1.1rem;font-weight:800;color:${rows.filter(r=>r.s==='Cancelled').length>0?'var(--red)':'var(--slate2)'}">${rows.filter(r=>r.s==='Cancelled').length}</div>
               <div style="font-size:.57rem;color:var(--slate)">Cancld</div>
             </div>
           </div>
-          <!-- Opportunity list grouped by status -->
-          <div style="max-height:320px;overflow-y:auto">
-            ${FLOW_STEPS.concat([{s:'Cancelled',col:'var(--red)',bg:'var(--red-t)'}]).map(({s,col})=>{
-              const sRows = rows.filter(r=>r.s===s);
-              if (!sRows.length) return '';
-              return `<div style="margin-bottom:6px">
-                <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;padding:0 2px">
-                  ${statusDot(s)}<span style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:${col}">${s}</span>
-                  <span style="font-size:.6rem;color:var(--slate2)">${sRows.length}</span>
-                </div>
-                ${sRows.map(r=>{
-                  const safeKey=(r.c+'|||'+r.p).replace(/'/g,'__SQ__');
-                  return `<div onclick="openPipeDrawer('${safeKey}')" style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;background:#f8fafc;border:1px solid var(--border);cursor:pointer;margin-bottom:2px" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#f8fafc'">
-                    ${companyLogoFromName(r.c, 16)}
-                    <span style="font-size:.74rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.c+(r.p?' · '+r.p:'')}">${r.c}${r.p?` <span style="color:var(--slate);font-weight:400">· ${r.p}</span>`:''}</span>
-                    ${prioBadge(r.prio||'Medium')}
-                  </div>`;
-                }).join('')}
+          <!-- Opportunity list grouped by status — collapsible -->
+          ${(()=>{
+            const SHOW_INITIAL = 5;
+            const allOpps = FLOW_STEPS.concat([{s:'Cancelled',col:'var(--red)',bg:'var(--red-t)'}])
+              .flatMap(({s,col}) => rows.filter(r=>r.s===s).map(r=>({...r,_sc:s,_col:col})));
+            const visibleItems = allOpps.slice(0,SHOW_INITIAL).map(r=>{
+              const safeKey=(r.c+'|||'+r.p).replace(/'/g,'__SQ__');
+              const prevS  = allOpps[allOpps.indexOf(r)-1]?._sc;
+              const header = r._sc !== prevS
+                ? `<div style="display:flex;align-items:center;gap:5px;margin:${allOpps.indexOf(r)===0?'0':'6px'} 0 3px;padding:0 2px">${statusDot(r._sc)}<span style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:${r._col}">${r._sc}</span><span style="font-size:.6rem;color:var(--slate2)">${rows.filter(x=>x.s===r._sc).length}</span></div>`
+                : '';
+              return header + `<div onclick="openPipeDrawer('${safeKey}')" style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;background:#f8fafc;border:1px solid var(--border);cursor:pointer;margin-bottom:2px" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#f8fafc'">
+                ${companyLogoFromName(r.c,16)}
+                <span style="font-size:.74rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.c}${r.p?` · <span style="color:var(--slate);font-weight:400">${r.p}</span>`:''}</span>
+                ${prioBadge(r.prio||'Medium')}
               </div>`;
-            }).join('')}
-          </div>`
+            }).join('');
+            const hiddenItems = allOpps.slice(SHOW_INITIAL).map(r=>{
+              const safeKey=(r.c+'|||'+r.p).replace(/'/g,'__SQ__');
+              const prevS  = allOpps[allOpps.indexOf(r)-1]?._sc;
+              const header = r._sc !== prevS
+                ? `<div style="display:flex;align-items:center;gap:5px;margin:6px 0 3px;padding:0 2px">${statusDot(r._sc)}<span style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:${r._col}">${r._sc}</span><span style="font-size:.6rem;color:var(--slate2)">${rows.filter(x=>x.s===r._sc).length}</span></div>`
+                : '';
+              return header + `<div onclick="openPipeDrawer('${safeKey}')" style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;background:#f8fafc;border:1px solid var(--border);cursor:pointer;margin-bottom:2px" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#f8fafc'">
+                ${companyLogoFromName(r.c,16)}
+                <span style="font-size:.74rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.c}${r.p?` · <span style="color:var(--slate);font-weight:400">${r.p}</span>`:''}</span>
+                ${prioBadge(r.prio||'Medium')}
+              </div>`;
+            }).join('');
+            const moreCount = allOpps.length - SHOW_INITIAL;
+            const moreBtn = moreCount > 0
+              ? `<div id="${ownerId}_opps_more" style="display:none">${hiddenItems}</div>
+                 <button onclick="toggleExpand('${ownerId}_opps_more',this)" style="width:100%;padding:4px;border:1px dashed var(--border);border-radius:6px;background:transparent;color:var(--blue);font-size:.7rem;cursor:pointer;font-family:var(--font);margin-top:4px">+ ${moreCount} more</button>`
+              : '';
+            return `<div>${visibleItems}${moreBtn}</div>`;
+          })()}`
           :`<div style="padding:12px;text-align:center;color:var(--slate2);font-size:.8rem;background:#f8fafc;border-radius:8px;border:1px solid var(--border)">No opportunities assigned</div>`}
         </div>
 
