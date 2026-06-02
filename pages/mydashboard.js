@@ -128,27 +128,14 @@ function renderMyDashboard() {
             <div style="font-size:.62rem;color:var(--slate);margin-top:2px">${myOpps.filter(r=>(r.prio||'Medium')===p&&r.s==='Running').length} running</div>
           </div>`).join('')}
       </div>
-      <!-- Opportunity list by status (replaces mini-bar) -->
-      <div style="padding:8px 0 4px;border-top:1px solid var(--border)">
+      <!-- Status mini-bar -->
+      <div style="display:flex;gap:4px;padding:8px 0 4px;border-top:1px solid var(--border)">
         ${['Running','Bidding','Pipeline','Prospect','Done','Cancelled'].map(s => {
-          const sOpps = myOpps.filter(r => r.s === s);
-          if (!sOpps.length) return '';
-          const sc = {Running:'var(--green)',Bidding:'var(--purple)',Pipeline:'var(--blue)',Prospect:'var(--amber)',Done:'var(--slate2)',Cancelled:'var(--red)'}[s];
-          return `<div style="margin-bottom:6px">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-              ${statusDot(s)}<span style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:${sc}">${s}</span>
-              <span style="font-size:.63rem;color:var(--slate2)">(${sOpps.length})</span>
-            </div>
-            ${sOpps.map(r => {
-              const safeKey = (r.c+'|||'+r.p).replace(/'/g,'__SQ__');
-              const sqOwner = (r.owner||'').replace(/'/g,'__SQ__');
-              return `<div style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:5px;cursor:pointer;background:#f8fafc;margin-bottom:2px" onclick="openPipeDrawer('${safeKey}')">
-                ${companyLogoFromName(r.c, 16)}
-                <span style="font-size:.74rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.c}${r.p?' · <span style="color:var(--slate);font-weight:400">'+r.p+'</span>':''}</span>
-                ${prioBadge(r.prio||'Medium')}
-                <span class="contact-link" onclick="event.stopPropagation();UI.nf('',null,'${sqOwner}')" style="font-size:.68rem;flex-shrink:0">${r.owner||''}</span>
-              </div>`;
-            }).join('')}
+          const n   = myOpps.filter(r=>r.s===s).length;
+          const sc  = {Running:'var(--green)',Bidding:'var(--purple)',Pipeline:'var(--blue)',Prospect:'var(--amber)',Done:'var(--slate2)',Cancelled:'var(--red)'}[s];
+          return `<div style="flex:1;text-align:center;padding:5px 2px;border-radius:6px;background:${n>0?'#f8fafc':'transparent'};cursor:pointer" onclick="UI.nf('${s}',null,'${sqMe}')">
+            <div style="font-size:.95rem;font-weight:700;color:${n>0?sc:'var(--slate2)'}">${n}</div>
+            <div style="font-size:.58rem;color:var(--slate)">${s}</div>
           </div>`;
         }).join('')}
       </div>
