@@ -58,7 +58,15 @@ function renderOwners() {
   <!-- ══════════════════════════════════════════════════ -->
   ${DATA_OWNERS.map(o => {
     const name     = o.displayName || ((o.firstName||'')+' '+(o.lastName||'')).trim();
-    const rows     = DATA_PIPE.filter(r => r.owner === name);
+    const rows     = DATA_PIPE.filter(r => r.owner === name).sort((a,b)=>{
+      const OPO={'Critical':0,'High':1,'Medium':2,'Low':3};
+      const OSO={'Running':0,'Bidding':1,'Pipeline':2,'Prospect':3,'Done':4,'Cancelled':5};
+      const pd=(OPO[a.prio||'Medium']??2)-(OPO[b.prio||'Medium']??2);
+      if(pd!==0)return pd;
+      const sd=(OSO[a.s]??9)-(OSO[b.s]??9);
+      if(sd!==0)return sd;
+      return(a.c||'').localeCompare(b.c||'');
+    });
     const col      = OC[name] || '#64748b';
     const ini      = name.split(' ').map(w=>w[0]).join('');
     const tasks    = DATA_TASKS.filter(t => t.responsible===name && t.status==='Open').length;
