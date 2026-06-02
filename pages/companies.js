@@ -176,6 +176,7 @@ function openCompanyDrawer(safeId) {
     <button class="sbtn sbtn-p" onclick="saveCompanyDrawer('${esc(co.id||co.name)}')" style="flex:1">✓ Save</button>
     <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('company','','','${esc(co.id||co.name)}')">+ Task</button>
     <button class="sbtn" style="background:var(--purple-t);color:var(--purple);border:1px solid var(--purple-l)" onclick="openNewContactDrawer('${esc(co.name)}')">+ Contact</button>
+    <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archiveCompany('${esc(co.id||co.name)}')">⊘ Archive</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   const logoHtml = companyLogo(co.website,co.name,32);
@@ -208,6 +209,34 @@ async function saveCompanyDrawer(origId) {
 }
 
 // ── New Company Drawer ────────────────────────────────────────
+// ── Archive Company ──────────────────────────────────────────
+async function archiveCompany(safeId) {
+  const id = safeId.replace(/__SQ__/g,"'");
+  const co = DATA_COMPANIES.find(r => r.id===id||r.name===id);
+  if (!co) return;
+  // Check: no linked opportunities
+  const linkedOpps = DATA_PIPE.filter(r => r.c===co.name || r.coId===co.id);
+  if (linkedOpps.length > 0) {
+    toast(`⚠ Cannot archive — ${linkedOpps.length} linked opportunity/ies. Unlink them first.`,'error');
+    return;
+  }
+  // Check: no linked contacts
+  const linkedConts = DATA_CONTACTS.filter(r => r.company===co.name || r.coId===co.id);
+  if (linkedConts.length > 0) {
+    toast(`⚠ Cannot archive — ${linkedConts.length} linked contact(s). Unlink them first.`,'error');
+    return;
+  }
+  if (!confirm(`Archive "${co.name}"?\nIt will be hidden from all views but kept in Excel.`)) return;
+  try {
+    await P.archiveRecord(activeCfg.sheets.companies, co._row, 'L');
+    toast('✓ Archived','success');
+    closeDrawer();
+    const j = await P.loadSheet(activeCfg.sheets.companies);
+    DATA_COMPANIES = P.parseCompanies(j);
+    updateCounts(); renderCompanies();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
 function openNewCompanyDrawer() {
   const indOpts = INDUSTRIES.map(i=>`<option>${i}</option>`).join('');
   const body = `
