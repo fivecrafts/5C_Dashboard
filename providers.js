@@ -132,11 +132,11 @@ const MsProvider = (() => {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!headers.length) return [];
 
-      // Rev 22 — 13 cols A–M (Category removed, Phone+Email removed)
+      // Rev 22+ — col N(13) = Archived flag
       const COL = {
         pid:0, p:1, c:2, d:3, s:4, prio:5,
         createdDate:6, updDate:7, owner:8, contact:9,
-        projStart:10, src:11, coId:12
+        projStart:10, src:11, coId:12, archived:13
       };
 
       // Helper: get cell value, strip HYPERLINK formula if present
@@ -167,7 +167,8 @@ const MsProvider = (() => {
           src:         cell(row, COL.src),
           coId:        cell(row, COL.coId),
         };
-        if (rec.c || rec.pid) out.push(rec);
+        rec.archived = cell(row, COL.archived);
+        if ((rec.c || rec.pid) && rec.archived !== 'Y') out.push(rec);
       });
       return out;
     },
@@ -186,7 +187,7 @@ const MsProvider = (() => {
         createdDate:'Created Date', updDate:'Updated Date', coId:'Company ID',
       };
       const IDX = {id:0,firstName:1,lastName:2,email:3,phone:4,web:5,
-                   company:6,linkedOpps:7,src:8,createdDate:9,updDate:10,coId:11};
+                   company:6,linkedOpps:7,src:8,createdDate:9,updDate:10,coId:11,archived:12};
       return dataRows.map((row, i) => {
         const rec = mapRow(row, headers, CMAP);
         // Index-based fallback if header lookup returned empty
@@ -204,7 +205,7 @@ const MsProvider = (() => {
         rec.createdDate = excelDate(rec.createdDate);
         rec.updDate     = excelDate(rec.updDate);
         return rec;
-      }).filter(r => r.firstName || r.lastName);
+      }).filter(r => (r.firstName || r.lastName) && r.archived !== 'Y');
     },
     parseTasks(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
@@ -258,7 +259,7 @@ const MsProvider = (() => {
       if (!dataRows || !dataRows.length) return [];
       // Rev 19: Priority col D(3) inserted; website→E(4), industry→F(5)…
       // Schema: A=id, B=name, C=type, D=prio, E=website, F=industry, G=country, H=owner, I=notes, J=createdDate, K=updDate
-      const COL_FALLBACK = { id:0, name:1, type:2, prio:3, website:4, industry:5, country:6, owner:7, notes:8, createdDate:9, updDate:10 };
+      const COL_FALLBACK = { id:0, name:1, type:2, prio:3, website:4, industry:5, country:6, owner:7, notes:8, createdDate:9, updDate:10, archived:11 };
       const CMAP = {
         id:'Company ID', name:'Company Name', type:'Type', prio:'Priority',
         website:'Website', industry:'Industry', country:'Country',
@@ -276,7 +277,7 @@ const MsProvider = (() => {
         rec.createdDate = excelDate(rec.createdDate);
         rec.updDate     = excelDate(rec.updDate);
         return rec;
-      }).filter(r => r.name || r.id);
+      }).filter(r => (r.name || r.id) && r.archived !== 'Y');
     },
 
     parseCodelists(json) {
@@ -351,6 +352,12 @@ const MsProvider = (() => {
       const r1 = await this.patchRange(s, `E${row._row}`, [[newS]]);
       await this.patchRange(s, `H${row._row}`, [[today]]).catch(() => {});
       return r1;
+    },
+
+    // Archive a record — PATCH the Archived col to "Y"
+    // sheet: sheet name, rowNum: Excel row number, col: column letter ('N','L','M')
+    async archiveRecord(sheet, rowNum, col) {
+      return this.patchRange(sheet, `${col}${rowNum}`, [['Y']]);
     },
 
     async savePriorityOnly(row, newP) {
