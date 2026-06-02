@@ -241,7 +241,10 @@ function openNewTaskFromContext() {
   if (drawerType === 'pipeline') {
     const [c, p] = drawerKey.split('|||');
     const row = DATA_PIPE.find(r => r.c === c && r.p === p);
-    openNewTask('opp', row ? esc(row.c + (row.p ? ' · ' + row.p : '')) : '', '');
+    // Also pass linked company (look up by client name)
+    const pipeCoRow = row ? (DATA_COMPANIES||[]).find(c=>c.name===row.c) : null;
+    const pipeCoId  = pipeCoRow ? (pipeCoRow.id||pipeCoRow.name) : (row ? row.c : '');
+    openNewTask('opp', row ? esc(row.c + (row.p ? ' · ' + row.p : '')) : '', '', esc(pipeCoId));
   } else if (drawerType === 'contact') {
     const row = DATA_CONTACTS.find(r => r.id === drawerKey || ((r.firstName + ' ' + r.lastName).trim() === drawerKey));
     const name = row ? ((row.firstName || '') + ' ' + (row.lastName || '')).trim() : '';
