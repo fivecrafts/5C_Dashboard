@@ -99,6 +99,7 @@ function openContactDrawer(safeId) {
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveContactDrawer()" style="flex:1">✓ Save</button>
     <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('contact','','${esc(name)}')">+ Task</button>
+    <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archiveContact('${esc(row.id)}')">⊘ Archive</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   openDrawer(name || 'Contact', body, foot, 'contact', id);
@@ -131,6 +132,35 @@ async function saveContactDrawer() {
 }
 
 // ── New Contact Drawer ────────────────────────────────────────
+// ── Archive Contact ──────────────────────────────────────────
+async function archiveContact(safeId) {
+  const id = safeId.replace(/__SQ__/g,"'");
+  const row = DATA_CONTACTS.find(r => r.id===id);
+  if (!row) return;
+  const fullName = ((row.firstName||'')+' '+(row.lastName||'')).trim();
+  // Check: no linked pipeline rows
+  const linkedOpps = DATA_PIPE.filter(r => r.contact === fullName);
+  if (linkedOpps.length > 0) {
+    toast(`⚠ Cannot archive — ${linkedOpps.length} opportunity/ies linked. Unlink them first.`,'error');
+    return;
+  }
+  // Check: no open linked tasks
+  const linkedTasks = DATA_TASKS.filter(t => t.linkedContact===fullName && t.status!=='Cancelled');
+  if (linkedTasks.length > 0) {
+    toast(`⚠ Cannot archive — ${linkedTasks.length} open task(s) linked. Cancel them first.`,'error');
+    return;
+  }
+  if (!confirm(`Archive "${fullName}"?\nIt will be hidden from all views but kept in Excel.`)) return;
+  try {
+    await P.archiveRecord(activeCfg.sheets.contacts, row._row, 'M');
+    toast('✓ Archived','success');
+    closeDrawer();
+    const j = await P.loadSheet(activeCfg.sheets.contacts);
+    DATA_CONTACTS = P.parseContacts(j);
+    updateCounts(); renderContacts('','');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
 function openNewContactDrawer(prefilledCompany) {
   const body = `
     <div class="field-row">
