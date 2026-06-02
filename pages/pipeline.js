@@ -262,6 +262,31 @@ async function createContactFromOpp(pipeRowNum) {
   } catch(e) { toast('Error: '+e.message,'error'); }
 }
 
+// ── Archive Opportunity ──────────────────────────────────────
+async function archiveOpp(k) {
+  const key = k.replace(/__SQ__/g,"'");
+  const [c, p] = key.split('|||');
+  const row = DATA_PIPE.find(r => r.c === c && r.p === p);
+  if (!row) return;
+  // Check: no linked tasks
+  const linkedTasks = DATA_TASKS.filter(t =>
+    t.linkedOpp && t.linkedOpp.includes(c) && t.status !== 'Cancelled'
+  );
+  if (linkedTasks.length > 0) {
+    toast(`⚠ Cannot archive — ${linkedTasks.length} open task(s) linked. Cancel them first.`, 'error');
+    return;
+  }
+  if (!confirm(`Archive "${c}${p?' · '+p:''}"?\nIt will be hidden from all views but kept in Excel.`)) return;
+  try {
+    await P.archiveRecord(activeCfg.sheets.pipeline, row._row, 'N');
+    toast('✓ Archived', 'success');
+    closeDrawer();
+    const j = await P.loadSheet(activeCfg.sheets.pipeline);
+    DATA_PIPE = P.parsePipeline(j);
+    updateCounts(); renderPipe('','','','');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
 function sortBy(col) {
   if (SORT_COL === col) SORT_DIR *= -1; else { SORT_COL = col; SORT_DIR = 1; }
   renderPipe('', '', '', '');
@@ -323,6 +348,7 @@ function openPipeDrawer(safeKey) {
   const foot = `
     <button class="sbtn sbtn-p" onclick="savePipeDrawer()" style="flex:1">✓ Save Changes</button>
     <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('opp','${esc(row.c + (row.p ? ' · ' + row.p : ''))}','')">+ Task</button>
+    <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archiveOpp('${esc(k)}')">⊘ Archive</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   openDrawer((row.c + (row.p ? ' · ' + row.p : '')) || 'Edit Opportunity', body, foot, 'pipeline', k);
