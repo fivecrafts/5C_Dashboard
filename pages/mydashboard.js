@@ -48,10 +48,21 @@ function renderMyDashboard() {
     return false;
   }
 
-  const myOpps  = DATA_PIPE.filter(r => isMe(r.owner)).sort((a,b) => (SO[a.s]??9)-(SO[b.s]??9));
+  const MPO = {'Critical':0,'High':1,'Medium':2,'Low':3};
+  const myOpps  = DATA_PIPE.filter(r => isMe(r.owner)).sort((a,b) => {
+    const pd = (MPO[a.prio||'Medium']??2)-(MPO[b.prio||'Medium']??2);
+    if (pd !== 0) return pd;
+    const sd = (SO[a.s]??9)-(SO[b.s]??9);
+    if (sd !== 0) return sd;
+    return (a.c||'').localeCompare(b.c||'');
+  });
   const myTasks = DATA_TASKS.filter(t => isMe(t.responsible) && t.status==='Open')
                     .sort((a,b) => (a.dueDate||'9999') < (b.dueDate||'9999') ? -1 : 1);
-  const myComp  = DATA_COMPANIES.filter(c => isMe(c.owner));
+  const myComp  = DATA_COMPANIES.filter(c => isMe(c.owner)).sort((a,b) => {
+    const pd = (MPO[a.prio||'Medium']??2)-(MPO[b.prio||'Medium']??2);
+    if (pd !== 0) return pd;
+    return (a.name||'').localeCompare(b.name||'');
+  });
   const overdue = myTasks.filter(t => t.dueDate && t.dueDate < today).length;
   const sqMe    = me.replace(/'/g,'__SQ__');
 
