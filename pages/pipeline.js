@@ -41,6 +41,8 @@ function renderPipe(q, fs, fp, fo) {
   q = q || ''; fs = fs || ''; fp = fp || ''; fo = fo || '';
 
   const SO = { Running:0, Bidding:1, Pipeline:2, Prospect:3, Done:4, Cancelled:5 };
+  const PO = {'Critical':0,'High':1,'Medium':2,'Low':3};
+  const SO2= {'Running':0,'Bidding':1,'Pipeline':2,'Prospect':3,'Done':4,'Cancelled':5};
   const filtered = DATA_PIPE
     .filter(r =>
       (!q  || (r.c + r.p + r.d + r.owner + r.contact).toLowerCase().includes(q)) &&
@@ -48,6 +50,13 @@ function renderPipe(q, fs, fp, fo) {
       (!fp || (r.prio||'Medium') === fp) &&
       (!fo || r.owner === fo)
     )
+    .sort((a,b) => {
+      const pd = (PO[a.prio||'Medium']??2) - (PO[b.prio||'Medium']??2);
+      if (pd !== 0) return pd;
+      const sd = (SO2[a.s]??9) - (SO2[b.s]??9);
+      if (sd !== 0) return sd;
+      return (a.c||'').localeCompare(b.c||'');
+    })
     .sort((a, b) => {
       if (SORT_COL === 's') return ((SO[a.s] ?? 9) - (SO[b.s] ?? 9)) * SORT_DIR;
       const av = (a[SORT_COL] || '').toLowerCase();
