@@ -42,6 +42,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
   q='';fs=fs||'';fr=fr||'';ftype=ftype||'';fprio=fprio||'';fcomp=fcomp||'';
 
   const today = new Date().toISOString().slice(0, 10);
+  const TPO = {'Critical':0,'High':1,'Medium':2,'Low':3};
   const filtered = DATA_TASKS.filter(r => {
     const overdue  = r.status === 'Open' && r.dueDate && r.dueDate < today;
     const fsMatch  = !fs || (fs === 'Overdue' ? overdue : r.status === fs);
@@ -51,6 +52,10 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
            (!ftype || r.type === ftype) &&
            (!fprio || (r.priority||'Medium') === fprio) &&
            (!fcomp || r.linkedCompany === fcomp);
+  }).sort((a,b) => {
+    const pd = (TPO[a.priority||'Medium']??2) - (TPO[b.priority||'Medium']??2);
+    if (pd !== 0) return pd;
+    return (a.taskName||a.type||'').localeCompare(b.taskName||b.type||'');
   });
   const open      = DATA_TASKS.filter(t => t.status === 'Open').length;
   const done      = DATA_TASKS.filter(t => t.status === 'Done').length;
