@@ -110,7 +110,12 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
         <td onclick="event.stopPropagation()">${buildTaskPrioDrop(r)}</td>
         <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openOppFromTask('${(r.linkedOpp || '').replace(/'/g, '__SQ__')}')">${r.linkedOpp || '—'}</span></td>
         <td style="font-size:.73rem"><span class="contact-link" onclick="event.stopPropagation();openContactFromTask('${(r.linkedContact || '').replace(/'/g, '__SQ__')}')">${r.linkedContact || '—'}</span></td>
-        <td style="font-size:.73rem">${r.linkedCompany ? `<span class="contact-link" onclick="event.stopPropagation();openCompanyFromName('${r.linkedCompany.replace(/'/g,'__SQ__')}')">${r.linkedCompany}</span>` : '—'}</td>
+        <td style="font-size:.73rem">${(()=>{
+          const co = r.linkedCompany ? (DATA_COMPANIES||[]).find(c=>c.id===r.linkedCompany||c.name===r.linkedCompany) : null;
+          const nm = co ? co.name : r.linkedCompany;
+          const safeNm = (nm||'').replace(/'/g,'__SQ__');
+          return nm ? `<div style="display:flex;align-items:center;gap:5px">${companyLogo(co?.website||'',nm,18)}<span class="contact-link" onclick="event.stopPropagation();openCompanyFromName('${safeNm}')" style="font-size:.75rem">${nm}</span></div>` : '—';
+        })()}</td>
         <td style="font-size:.75rem;${dueCls}">${r.dueDate || '—'}${isOverdue ? ' ⚠' : ''}</td>
         <td>${taskStatusBadge(r.status)}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.responsible ? `<span class="contact-link" onclick="UI.nf('',null,'${r.responsible.replace(/'/g,'__SQ__')}')">${r.responsible}</span>` : '—'}</td>
@@ -121,7 +126,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
 }
 
 // ── Task Form (shared by edit + new) ─────────────────────────
-function buildTaskForm(row, preOpp, preCont) {
+function buildTaskForm(row, preOpp, preCont, preCo) {
   const oppOptions = DATA_PIPE.map(r => {
     const label = r.c + (r.p ? ' · ' + r.p : '');
     const sel   = row ? row.linkedOpp === label : (preOpp && preOpp === label);
@@ -164,7 +169,7 @@ function buildTaskForm(row, preOpp, preCont) {
     <div class="field-group"><label>Linked Company</label>
       <select id="dt-comp">
         <option value="">— None —</option>
-        ${(DATA_COMPANIES||[]).map(co => `<option value="${esc(co.id)}"${(row?.linkedCompany||'')===(co.id||co.name)?' selected':''}>${co.name}</option>`).join('')}
+        ${(DATA_COMPANIES||[]).map(co => {const selVal=row?.linkedCompany||preCo||'';const sel=selVal&&(selVal===co.id||selVal===co.name);return `<option value="${esc(co.id)}"${sel?' selected':''}>${co.name}</option>`;}).join('')}
       </select>
     </div>
     <div class="field-group"><label>Notes</label><textarea id="dt-notes">${esc(row?.notes || '')}</textarea></div>
@@ -213,16 +218,7 @@ function openNewTask(context, linkedOpp, linkedContact, linkedCompany) {
   const foot = `
     <button class="sbtn sbtn-p" onclick="createTaskDrawer()" style="flex:1">+ Create Task</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
-  openDrawer('New Task', buildTaskForm(null, preOpp, preCont), foot, 'new-task', null);
-  // Prefill linked company after drawer renders
-  if (preCo) setTimeout(() => {
-    const sel = $('dt-comp');
-    if (sel) {
-      // Find option matching by id or name
-      const co = DATA_COMPANIES.find(c => c.id === preCo || c.name === preCo);
-      if (co) { for (const opt of sel.options) { if (opt.value === co.id) { opt.selected = true; break; } } }
-    }
-  }, 50);
+  openDrawer('New Task', buildTaskForm(null, preOpp, preCont, preCo), foot, 'new-task', null);
 }
 
 async function createTaskDrawer() {
