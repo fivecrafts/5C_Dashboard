@@ -144,22 +144,40 @@ function renderOwners() {
             ${rows.length>0?`<button onclick="UI.nf('',null,'${sq}')" style="padding:3px 10px;border:1px solid var(--blue-l);border-radius:5px;background:var(--blue-t);color:var(--blue);font-size:.7rem;font-family:var(--font);cursor:pointer">View all ${rows.length} →</button>`:''}
           </div>
           ${rows.length>0?`
-          <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px">
-            ${FLOW_STEPS.map(({s,col,bg,border},i)=>{
+          <!-- Compact flow bar (counts) -->
+          <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:10px">
+            ${FLOW_STEPS.map(({s,col,bg},i)=>{
               const n=rows.filter(r=>r.s===s).length;
-              return `<div onclick="UI.nf('${s}',null,'${sq}')" style="flex:1;text-align:center;padding:10px 4px;background:${n>0?bg:'#f8fafc'};cursor:pointer;border-right:${i<FLOW_STEPS.length-1?'1px solid var(--border)':'none'};transition:filter .15s" onmouseover="this.style.filter='brightness(.95)'" onmouseout="this.style.filter=''">
-                <div style="font-size:1.4rem;font-weight:800;color:${n>0?col:'var(--slate2)'};line-height:1">${n}</div>
-                <div style="font-size:.62rem;color:var(--slate);margin-top:3px;font-weight:${n>0?'600':'400'}">${s}</div>
+              return `<div onclick="UI.nf('${s}',null,'${sq}')" style="flex:1;text-align:center;padding:7px 3px;background:${n>0?bg:'#f8fafc'};cursor:pointer;border-right:${i<FLOW_STEPS.length-1?'1px solid var(--border)':'none'};opacity:${n===0?'0.4':'1'}">
+                <div style="font-size:1.1rem;font-weight:800;color:${n>0?col:'var(--slate2)'}">${n}</div>
+                <div style="font-size:.57rem;color:var(--slate)">${s}</div>
               </div>`;
             }).join('')}
-            <div onclick="UI.nf('Cancelled',null,'${sq}')" style="flex:.65;text-align:center;padding:10px 4px;background:${cancelled>0?'var(--red-t)':'#f8fafc'};border-left:2px dashed var(--border);cursor:pointer">
-              <div style="font-size:1.4rem;font-weight:800;color:${cancelled>0?'var(--red)':'var(--slate2)'};line-height:1">${cancelled}</div>
-              <div style="font-size:.62rem;color:var(--slate);margin-top:3px">Cancelled</div>
+            <div onclick="UI.nf('Cancelled',null,'${sq}')" style="flex:.6;text-align:center;padding:7px 3px;background:${rows.filter(r=>r.s==='Cancelled').length>0?'var(--red-t)':'#f8fafc'};border-left:2px dashed var(--border);cursor:pointer;opacity:${rows.filter(r=>r.s==='Cancelled').length===0?'0.4':'1'}">
+              <div style="font-size:1.1rem;font-weight:800;color:${rows.filter(r=>r.s==='Cancelled').length>0?'var(--red)':'var(--slate2)'}">C:${rows.filter(r=>r.s==='Cancelled').length}</div>
+              <div style="font-size:.57rem;color:var(--slate)">Cancld</div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:3px;font-size:.6rem;color:var(--slate2)">
-            ${FLOW_STEPS.map(({s},i)=>`<span style="font-weight:500">${s}</span>${i<FLOW_STEPS.length-1?'<span>→</span>':''}`).join('')}
-            <span style="margin-left:8px;padding-left:8px;border-left:1px dashed var(--slate2);color:var(--red)">✕ Cancelled</span>
+          <!-- Opportunity list grouped by status -->
+          <div style="max-height:320px;overflow-y:auto">
+            ${FLOW_STEPS.concat([{s:'Cancelled',col:'var(--red)',bg:'var(--red-t)'}]).map(({s,col})=>{
+              const sRows = rows.filter(r=>r.s===s);
+              if (!sRows.length) return '';
+              return `<div style="margin-bottom:6px">
+                <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;padding:0 2px">
+                  ${statusDot(s)}<span style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:${col}">${s}</span>
+                  <span style="font-size:.6rem;color:var(--slate2)">${sRows.length}</span>
+                </div>
+                ${sRows.map(r=>{
+                  const safeKey=(r.c+'|||'+r.p).replace(/'/g,'__SQ__');
+                  return `<div onclick="openPipeDrawer('${safeKey}')" style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;background:#f8fafc;border:1px solid var(--border);cursor:pointer;margin-bottom:2px" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#f8fafc'">
+                    ${companyLogoFromName(r.c, 16)}
+                    <span style="font-size:.74rem;font-weight:500;color:var(--navy2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.c+(r.p?' · '+r.p:'')}">${r.c}${r.p?` <span style="color:var(--slate);font-weight:400">· ${r.p}</span>`:''}</span>
+                    ${prioBadge(r.prio||'Medium')}
+                  </div>`;
+                }).join('')}
+              </div>`;
+            }).join('')}
           </div>`
           :`<div style="padding:12px;text-align:center;color:var(--slate2);font-size:.8rem;background:#f8fafc;border-radius:8px;border:1px solid var(--border)">No opportunities assigned</div>`}
         </div>
