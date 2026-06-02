@@ -40,13 +40,18 @@ function renderCompanies(q, ft, fown, fprio, find) {
   if (find === undefined) { const el=$('cofind');  find = el?el.value:''; }
   q='';ft=ft||'';fown=fown||'';fprio=fprio||'';find=find||'';
 
+  const CPO = {'Critical':0,'High':1,'Medium':2,'Low':3};
   const filtered = DATA_COMPANIES.filter(r =>
     (!q  || (r.name+r.industry+r.country+r.owner+r.notes).toLowerCase().includes(q.toLowerCase())) &&
     (!ft   || r.type === ft) &&
     (!fown || r.owner === fown) &&
     (!fprio|| r.prio === fprio) &&
     (!find || r.industry === find)
-  );
+  ).sort((a,b) => {
+    const pd = (CPO[a.prio||'Medium']??2) - (CPO[b.prio||'Medium']??2);
+    if (pd !== 0) return pd;
+    return (a.name||'').localeCompare(b.name||'');
+  });
   const customers = DATA_COMPANIES.filter(r => r.type==='Customer'||r.type==='Both').length;
   const partners  = DATA_COMPANIES.filter(r => r.type==='Partnership'||r.type==='Both').length;
   const withOpps  = DATA_COMPANIES.filter(r => DATA_PIPE.some(p => p.c===r.name)).length;
@@ -169,7 +174,7 @@ function openCompanyDrawer(safeId) {
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveCompanyDrawer('${esc(co.id||co.name)}')" style="flex:1">✓ Save</button>
-    <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('company','${esc(co.id||co.name)}','${esc(co.name)}')">+ Task</button>
+    <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('company','','','${esc(co.id||co.name)}')">+ Task</button>
     <button class="sbtn" style="background:var(--purple-t);color:var(--purple);border:1px solid var(--purple-l)" onclick="openNewContactDrawer('${esc(co.name)}')">+ Contact</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
