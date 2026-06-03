@@ -72,7 +72,12 @@ function renderOwners() {
     const tasks    = DATA_TASKS.filter(t => t.responsible===name && t.status==='Open').length;
     const overdue  = DATA_TASKS.filter(t => t.responsible===name && t.status==='Open' && t.dueDate && t.dueDate<today).length;
     const sq       = name.replace(/'/g,'__SQ__');
-    const myComp   = DATA_COMPANIES.filter(c => c.owner===name);
+    const CPO2  = {'Critical':0,'High':1,'Medium':2,'Low':3};
+    const coSort = (a,b) => {
+      const pd = (CPO2[a.prio||'Medium']??2)-(CPO2[b.prio||'Medium']??2);
+      return pd !== 0 ? pd : (a.name||'').localeCompare(b.name||'');
+    };
+    const myComp   = DATA_COMPANIES.filter(c => c.owner===name).sort(coSort);
     const customers    = myComp.filter(c=>c.type==='Customer'||c.type==='Both');
     const partnerCos   = myComp.filter(c=>c.type==='Partnership'||c.type==='Both');
     const ownerId  = 'own_' + name.replace(/[^a-z0-9]/gi,'_');
