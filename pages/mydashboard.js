@@ -69,9 +69,9 @@ function renderMyDashboard() {
   // Priority counts
   const prioCounts  = {};
   PRIORITIES.forEach(p => { prioCounts[p] = myOpps.filter(r => (r.prio||'Medium')===p).length; });
-  const prioColors  = { Critical:'var(--pink)',  High:'var(--red)',  Medium:'var(--amber)',  Low:'var(--green)' };
-  const prioBgs     = { Critical:'var(--pink-t)',High:'var(--red-t)',Medium:'var(--amber-t)',Low:'var(--green-t)' };
-  const prioBorders = { Critical:'var(--pink-l)',High:'var(--red-l)',Medium:'var(--amber-l)',Low:'var(--green-l)' };
+  const prioColors  = { Critical:'#7c3aed', High:'#ea580c', Medium:'#eab308', Low:'#16a34a' };
+  const prioBgs     = { Critical:'#ede9fe',   High:'#fff1e6',   Medium:'#fefce8',   Low:'#dcfce7' };
+  const prioBorders = { Critical:'#c4b5fd',   High:'#fed7aa',   Medium:'#fef08a',   Low:'#bbf7d0' };
 
   // Companies split
   const customers   = myComp.filter(c => c.type==='Customer'||c.type==='Both');
