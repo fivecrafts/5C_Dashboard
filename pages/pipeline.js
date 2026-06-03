@@ -313,12 +313,12 @@ function openPipeDrawer(safeKey) {
     <div class="field-group"><label>Project / Scope</label><input id="d-p" value="${esc(row.p)}"></div>
     <div class="field-group"><label>Detail / Roles &amp; Requirements</label><textarea id="d-d">${esc(row.d)}</textarea></div>
     <div class="field-row">
-      <div class="field-group"><label>Status</label><select id="d-s">
-        ${ALL_S.map(s => `<option value="${s}"${row.s === s ? ' selected' : ''}${!allowed.includes(s) && s !== row.s ? ' disabled style="color:#ccc"' : ''}>${s}</option>`).join('')}
-      </select></div>
-      <div class="field-group"><label>Priority</label><select id="d-prio">
-        ${PRIORITIES.map(p => `<option${(row.prio||'Medium')===p?' selected':''}>${p}</option>`).join('')}
-      </select></div>
+      <div class="field-group"><label>Status</label>
+        ${buildDrawerStatusDrop('d-s', row.s, allowed, ALL_S)}
+      </div>
+      <div class="field-group"><label>Priority</label>
+        ${buildDrawerPrioDrop('d-prio', row.prio||'Medium')}
+      </div>
     </div>
     <div class="field-group"><label>Project Start</label><input id="d-projStart" type="date" value="${row.projStart || ''}"></div>
     <div class="field-row">
