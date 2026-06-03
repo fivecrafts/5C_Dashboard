@@ -128,6 +128,10 @@ let _openDrop = null;
 function closeDrop() {
   if (_openDrop) {
     _openDrop.classList.remove('open');
+    // Return menu to its original parent if it was moved to body
+    if (_openDrop.parentNode === document.body && _openDrop._originalParent) {
+      _openDrop._originalParent.appendChild(_openDrop);
+    }
     _openDrop = null;
   }
 }
@@ -138,15 +142,22 @@ document.addEventListener('click', (e) => {
 });
 
 function openDrop(menuId, triggerEl) {
-  if (_openDrop && _openDrop.id !== menuId) closeDrop();
+  if (_openDrop) {
+    const wasOpen = _openDrop.id === menuId;
+    closeDrop();
+    if (wasOpen) return; // toggle off
+  }
   const menu = document.getElementById(menuId);
   if (!menu) return;
-  // Position menu below trigger
+  // Move to body to escape overflow:auto stacking context in drawer
   const rect = triggerEl.getBoundingClientRect();
-  menu.style.top  = (rect.bottom + 4) + 'px';
-  menu.style.left = rect.left + 'px';
-  menu.classList.toggle('open');
-  _openDrop = menu.classList.contains('open') ? menu : null;
+  menu.style.top   = (rect.bottom + 4) + 'px';
+  menu.style.left  = rect.left + 'px';
+  menu.style.width = rect.width + 'px';
+  menu._originalParent = menu.parentNode;
+  document.body.appendChild(menu);
+  menu.classList.add('open');
+  _openDrop = menu;
 }
 
 // Build status badge HTML (inline, no ::before dot — uses coloured dot span)
