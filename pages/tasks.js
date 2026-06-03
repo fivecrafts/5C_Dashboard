@@ -149,10 +149,10 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
     </div>
     <div class="field-row">
       <div class="field-group"><label>Task Type</label><select id="dt-type">${typeOpts}</select></div>
-      <div class="field-group"><label>Priority</label><select id="dt-prio">${prioOpts}</select></div>
+      <div class="field-group"><label>Priority</label>${buildDrawerPrioDrop('dt-prio', row?.priority||'Medium')}</div>
     </div>
     <div class="field-row">
-      <div class="field-group"><label>Status</label><select id="dt-status">${statOpts}</select></div>
+      <div class="field-group"><label>Status</label>${buildDrawerStatusDrop('dt-status', row?.status||'Open', ['Open','Done','Cancelled'], ['Open','Done','Cancelled'])}</div>
       <div class="field-group"><label>Due Date</label><input id="dt-due" type="date" value="${row?.dueDate || ''}"></div>
     </div>
     <div class="field-group"><label>Responsible</label>
