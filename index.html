@@ -12,7 +12,7 @@
   --blue:#2563eb;--blue-l:#dbeafe;--blue-t:#eff6ff;
   --green:#059669;--green-l:#d1fae5;--green-t:#ecfdf5;
   --amber:#d97706;--amber-l:#fef3c7;--amber-t:#fffbeb;
-  --red:#dc2626;--red-l:#fee2e2;--red-t:#fef2f2;
+  --red:#7c3aed;--red-l:#ede9fe;--red-t:#fef2f2;
   --purple:#7c3aed;--purple-l:#ede9fe;--purple-t:#f5f3ff;
   --slate:#64748b;--slate2:#94a3b8;
   --teal:#0891b2;--teal-l:#cffafe;--teal-t:#ecfeff;
@@ -121,10 +121,10 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
 .s-cancelled{background:var(--red-l);color:#991b1b;}.s-cancelled::before{color:var(--red);}
 .ts-open{background:var(--blue-l);color:#1e40af;}.ts-done{background:var(--green-l);color:#065f46;}
 .ts-cancelled{background:#f1f5f9;color:#475569;}.ts-overdue{background:var(--red-l);color:#991b1b;}
-.pri-critical{background:#fdf2f8;color:#db2777;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;border:1px solid #fbcfe8;}
-.pri-high{background:var(--red-l);color:#991b1b;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;}
-.pri-medium{background:var(--amber-l);color:#92400e;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;}
-.pri-low{background:var(--green-l);color:#065f46;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;}
+.pri-critical{background:#ede9fe;color:#7c3aed;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;border:1px solid #c4b5fd;}
+.pri-high{background:#fff1e6;color:#ea580c;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;border:1px solid #fed7aa;}
+.pri-medium{background:#fefce8;color:#a16207;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;border:1px solid #fef08a;}
+.pri-low{background:#dcfce7;color:#16a34a;font-size:.64rem;padding:1px 7px;border-radius:4px;font-weight:600;}
 .cat-project{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
 .cat-partnership{background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8;}
 .cat-prospect{background:#fef9c3;color:#854d0e;border:1px solid #fef08a;}
@@ -244,8 +244,8 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
       <div class="sb-user">👤 <span id="sb-user">—</span> <span class="sb-pvdr" id="sb-pvdr"></span></div>
     </div>
     <nav class="sb-nav">
-      <div class="ni" onclick="UI.nav('owners',this)"><span class="ic" style="font-size:.68rem;font-weight:700">5C</span><span> 5C Dashboard</span><span class="pl" id="pl-owners">—</span></div>
-      <div class="ni active" onclick="UI.nav('mydashboard',this)"><span class="ic">👤</span><span> My Dashboard</span><span class="pl" id="pl-myopps">—</span></div>
+      <div class="ni active" onclick="UI.nav('owners',this)"><span class="ic" style="font-size:.68rem;font-weight:700">5C</span><span> 5C Dashboard</span><span class="pl" id="pl-owners">—</span></div>
+      <div class="ni" onclick="UI.nav('mydashboard',this)"><span class="ic">👤</span><span> My Dashboard</span><span class="pl" id="pl-myopps">—</span></div>
       <div class="ni" onclick="UI.nav('companies',this)"><span class="ic">🏢</span><span> Companies</span><span class="pl" id="pl-companies">—</span></div>
       <div class="ni" onclick="UI.nav('pipeline',this)"><span class="ic">⚡</span><span> All Opportunities</span><span class="pl" id="pl-all">—</span></div>
       <div class="ni" onclick="UI.nav('tasks',this)"><span class="ic">✅</span><span> Tasks</span><span class="pl" id="pl-tasks">—</span></div>
@@ -258,7 +258,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
 
   <div class="main">
     <div class="topbar">
-      <div class="tb-l"><span class="tb-t" id="tb-t">Dashboard</span><span style="color:var(--slate2)">·</span><span class="tb-s" id="tb-s">Overview</span></div>
+      <div class="tb-l"><span class="tb-t" id="tb-t">5C Dashboard</span><span style="color:var(--slate2)">·</span><span class="tb-s" id="tb-s">Team overview · Opportunities · Companies</span></div>
       <div class="tb-r">
         <span class="chip ch-a" id="chip-chg" style="display:none">⚠ <span id="chg-n">0</span> unsaved</span>
         <span id="my-opps-chip" style="display:none;cursor:pointer" class="chip ch-b" onclick="UI.nf('',null,window.CURRENT_USER_NAME)"></span>
@@ -275,7 +275,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
     </div>
 
     <div class="content">
-      <div class="page active" id="page-mydashboard"><div id="mydash-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
+      <div class="page" id="page-mydashboard"><div id="mydash-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
       <div class="page" id="page-dashboard"><div id="dash-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
       <div class="page" id="page-pipeline">
         <div id="pipe-out"></div>
@@ -288,7 +288,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
       <div class="page" id="page-contacts"><div id="contacts-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
       <div class="page" id="page-tasks"><div id="tasks-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
       <div class="page" id="page-companies"><div id="companies-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
-      <div class="page" id="page-owners"><div id="owners-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
+      <div class="page active" id="page-owners"><div id="owners-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
     </div>
   </div>
 </div>
