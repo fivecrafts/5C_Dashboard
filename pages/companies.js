@@ -151,9 +151,9 @@ function openCompanyDrawer(safeId) {
       </select></div>
     </div>
     <div class="field-row">
-      <div class="field-group"><label>Priority</label><select id="dco-prio">
-        ${PRIORITIES.map(p=>`<option${(co.prio||'Medium')===p?' selected':''}>${p}</option>`).join('')}
-      </select></div>
+      <div class="field-group"><label>Priority</label>
+        ${buildDrawerPrioDrop('dco-prio', co.prio||'Medium')}
+      </div>
       <div class="field-group"><label>Industry</label><select id="dco-ind">
         <option value="">— Select —</option>${indOpts}
       </select></div>
@@ -247,9 +247,9 @@ function openNewCompanyDrawer() {
       </select></div>
     </div>
     <div class="field-row">
-      <div class="field-group"><label>Priority</label><select id="dco-prio">
-        ${PRIORITIES.map(p=>`<option${p==='Medium'?' selected':''}>${p}</option>`).join('')}
-      </select></div>
+      <div class="field-group"><label>Priority</label>
+        ${buildDrawerPrioDrop('dco-prio','Medium')}
+      </div>
       <div class="field-group"><label>Industry</label><select id="dco-ind">
         <option value="">— Select —</option>${indOpts}
       </select></div>
