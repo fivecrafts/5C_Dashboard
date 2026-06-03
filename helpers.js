@@ -170,7 +170,7 @@ function buildDrawerStatusDrop(elId, currentVal, allowedVals, allStatuses) {
   return `<div class="cdrop" style="display:block">
     <input type="hidden" id="${elId}" value="${currentVal}">
     <div class="cdrop-trigger" style="width:100%;justify-content:flex-start;gap:8px;padding:8px 12px"
-      onclick="openDrop('${menuId}',this)">
+      onclick="event.stopPropagation();openDrop('${menuId}',this)">
       <span id="${elId}_dot">${statusDot(currentVal)}</span>
       <span id="${elId}_lbl" style="flex:1">${currentVal}</span>
       <span class="arr">▾</span>
@@ -190,7 +190,7 @@ function buildDrawerPrioDrop(elId, currentVal) {
   return `<div class="cdrop" style="display:block">
     <input type="hidden" id="${elId}" value="${cur}">
     <div class="cdrop-trigger" style="width:100%;justify-content:flex-start;gap:8px;padding:8px 12px"
-      onclick="openDrop('${menuId}',this)">
+      onclick="event.stopPropagation();openDrop('${menuId}',this)">
       <span id="${elId}_dot">${prioDot(cur)}</span>
       <span id="${elId}_lbl" style="flex:1">${cur}</span>
       <span class="arr">▾</span>
