@@ -131,7 +131,11 @@ function closeDrop() {
     _openDrop = null;
   }
 }
-document.addEventListener('click', closeDrop);
+document.addEventListener('click', (e) => {
+  // Don't close if clicking inside a cdrop element
+  if (e.target.closest && e.target.closest('.cdrop')) return;
+  closeDrop();
+});
 
 function openDrop(menuId, triggerEl) {
   if (_openDrop && _openDrop.id !== menuId) closeDrop();
