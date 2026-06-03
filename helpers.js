@@ -156,6 +156,68 @@ function prioDot(p) {
   return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[p]||'#94a3b8'};display:inline-block;flex-shrink:0"></span>`;
 }
 
+
+// ── Styled dropdown for detail drawers (status + priority) ──────
+// Renders a cdrop that also keeps a hidden <input> in sync for save functions
+function buildDrawerStatusDrop(elId, currentVal, allowedVals, allStatuses) {
+  const menuId = 'drd-' + elId;
+  const opts = (allStatuses||ALL_S).map(s => {
+    const dis = allowedVals && !allowedVals.includes(s) && s !== currentVal;
+    return `<div class="cdrop-opt${currentVal===s?' active':''}${dis?' disabled':''}"
+      onclick="closeDrop();_setDrop('${elId}','${menuId}',this,'${s}')">
+      ${statusDot(s)}<span>${s}</span></div>`;
+  }).join('');
+  return `<div class="cdrop" style="display:block">
+    <input type="hidden" id="${elId}" value="${currentVal}">
+    <div class="cdrop-trigger" style="width:100%;justify-content:flex-start;gap:8px;padding:8px 12px"
+      onclick="openDrop('${menuId}',this)">
+      <span id="${elId}_dot">${statusDot(currentVal)}</span>
+      <span id="${elId}_lbl" style="flex:1">${currentVal}</span>
+      <span class="arr">▾</span>
+    </div>
+    <div class="cdrop-menu" id="${menuId}" style="width:100%">${opts}</div>
+  </div>`;
+}
+
+function buildDrawerPrioDrop(elId, currentVal) {
+  const cur = currentVal || 'Medium';
+  const menuId = 'drd-' + elId;
+  const opts = PRIORITIES.map(p =>
+    `<div class="cdrop-opt${cur===p?' active':''}"
+      onclick="closeDrop();_setDrop('${elId}','${menuId}',this,'${p}')">
+      ${prioDot(p)}<span>${p}</span></div>`
+  ).join('');
+  return `<div class="cdrop" style="display:block">
+    <input type="hidden" id="${elId}" value="${cur}">
+    <div class="cdrop-trigger" style="width:100%;justify-content:flex-start;gap:8px;padding:8px 12px"
+      onclick="openDrop('${menuId}',this)">
+      <span id="${elId}_dot">${prioDot(cur)}</span>
+      <span id="${elId}_lbl" style="flex:1">${cur}</span>
+      <span class="arr">▾</span>
+    </div>
+    <div class="cdrop-menu" id="${menuId}" style="width:100%">${opts}</div>
+  </div>`;
+}
+
+// Update hidden input + trigger label when option selected
+function _setDrop(elId, menuId, optEl, val) {
+  const hidden = document.getElementById(elId);
+  if (hidden) hidden.value = val;
+  const lbl = document.getElementById(elId + '_lbl');
+  if (lbl) lbl.textContent = val;
+  // Re-render dot
+  const dot = document.getElementById(elId + '_dot');
+  if (dot) {
+    const isStatus = ['Running','Bidding','Pipeline','Prospect','Done','Cancelled'].includes(val);
+    dot.innerHTML = isStatus ? statusDot(val) : prioDot(val);
+  }
+  // Update active class
+  const menu = document.getElementById(menuId);
+  if (menu) menu.querySelectorAll('.cdrop-opt').forEach(o => {
+    o.classList.toggle('active', o.querySelector('span:last-child')?.textContent === val);
+  });
+}
+
 // ── Update all sidebar count badges ──
 function updateCounts() {
   // Guard every element — some sidebar items may not exist in all layouts
