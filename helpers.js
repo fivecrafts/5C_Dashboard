@@ -166,6 +166,18 @@ function statusDot(s) {
                 Prospect:'var(--amber)',Done:'var(--slate2)',Cancelled:'var(--red)'};
   return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[s]||'#ccc'};display:inline-block;flex-shrink:0"></span>`;
 }
+function taskStatusDot(s) {
+  const cols = {Open:'var(--blue)', Done:'var(--green)', Cancelled:'#94a3b8'};
+  return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[s]||'#94a3b8'};display:inline-block;flex-shrink:0"></span>`;
+}
+function taskStatusBadge(s) {
+  const styles = {
+    Open:      'background:var(--blue-t);color:var(--blue);border:1px solid var(--blue-l)',
+    Done:      'background:var(--green-t);color:var(--green);border:1px solid var(--green-l)',
+    Cancelled: 'background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0',
+  };
+  return `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:.72rem;font-weight:600;${styles[s]||styles.Open}">${s}</span>`;
+}
 function prioDot(p) {
   const cols = {Critical:'#7c3aed',High:'#ea580c',Medium:'#eab308',Low:'#16a34a'};
   return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[p]||'#94a3b8'};display:inline-block;flex-shrink:0"></span>`;
@@ -188,6 +200,27 @@ function buildDrawerStatusDrop(elId, currentVal, allowedVals, allStatuses) {
       onclick="event.stopPropagation();openDrop('${menuId}',this)">
       <span id="${elId}_dot">${statusDot(currentVal)}</span>
       <span id="${elId}_lbl" style="flex:1">${currentVal}</span>
+      <span class="arr">▾</span>
+    </div>
+    <div class="cdrop-menu" id="${menuId}" style="width:100%">${opts}</div>
+  </div>`;
+}
+
+function buildDrawerTaskStatusDrop(elId, currentVal) {
+  const cur     = currentVal || 'Open';
+  const menuId  = 'drd-' + elId;
+  const TSTAT   = ['Open','Done','Cancelled'];
+  const opts    = TSTAT.map(s =>
+    `<div class="cdrop-opt${cur===s?' active':''}"
+      onclick="closeDrop();_setDrop('${elId}','${menuId}',this,'${s}')">
+      ${taskStatusDot(s)}<span>${s}</span></div>`
+  ).join('');
+  return `<div class="cdrop" style="display:block">
+    <input type="hidden" id="${elId}" value="${cur}">
+    <div class="cdrop-trigger" style="width:100%;justify-content:flex-start;gap:8px;padding:8px 12px"
+      onclick="event.stopPropagation();openDrop('${menuId}',this)">
+      <span id="${elId}_dot">${taskStatusDot(cur)}</span>
+      <span id="${elId}_lbl" style="flex:1">${cur}</span>
       <span class="arr">▾</span>
     </div>
     <div class="cdrop-menu" id="${menuId}" style="width:100%">${opts}</div>
