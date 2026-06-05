@@ -1,6 +1,34 @@
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
+// TASKS INLINE STATUS DROPDOWN  — Open=Blue, Done=Green, Cancelled=Grey
+// ════════════════════════════════════════════════════════════════
+function buildTaskStatusDrop(r) {
+  const menuId = 'tsd-' + (r.id||'').replace(/[^a-z0-9]/gi,'_');
+  const cur    = r.status || 'Open';
+  const TSTAT  = ['Open','Done','Cancelled'];
+  const opts   = TSTAT.map(s => {
+    const safeId = (r.id||'').replace(/'/g,'__SQ__');
+    return `<div class="cdrop-opt${cur===s?' active':''}" onclick="closeDrop();saveTaskStatusDirect('${safeId}','${s}')">${taskStatusDot(s)}<span>${s}</span></div>`;
+  }).join('');
+  return `<div class="cdrop" onclick="event.stopPropagation()"><div class="cdrop-trigger" onclick="event.stopPropagation();openDrop('${menuId}',this)" style="min-width:100px">${taskStatusDot(cur)}<span>${cur}</span><span class="arr">▾</span></div><div class="cdrop-menu" id="${menuId}">${opts}</div></div>`;
+}
+
+async function saveTaskStatusDirect(safeId, newS) {
+  const id  = safeId.replace(/__SQ__/g,"'");
+  const row = DATA_TASKS.find(r => r.id === id);
+  if (!row || row.status === newS) return;
+  try {
+    const ok = await P.patchRange(activeCfg.sheets.tasks, `G${row._row}`, [[newS]]);
+    if (ok) {
+      row.status = newS;
+      renderTasks();
+      toast(`✓ Status → ${newS}`, 'success');
+    } else toast('⚠ Save failed','error');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+// ════════════════════════════════════════════════════════════════
 // TASKS INLINE PRIORITY DROPDOWN
 // ════════════════════════════════════════════════════════════════
 function buildTaskPrioDrop(r) {
@@ -117,7 +145,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
           return nm ? `<div style="display:flex;align-items:center;gap:5px">${companyLogo(co?.website||'',nm,18)}<span class="contact-link" onclick="event.stopPropagation();openCompanyFromName('${safeNm}')" style="font-size:.75rem">${nm}</span></div>` : '—';
         })()}</td>
         <td style="font-size:.75rem;${dueCls}">${r.dueDate || '—'}${isOverdue ? ' ⚠' : ''}</td>
-        <td>${taskStatusBadge(r.status)}</td>
+        <td onclick="event.stopPropagation()">${buildTaskStatusDrop(r)}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.responsible ? `<span class="contact-link" onclick="UI.nf('',null,'${r.responsible.replace(/'/g,'__SQ__')}')">${r.responsible}</span>` : '—'}</td>
         <td style="font-size:.72rem;color:var(--slate2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
       </tr>`;
@@ -152,7 +180,7 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
       <div class="field-group"><label>Priority</label>${buildDrawerPrioDrop('dt-prio', row?.priority||'Medium')}</div>
     </div>
     <div class="field-row">
-      <div class="field-group"><label>Status</label>${buildDrawerStatusDrop('dt-status', row?.status||'Open', ['Open','Done','Cancelled'], ['Open','Done','Cancelled'])}</div>
+      <div class="field-group"><label>Status</label>${buildDrawerTaskStatusDrop('dt-status', row?.status||'Open')}</div>
       <div class="field-group"><label>Due Date</label><input id="dt-due" type="date" value="${row?.dueDate || ''}"></div>
     </div>
     <div class="field-group"><label>Responsible</label>
