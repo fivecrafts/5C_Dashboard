@@ -229,6 +229,7 @@ function openTaskDrawer(safeId) {
   drawerKey = id;
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveTaskDrawer()" style="flex:1">✓ Save Task</button>
+    <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archiveTaskCheck('${esc(row.id)}')">⊘ Archive</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
   openDrawer(row.id + ' · ' + row.type, buildTaskForm(row), foot, 'task', id);
 }
@@ -274,6 +275,26 @@ async function saveTaskDrawer() {
 }
 
 // ── New task (optionally pre-filled from opp or contact) ──────
+// ── Archive Task ─────────────────────────────────────────────
+async function archiveTaskCheck(safeId) {
+  const id  = safeId.replace(/__SQ__/g,"'");
+  const row = DATA_TASKS.find(r => r.id === id);
+  if (!row) return;
+  const label = row.taskName || row.type || row.id;
+  if (!confirm(`Archive "${label}"?\nIt will be hidden from all views but kept in Excel.`)) return;
+  try {
+    const ok = await P.archiveTask(row);
+    if (ok) {
+      toast('✓ Task archived','success');
+      closeDrawer();
+      const j = await P.loadSheet(activeCfg.sheets.tasks);
+      DATA_TASKS = P.parseTasks(j);
+      updateCounts();
+      renderTasks();
+    } else toast('⚠ Save failed','error');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
 function openNewTask(context, linkedOpp, linkedContact, linkedCompany) {
   closeDrawer();
   drawerKey = null;
