@@ -136,19 +136,8 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
         <td style="font-size:.82rem;font-weight:600;color:var(--navy2)">${r.taskName || '—'}</td>
         <td style="font-size:.78rem;font-weight:500">${r.type || '—'}</td>
         <td onclick="event.stopPropagation()">${buildTaskPrioDrop(r)}</td>
-        <td style="font-size:.73rem" onclick="event.stopPropagation()">${(()=>{
-          if (!r.linkedOpp) return '—';
-          const parts = r.linkedOpp.split(' · ');
-          const co    = (DATA_COMPANIES||[]).find(c=>c.name===parts[0]);
-          const safeOpp = r.linkedOpp.replace(/'/g,'__SQ__');
-          return `<div style="display:flex;align-items:center;gap:5px"><span style="flex-shrink:0">${companyLogoFromName(parts[0],16)}</span><span class="contact-link" onclick="openOppFromTask('${safeOpp}')" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">${r.linkedOpp}</span></div>`;
-        })()}</td>
-        <td style="font-size:.73rem" onclick="event.stopPropagation()">${(()=>{
-          if (!r.linkedContact) return '—';
-          const ini = r.linkedContact.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
-          const safeCont = r.linkedContact.replace(/'/g,'__SQ__');
-          return `<div style="display:flex;align-items:center;gap:5px"><span style="width:18px;height:18px;border-radius:50%;background:var(--blue-t);color:var(--blue);display:inline-flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;flex-shrink:0">${ini}</span><span class="contact-link" onclick="openContactFromTask('${safeCont}')">${r.linkedContact}</span></div>`;
-        })()}</td>
+        <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedOpp ? `<span class="contact-link" onclick="openOppFromTask('${r.linkedOpp.replace(/'/g,'__SQ__')}')">${r.linkedOpp}</span>` : '—'}</td>
+        <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedContact ? `<span class="contact-link" onclick="openContactFromTask('${r.linkedContact.replace(/'/g,'__SQ__')}')">${r.linkedContact}</span>` : '—'}</td>
         <td style="font-size:.73rem">${(()=>{
           const co = r.linkedCompany ? (DATA_COMPANIES||[]).find(c=>c.id===r.linkedCompany||c.name===r.linkedCompany) : null;
           const nm = co ? co.name : r.linkedCompany;
