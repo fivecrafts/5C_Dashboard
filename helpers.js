@@ -278,6 +278,7 @@ function updateCounts() {
   s_('pl-contacts', DATA_CONTACTS.length);
   s_('pl-companies',DATA_COMPANIES.length);
   s_('pl-tasks',    DATA_TASKS.filter(t => t.status === 'Open').length + ' open');
+  s_('pl-events',   (DATA_EVENTS||[]).length || '—');
   s_('pl-owners',   DATA_OWNERS.length);
   const n = Object.keys(CHANGES).length + Object.keys(PRIO_CHANGES).length;
   s_('chg-n', n);
