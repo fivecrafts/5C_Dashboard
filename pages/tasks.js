@@ -232,14 +232,34 @@ async function saveTaskDrawer() {
   const row = DATA_TASKS.find(r => r.id === id);
   if (!row) return;
   toast('Saving…', 'info');
+  const newDueDate = $('dt-due').value;
+  const dateChanged = newDueDate && newDueDate !== row.dueDate;
   const fields = {
-    taskName: ($('dt-taskname') ? $('dt-taskname').value.trim() : ''),
-    type: $('dt-type').value, priority: $('dt-prio').value, status: $('dt-status').value,
-    dueDate: $('dt-due').value, responsible: $('dt-resp').value.trim(),
-    linkedOpp: $('dt-opp').value, linkedContact: $('dt-cont').value,
+    taskName:      $('dt-taskname') ? $('dt-taskname').value.trim() : '',
+    type:          $('dt-type').value,
+    priority:      $('dt-prio').value,
+    status:        $('dt-status').value,
+    dueDate:       newDueDate,
+    responsible:   $('dt-resp').value.trim(),
+    linkedOpp:     $('dt-opp').value,
+    linkedContact: $('dt-cont').value,
     linkedCompany: $('dt-comp') ? $('dt-comp').value : '',
-    notes: $('dt-notes').value.trim(),
+    notes:         $('dt-notes').value.trim(),
+    outlookEventId: row.outlookEventId || '',
   };
+  // Handle Outlook event
+  if (row.outlookEventId && dateChanged) {
+    // Existing event + date changed → offer update
+    const update = confirm(`Due date changed to ${newDueDate}.\nUpdate the linked Outlook Task reminder?`);
+    if (update) {
+      const ok = await P.updateCalendarEvent(row.outlookEventId, newDueDate, fields);
+      toast(ok ? '📅 Outlook Task reminder updated' : '⚠ Update failed — check Tasks.ReadWrite permission', ok ? 'success' : 'error');
+    }
+  } else if (!row.outlookEventId && newDueDate && $('dt-cal') && $('dt-cal').checked) {
+    // No event yet but checkbox ticked → create one
+    const evId = await P.createCalendarEvent(fields);
+    if (evId) { fields.outlookEventId = evId; toast('📅 Added to Outlook Tasks / To-Do', 'info'); }
+  }
   try {
     const ok = await P.saveTaskRow(row, fields);
     if (ok) { Object.assign(row, fields); renderTasks('', '', '', '', '', ''); toast('✓ Saved', 'success'); closeDrawer(); }
