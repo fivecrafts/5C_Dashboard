@@ -218,7 +218,7 @@ function openDrawer(title, bodyHTML, footHTML, type, dKey) {
   $('drawer-title').textContent   = title;
   $('drawer-body').innerHTML      = bodyHTML;
   $('drawer-foot').innerHTML      = footHTML;
-  $('drawer-task-btn').style.display = (type === 'pipeline' || type === 'contact') ? 'inline-block' : 'none';
+  $('drawer-task-btn').style.display = 'none'; // Task button kept in drawer footer only
   $('drawer-overlay').classList.add('open');
   $('drawer').classList.add('open');
 }
