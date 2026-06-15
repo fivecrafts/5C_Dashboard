@@ -201,6 +201,23 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
       </select>
     </div>
     <div class="field-group"><label>Notes</label><textarea id="dt-notes">${esc(row?.notes || '')}</textarea></div>
+
+    <!-- Outlook Task integration -->
+    <div style="margin:8px 0;padding:10px 12px;background:var(--blue-t);border:1px solid var(--blue-l);border-radius:8px">
+      ${row?.outlookEventId ? `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span style="font-size:.78rem;color:var(--blue)">📅 Outlook Task linked</span>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.75rem;color:var(--slate)">
+            <input type="checkbox" id="dt-cal" style="accent-color:var(--blue)">
+            Remove on save
+          </label>
+        </div>` : `
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="dt-cal" style="width:15px;height:15px;accent-color:var(--blue)" ${!row ? 'checked' : ''}>
+          <span style="font-size:.78rem;color:var(--blue)">📅 ${row ? 'Add to Outlook Tasks' : 'Add to Outlook Tasks (no time blocked)'}</span>
+        </label>`}
+    </div>
+
     ${row ? `<div style="font-size:.7rem;color:var(--slate);margin-top:4px">${row.id} · Created ${row.createdDate || '—'}</div>` : ''}`;
 }
 
