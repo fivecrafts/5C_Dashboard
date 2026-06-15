@@ -219,7 +219,7 @@ const MsProvider = (() => {
       // Rev 19+: col L (index 11) = Task Name (free text label)
       const TCOL = { id:0, type:1, linkedOpp:2, linkedContact:3, linkedCompany:4,
                      createdDate:5, status:6, responsible:7, dueDate:8, notes:9,
-                     priority:10, taskName:11 };
+                     priority:10, taskName:11, linkedEvent:12, outlookEventId:13 };
       return dataRows.map((row, i) => {
         const rec = {
           _row:          i + 2,
@@ -235,6 +235,8 @@ const MsProvider = (() => {
           dueDate:       excelDate(String(row[TCOL.dueDate] ?? '').trim()),
           notes:         String(row[TCOL.notes]        ?? '').trim(),
           priority:      String(row[TCOL.priority]     ?? '').trim(),
+          linkedEvent:   String(row[TCOL.linkedEvent]   ?? '').trim(),
+          outlookEventId:String(row[TCOL.outlookEventId]?? '').trim(),
         };
         return rec;
       }).filter(r => r.id || r.type);
@@ -355,9 +357,85 @@ const MsProvider = (() => {
     },
 
     // Archive a record — PATCH the Archived col to "Y"
-    // sheet: sheet name, rowNum: Excel row number, col: column letter ('N','L','M')
     async archiveRecord(sheet, rowNum, col) {
       return this.patchRange(sheet, `${col}${rowNum}`, [['Y']]);
+    },
+
+    // ── Outlook Task (To-Do) integration ────────────────────────
+    // Requires Tasks.ReadWrite delegated permission (NOT Calendars)
+    // Creates a task in Outlook/To-Do with due date + reminder — no time slot blocked
+    // Stores "listId||taskId" in col N so we can update/complete later
+    async _getDefaultTaskListId() {
+      try {
+        const t   = await token();
+        const res = await fetch('https://graph.microsoft.com/v1.0/me/todo/lists', {
+          headers: { Authorization: 'Bearer ' + t }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        const def  = (data.value || []).find(l => l.wellknownListName === 'defaultList') || data.value?.[0];
+        return def?.id || null;
+      } catch { return null; }
+    },
+
+    async createCalendarEvent(task) {
+      try {
+        const t      = await token();
+        const listId = await this._getDefaultTaskListId();
+        if (!listId) return null;
+        const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Prague';
+        const title = `📋 ${task.taskName || task.type || 'Task'}`
+          + (task.linkedOpp ? ` · ${task.linkedOpp}` : '')
+          + (task.linkedCompany ? ` [${task.linkedCompany}]` : '');
+        const bodyText = [
+          task.taskName || task.type,
+          task.linkedOpp    ? `Opportunity: ${task.linkedOpp}`  : '',
+          task.linkedCompany? `Company: ${task.linkedCompany}` : '',
+          task.linkedContact? `Contact: ${task.linkedContact}` : '',
+          task.notes        ? `Notes: ${task.notes}` : '',
+          'Open 5C Dashboard: https://fivecrafts.github.io/5C_Dashboard/',
+        ].filter(Boolean).join('\n');
+        const res = await fetch(
+          `https://graph.microsoft.com/v1.0/me/todo/lists/${encodeURIComponent(listId)}/tasks`,
+          {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title,
+              body:          { content: bodyText, contentType: 'text' },
+              dueDateTime:   task.dueDate ? { dateTime: task.dueDate + 'T09:00:00.000Z', timeZone: 'UTC' } : undefined,
+              reminderDateTime: task.dueDate ? { dateTime: task.dueDate + 'T09:00:00.000Z', timeZone: 'UTC' } : undefined,
+              isReminderOn:  true,
+              importance:    task.priority === 'Critical' || task.priority === 'High' ? 'high' : 'normal',
+            }),
+          }
+        );
+        if (!res.ok) return null;
+        const created = await res.json();
+        // Store as "listId||taskId" for later updates
+        return created.id ? `${listId}||${created.id}` : null;
+      } catch { return null; }
+    },
+
+    async updateCalendarEvent(compositeId, newDate) {
+      if (!compositeId || !newDate) return false;
+      try {
+        const [listId, taskId] = compositeId.split('||');
+        if (!listId || !taskId) return false;
+        const t   = await token();
+        const res = await fetch(
+          `https://graph.microsoft.com/v1.0/me/todo/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`,
+          {
+            method: 'PATCH',
+            headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              dueDateTime:      { dateTime: newDate + 'T09:00:00.000Z', timeZone: 'UTC' },
+              reminderDateTime: { dateTime: newDate + 'T09:00:00.000Z', timeZone: 'UTC' },
+            }),
+          }
+        );
+        return res.ok;
+      } catch { return false; }
     },
 
     async savePriorityOnly(row, newP) {
@@ -426,12 +504,13 @@ const MsProvider = (() => {
 
     async saveTaskRow(row, fields) {
       // Rev 19+: 12 cols A:L, taskName at col L (index 11)
-      return this.patchRange(CFG.microsoft.sheets.tasks, `A${row._row}:L${row._row}`,
+      return this.patchRange(CFG.microsoft.sheets.tasks, `A${row._row}:N${row._row}`,
         [[row.id, fields.type, fields.linkedOpp, fields.linkedContact,
           fields.linkedCompany || '',
           row.createdDate, fields.status, fields.responsible,
           fields.dueDate, fields.notes, fields.priority,
-          fields.taskName || '']]
+          fields.taskName || '', row.linkedEvent || '',
+          fields.outlookEventId || row.outlookEventId || '']]
       );
     },
 
@@ -449,7 +528,7 @@ const MsProvider = (() => {
         today, fields.status || 'Open',
         fields.responsible || '', fields.dueDate || '',
         fields.notes || '', fields.priority || 'Medium',
-        fields.taskName || '']]);
+        fields.taskName || '', '', fields.outlookEventId || '']]);
     },
   };
 })();
@@ -524,6 +603,8 @@ const GglProvider = (() => {
     async saveStatusOnly(row, s)   { return MsProvider.saveStatusOnly.call(this, row, s); },
     async savePriorityOnly(row, p)  { return MsProvider.savePriorityOnly.call(this, row, p); },
     async loadOwnerPhoto(email)     { return null; }, // Google provider — not implemented
+    async createCalendarEvent(task) { return null; }, // Google provider — not implemented
+    async updateCalendarEvent(id, d){ return false; },
     async saveContactRow(row, f)   { return MsProvider.saveContactRow.call(this, row, f); },
     async createContact(f)         { return MsProvider.createContact.call(this, f); },
     async saveTaskRow(row, f)      { return MsProvider.saveTaskRow.call(this, row, f); },
