@@ -242,7 +242,8 @@ const MsProvider = (() => {
       // Rev 19+: col L (index 11) = Task Name (free text label)
       const TCOL = { id:0, type:1, linkedOpp:2, linkedContact:3, linkedCompany:4,
                      createdDate:5, status:6, responsible:7, dueDate:8, notes:9,
-                     priority:10, taskName:11, linkedEvent:12, outlookEventId:13 };
+                     priority:10, taskName:11, linkedEvent:12, outlookEventId:13,
+                     archived:14 };
       return dataRows.map((row, i) => {
         const rec = {
           _row:          i + 2,
@@ -260,9 +261,10 @@ const MsProvider = (() => {
           priority:      String(row[TCOL.priority]     ?? '').trim(),
           linkedEvent:   String(row[TCOL.linkedEvent]   ?? '').trim(),
           outlookEventId:String(row[TCOL.outlookEventId]?? '').trim(),
+          archived:      String(row[TCOL.archived]       ?? '').trim(),
         };
         return rec;
-      }).filter(r => r.id || r.type);
+      }).filter(r => (r.id || r.type) && r.archived !== 'Y');
     },
 
     parseOwners(json) {
@@ -382,6 +384,11 @@ const MsProvider = (() => {
     // Archive a record — PATCH the Archived col to "Y"
     async archiveRecord(sheet, rowNum, col) {
       return this.patchRange(sheet, `${col}${rowNum}`, [['Y']]);
+    },
+
+    // Archive a Task — col O = Archived
+    async archiveTask(row) {
+      return this.patchRange(CFG.microsoft.sheets.tasks, `O${row._row}`, [['Y']]);
     },
 
     // ── Outlook Task (To-Do) integration ────────────────────────
@@ -627,6 +634,12 @@ const GglProvider = (() => {
     async savePriorityOnly(row, p)  { return MsProvider.savePriorityOnly.call(this, row, p); },
     async loadOwnerPhoto(email)     { return null; }, // Google provider — not implemented
     async createCalendarEvent(task) { return null; }, // Google provider — not implemented
+    parseEvents(j)         { return MsProvider.parseEvents.call(this, j); },
+    async saveEventStatus(e,s){ return false; },
+    async saveEventRow(e,f)  { return false; },
+    async createEvent(f)     { return false; },
+    async archiveEvent(e)    { return false; },
+    async archiveTask(row)   { return false; },
     async updateCalendarEvent(id, d){ return false; },
     async saveContactRow(row, f)   { return MsProvider.saveContactRow.call(this, row, f); },
     async createContact(f)         { return MsProvider.createContact.call(this, f); },
