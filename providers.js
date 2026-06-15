@@ -108,14 +108,37 @@ const MsProvider = (() => {
   return {
     async tryAutoLogin() {
       boot();
-      await app.handleRedirectPromise().catch(() => {});
+      try {
+        const result = await app.handleRedirectPromise();
+        // If redirect returned an error (e.g. AADSTS160021 stale session), clear cache
+        if (result === null) {
+          const accs = app.getAllAccounts();
+          if (accs.length) {
+            // Try silent token to confirm session is still alive
+            try {
+              await app.acquireTokenSilent({ scopes: c.scopes, account: accs[0] });
+            } catch (silentErr) {
+              // Silent failed → clear cached accounts so login page prompts fresh
+              if (silentErr.errorCode === 'interaction_required' ||
+                  (silentErr.message && silentErr.message.includes('AADSTS160021'))) {
+                await app.clearCache().catch(() => {});
+                return null; // caller will trigger signIn() with prompt:'select_account'
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // handleRedirectPromise itself threw (e.g. AADSTS160021 on redirect return)
+        await app.clearCache().catch(() => {});
+        return null;
+      }
       const accs = app.getAllAccounts();
       return accs.length ? { name: accs[0].name, email: accs[0].username } : null;
     },
 
     async signIn() {
       boot();
-      await app.loginRedirect({ scopes: c.scopes });
+      await app.loginRedirect({ scopes: c.scopes, prompt: 'select_account' });
       return null;
     },
 
