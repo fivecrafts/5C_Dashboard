@@ -127,8 +127,14 @@ const UI = {
       const user = await P.signIn();
       if (user) this._onLogin(user);
     } catch (e) {
-      if (!e.message.includes('user_cancelled') && !e.message.includes('popup_closed'))
-        showErr(e.message);
+      const msg = e.message || '';
+      // AADSTS160021 = stale session — clear and redirect to fresh login
+      if (msg.includes('AADSTS160021') || msg.includes('interaction_required')) {
+        await P.signOut().catch(()=>{});
+        await P.signIn(); // will use prompt:'select_account'
+      } else if (!msg.includes('user_cancelled') && !msg.includes('popup_closed')) {
+        showErr(msg);
+      }
     }
   },
 
