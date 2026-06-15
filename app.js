@@ -15,10 +15,11 @@ const App = {
         P.loadSheet(activeCfg.sheets.codelists),
       ]);
       // Wave 2: larger sheets
-      const [cj, tj, compj] = await Promise.all([
+      const [cj, tj, compj, ej] = await Promise.all([
         P.loadSheet(activeCfg.sheets.contacts),
         P.loadSheet(activeCfg.sheets.tasks),
         P.loadSheet(activeCfg.sheets.companies).catch(() => ({ values: [] })),
+        P.loadSheet(activeCfg.sheets.events).catch(()=>({values:[]})),
       ]);
       DATA_PIPE      = P.parsePipeline(pj);
       DATA_CONTACTS  = P.parseContacts(cj);
