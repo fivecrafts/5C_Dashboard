@@ -266,6 +266,30 @@ const MsProvider = (() => {
         return rec;
       }).filter(r => (r.id || r.type) && r.archived !== 'Y');
     },
+    // <-- Ensure there is a comma here
+
+    parseEvents(json) {
+      const { dataRows } = parseSheetByLetter(json);
+      if (!dataRows || !dataRows.length) return [];
+      const ECOL = { 
+        id:0, name:1, dateFrom:2, dateTo:3, place:4, 
+        status:5, mode:6, owner:7, industry:8, webLink:9, archived:10 
+      };
+      return dataRows.map((row, i) => ({
+        _row:      i + 2,
+        id:        String(row[ECOL.id] || '').trim(),
+        name:      String(row[ECOL.name] || '').trim(),
+        dateFrom:  excelDate(row[ECOL.dateFrom]),
+        dateTo:    excelDate(row[ECOL.dateTo]),
+        place:     String(row[ECOL.place] || '').trim(),
+        status:    String(row[ECOL.status] || 'Watching').trim(),
+        mode:      String(row[ECOL.mode] || '').trim(),
+        owner:     String(row[ECOL.owner] || '').trim(),
+        industry:  String(row[ECOL.industry] || '').trim(),
+        webLink:   String(row[ECOL.webLink] || '').trim(),
+        archived:  String(row[ECOL.archived] || '').trim()
+      })).filter(r => r.name && r.archived !== 'Y');
+    },
 
     parseOwners(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
