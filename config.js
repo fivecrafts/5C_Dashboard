@@ -21,6 +21,7 @@ const CFG = {
       pipeline:  'Pipeline',
       contacts:  'Contacts',
       tasks:     'Tasks',
+    events:    'Events',
       owners:    'Owners',
       codelists: 'Codelists',
       companies: 'Companies',
@@ -39,6 +40,7 @@ const CFG = {
       pipeline:  'Pipeline',
       contacts:  'Contacts',
       tasks:     'Tasks',
+    events:    'Events',
       owners:    'Owners',
       codelists: 'Codelists',
       companies: 'Companies',
@@ -65,7 +67,7 @@ const CONT_COLS = {
 const TASK_COLS = {
   A:'id', B:'type', C:'linkedOpp', D:'linkedContact', E:'linkedCompany',
   F:'createdDate', G:'status', H:'responsible', I:'dueDate', J:'notes', K:'priority',
-  L:'taskName', M:'linkedEvent', N:'outlookEventId'
+  L:'taskName', M:'linkedEvent', N:'outlookEventId', O:'archived'
 };
 const OWN_COLS  = { A:'id', B:'firstName', C:'lastName', D:'displayName', E:'email', F:'notes' };
 // Rev 19 — Priority col D inserted, all subsequent shift +1
@@ -91,3 +93,13 @@ const FLOW = {
 // ════════════════════════════════════════════════════════════════
 const ALL_S          = ['Running','Bidding','Pipeline','Prospect','Done','Cancelled'];
 const OWNER_PALETTE  = ['#2563eb','#059669','#7c3aed','#d97706','#dc2626','#0891b2','#65a30d','#c2410c'];
+
+// Events sheet columns (rev 28d, 20 cols A–T)
+const EVENT_COLS = {
+  id:0, name:1, owner:2, place:3, country:4, mode:5, status:6, industry:7,
+  dateFrom:8, dateTo:9, webLink:10, description:11, audience:12, followup:13,
+  linkedCompanies:14, linkedOpps:15, linkedContacts:16,
+  createdDate:17, updDate:18, archived:19
+};
+const EVENT_STATUSES  = ['Active','Watching','Not Interested'];
+const EVENT_MODES     = ['Offline','Online','Hybrid'];
