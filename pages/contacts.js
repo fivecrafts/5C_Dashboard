@@ -6,7 +6,7 @@
 function renderContacts(q, fc) {
   q = q || ''; fc = fc || '';
   const filtered = DATA_CONTACTS.filter(r => {
-    const name = ((r.firstName || '') + ' ' + (r.lastName || '')).trim();
+    const name = contactDisplayName(r);  // Surname Name format
     return (!q  || (name + r.email + r.company + r.phone).toLowerCase().includes(q.toLowerCase())) &&
            (!fc || r.company === fc);
   }).sort((a,b)=>{
@@ -82,7 +82,7 @@ function openContactDrawer(safeId) {
     <div class="field-group"><label>Company</label>
       <select id="dc-co">
         <option value="">— None —</option>
-        ${(DATA_COMPANIES||[]).map(c=>`<option value="${esc(c.name)}"${(row.company||'')=== c.name?' selected':''}>${c.name}</option>`).join('')}
+        ${[...(DATA_COMPANIES||[])].sort((a,b)=>(a.name||"").localeCompare(b.name||"")).map(c=>`<option value="${esc(c.name)}"${(row.company||'')=== c.name?' selected':''}>${c.name}</option>`).join('')}
       </select>
     </div>
     <div class="field-row">
@@ -170,7 +170,7 @@ function openNewContactDrawer(prefilledCompany) {
     <div class="field-group"><label>Company</label>
       <select id="dc-co">
         <option value="">— None —</option>
-        ${(DATA_COMPANIES||[]).map(c=>`<option value="${esc(c.name)}"${(prefilledCompany&&prefilledCompany=== c.name)?' selected':''}>${c.name}</option>`).join('')}
+        ${[...(DATA_COMPANIES||[])].sort((a,b)=>(a.name||"").localeCompare(b.name||"")).map(c=>`<option value="${esc(c.name)}"${(prefilledCompany&&prefilledCompany=== c.name)?' selected':''}>${c.name}</option>`).join('')}
       </select>
     </div>
     <div class="field-row">
