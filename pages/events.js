@@ -127,6 +127,29 @@ function addAudChip(sel) {
   _updateChipHidden('dev-aud-chips','dev-aud');
   sel.value = '';
 }
+function removeContChip(safeVal) {
+  const val = safeVal.replace(/__SQ__/g,"'");
+  const chips = document.getElementById('dev-lcont-chips');
+  if (!chips) return;
+  chips.querySelectorAll('span[data-val]').forEach(s=>{ if(s.dataset.val===val) s.remove(); });
+  _updateChipHidden('dev-lcont-chips','dev-lcont');
+}
+function addContChip(sel) {
+  const val = sel.value; if (!val) return;
+  const hidden = document.getElementById('dev-lcont');
+  if (hidden && hidden.value && hidden.value.includes(val)) { sel.value=''; return; }
+  const m = val.match(/^(.*?)\s*\((C-\d+)\)$/);
+  const cName = m ? m[1].trim() : val;
+  const chips = document.getElementById('dev-lcont-chips');
+  if (!chips) return;
+  const span = document.createElement('span');
+  span.dataset.val = val;
+  span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--purple-t,#f3e8ff);border:1px solid var(--purple-l,#e9d5ff);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--accent5)';
+  span.innerHTML = `${cName}<span onclick="this.parentElement.remove();_updateChipHidden('dev-lcont-chips','dev-lcont')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span>`;
+  chips.appendChild(span);
+  _updateChipHidden('dev-lcont-chips','dev-lcont');
+  sel.value = '';
+}
 function removeCoChip(safeVal) {
   const val = safeVal.replace(/__SQ__/g,"'");
   const chips = document.getElementById('dev-lco-chips');
@@ -350,8 +373,25 @@ function openEventDrawer(safeId) {
     </div>
     <!-- Linked Opportunities hidden — maintained via pipeline drawer -->
     <input type="hidden" id="dev-lopp" value="${esc(ev.linkedOpps||'')}">
-    <div class="field-group"><label>Linked Contacts</label>${parseLinks(ev.linkedContacts,'C')}
-      <input id="dev-lcont" value="${esc(ev.linkedContacts||'')}" style="margin-top:4px" placeholder="Name (C-NNN), …"></div>
+    <div class="field-group"><label>Linked Contacts</label>
+      <div id="dev-lcont-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;background:#fff;margin-bottom:4px">
+        ${(ev.linkedContacts||'').split(',').filter(x=>x.trim()).map(a=>{
+          const m=a.trim().match(/^(.*?)\s*\((C-\d+)\)$/);
+          const cName=m?m[1].trim():a.trim();
+          const safeA=a.trim().replace(/'/g,'__SQ__');
+          return `<span data-val="${a.trim()}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--purple-t,#f3e8ff);border:1px solid var(--purple-l,#e9d5ff);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--accent5)">${cName}<span onclick="removeContChip('${safeA}')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span></span>`;
+        }).join('')}
+      </div>
+      <input type="hidden" id="dev-lcont" value="${esc(ev.linkedContacts||'')}">
+      <select id="dev-lcont-add" onchange="addContChip(this)" style="font-size:.78rem">
+        <option value="">+ Add contact…</option>
+        ${[...(DATA_CONTACTS||[])].sort((a,b)=>(a.lastName||'').localeCompare(b.lastName||'')||(a.firstName||'').localeCompare(b.firstName||'')).map(c=>{
+          const name=contactDisplayName(c);
+          const stored=((c.firstName||'')+' '+(c.lastName||'')).trim();
+          return `<option value="${esc(stored+' ('+c.id+')')}">${name}</option>`;
+        }).join('')}
+      </select>
+    </div>
     <div class="field-group"><label>Followup / Result</label>
       <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;max-height:120px;overflow-y:auto">${followupHtml}</div>
       <textarea id="dev-followup" rows="2" placeholder="Append new entry (will be prefixed with today's date)…"></textarea>
