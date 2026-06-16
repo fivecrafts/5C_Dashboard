@@ -307,7 +307,7 @@ function openPipeDrawer(safeKey) {
           <div id="d-c-logo" style="flex-shrink:0">${companyLogoFromName(row.c, 28)}</div>
           <select id="d-c" style="flex:1" onchange="(()=>{const co=(DATA_COMPANIES||[]).find(c=>c.name===this.value);$('d-c-logo').innerHTML=co?companyLogo(co.website,co.name,28):companyLogoFromName(this.value,28);})()">
             <option value="">— Select company —</option>
-            ${(DATA_COMPANIES||[]).map(c=>`<option value="${esc(c.name)}"${row.c===c.name?' selected':''}>${c.name}</option>`).join('')}
+            ${[...(DATA_COMPANIES||[])].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(c=>`<option value="${esc(c.name)}"${row.c===c.name?' selected':''}>${c.name}</option>`).join('')}
           </select>
         </div></div>
     <div class="field-group"><label>Project / Scope</label><input id="d-p" value="${esc(row.p)}"></div>
@@ -331,9 +331,10 @@ function openPipeDrawer(safeKey) {
         <div style="display:flex;gap:6px;align-items:center">
           <select id="d-rsp" style="flex:1">
             <option value="">— None —</option>
-            ${(DATA_CONTACTS||[]).map(c=>{
-              const n=((c.firstName||'')+' '+(c.lastName||'')).trim();
-              return `<option value="${esc(n)}"${(row.contact||'')=== n?' selected':''}>${n}${c.company?' · '+c.company:''}</option>`;
+            ${[...(DATA_CONTACTS||[])].sort((a,b)=>(a.lastName||'').localeCompare(b.lastName||'') || (a.firstName||'').localeCompare(b.firstName||'')).map(c=>{
+              const n=contactDisplayName(c);
+              const stored=((c.firstName||'')+' '+(c.lastName||'')).trim();
+              return `<option value="${esc(stored)}"${(row.contact||'')=== stored?' selected':''}>${n}${c.company?' · '+c.company:''}</option>`;
             }).join('')}
           </select>
           <button type="button" onclick="openNewContactFromOpp('${row._row}','${esc(row.c)}')"
