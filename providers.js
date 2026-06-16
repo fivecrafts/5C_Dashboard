@@ -268,27 +268,36 @@ const MsProvider = (() => {
     },
     // <-- Ensure there is a comma here
 
+    // parseEvents — full 20-col schema (rev 28d, cols A–T)
+    // A=id, B=name, C=owner, D=place, E=country, F=mode, G=status, H=industry,
+    // I=dateFrom, J=dateTo, K=webLink, L=description, M=audience, N=followup,
+    // O=linkedCompanies, P=linkedOpps, Q=linkedContacts, R=createdDate, S=updDate, T=archived
     parseEvents(json) {
       const { dataRows } = parseSheetByLetter(json);
       if (!dataRows || !dataRows.length) return [];
-      const ECOL = { 
-        id:0, name:1, dateFrom:2, dateTo:3, place:4, 
-        status:5, mode:6, owner:7, industry:8, webLink:9, archived:10 
-      };
       return dataRows.map((row, i) => ({
-        _row:      i + 2,
-        id:        String(row[ECOL.id] || '').trim(),
-        name:      String(row[ECOL.name] || '').trim(),
-        dateFrom:  excelDate(row[ECOL.dateFrom]),
-        dateTo:    excelDate(row[ECOL.dateTo]),
-        place:     String(row[ECOL.place] || '').trim(),
-        status:    String(row[ECOL.status] || 'Watching').trim(),
-        mode:      String(row[ECOL.mode] || '').trim(),
-        owner:     String(row[ECOL.owner] || '').trim(),
-        industry:  String(row[ECOL.industry] || '').trim(),
-        webLink:   String(row[ECOL.webLink] || '').trim(),
-        archived:  String(row[ECOL.archived] || '').trim()
-      })).filter(r => r.name && r.archived !== 'Y');
+        _row:            i + 2,
+        id:              String(row[0]  ?? '').trim(),
+        name:            String(row[1]  ?? '').trim(),
+        owner:           String(row[2]  ?? '').trim().replace(/^=HYPERLINK\("[^"]*","([^"]*)"\)$/i,'$1'),
+        place:           String(row[3]  ?? '').trim(),
+        country:         String(row[4]  ?? '').trim(),
+        mode:            String(row[5]  ?? '').trim(),
+        status:          String(row[6]  ?? '').trim() || 'Watching',
+        industry:        String(row[7]  ?? '').trim(),
+        dateFrom:        excelDate(String(row[8]  ?? '').trim()),
+        dateTo:          excelDate(String(row[9]  ?? '').trim()),
+        webLink:         String(row[10] ?? '').trim(),
+        description:     String(row[11] ?? '').trim(),
+        audience:        String(row[12] ?? '').trim(),
+        followup:        String(row[13] ?? '').trim(),
+        linkedCompanies: String(row[14] ?? '').trim(),
+        linkedOpps:      String(row[15] ?? '').trim(),
+        linkedContacts:  String(row[16] ?? '').trim(),
+        createdDate:     excelDate(String(row[17] ?? '').trim()),
+        updDate:         excelDate(String(row[18] ?? '').trim()),
+        archived:        String(row[19] ?? '').trim(),
+      })).filter(r => (r.name || r.id) && r.archived !== 'Y');
     },
 
     parseOwners(json) {
@@ -583,6 +592,51 @@ const MsProvider = (() => {
         fields.responsible || '', fields.dueDate || '',
         fields.notes || '', fields.priority || 'Medium',
         fields.taskName || '', '', fields.outlookEventId || '']]);
+    },
+
+    // ── Events write methods ────────────────────────────────────────
+    async saveEventStatus(ev, newS) {
+      const today = new Date().toISOString().slice(0,10);
+      const s  = CFG.microsoft.sheets.events;
+      const ok = await this.patchRange(s, `G${ev._row}`, [[newS]]);
+      if (ok) await this.patchRange(s, `S${ev._row}`, [[today]]).catch(()=>{});
+      return ok;
+    },
+
+    async saveEventRow(ev, fields) {
+      const today = new Date().toISOString().slice(0,10);
+      const s     = CFG.microsoft.sheets.events;
+      return this.patchRange(s, `A${ev._row}:T${ev._row}`, [[
+        ev.id,
+        fields.name, fields.owner, fields.place, fields.country,
+        fields.mode, fields.status, fields.industry,
+        fields.dateFrom, fields.dateTo, fields.webLink, fields.description,
+        fields.audience, fields.followup,
+        fields.linkedCompanies, fields.linkedOpps, fields.linkedContacts,
+        ev.createdDate || today, today, ''
+      ]]);
+    },
+
+    async createEvent(fields) {
+      const s     = CFG.microsoft.sheets.events;
+      const today = new Date().toISOString().slice(0,10);
+      const maxEN = (DATA_EVENTS||[]).reduce((m,e)=>{
+        const n=parseInt((e.id||'').replace('E-',''),10);
+        return isNaN(n)?m:Math.max(m,n);
+      },0);
+      const newId = `E-${String(maxEN+1).padStart(3,'0')}`;
+      return this.appendRow(s, [[
+        newId, fields.name, fields.owner||'', fields.place||'', fields.country||'',
+        fields.mode||'', fields.status||'Watching', fields.industry||'',
+        fields.dateFrom||'', fields.dateTo||'', fields.webLink||'', fields.description||'',
+        fields.audience||'', fields.followup||'',
+        fields.linkedCompanies||'', fields.linkedOpps||'', fields.linkedContacts||'',
+        today, today, ''
+      ]]);
+    },
+
+    async archiveEvent(ev) {
+      return this.patchRange(CFG.microsoft.sheets.events, `T${ev._row}`, [['Y']]);
     },
   };
 })();
