@@ -268,9 +268,9 @@ const MsProvider = (() => {
     },
     // <-- Ensure there is a comma here
 
-    // parseEvents — full 20-col schema (rev 28d, cols A–T)
-    // A=id, B=name, C=owner, D=place, E=country, F=mode, G=status, H=industry,
-    // I=dateFrom, J=dateTo, K=webLink, L=description, M=audience, N=followup,
+    // parseEvents — ACTUAL Excel column order (corrected from live data)
+    // A=id, B=name, C=industry, D=country, E=place, F=status, G=mode, H=dateFrom,
+    // I=owner, J=dateTo, K=webLink, L=description, M=audience, N=followup,
     // O=linkedCompanies, P=linkedOpps, Q=linkedContacts, R=createdDate, S=updDate, T=archived
     parseEvents(json) {
       const { dataRows } = parseSheetByLetter(json);
@@ -279,13 +279,13 @@ const MsProvider = (() => {
         _row:            i + 2,
         id:              String(row[0]  ?? '').trim(),
         name:            String(row[1]  ?? '').trim(),
-        owner:           String(row[2]  ?? '').trim().replace(/^=HYPERLINK\("[^"]*","([^"]*)"\)$/i,'$1'),
-        place:           String(row[3]  ?? '').trim(),
-        country:         String(row[4]  ?? '').trim(),
-        mode:            String(row[5]  ?? '').trim(),
-        status:          String(row[6]  ?? '').trim() || 'Watching',
-        industry:        String(row[7]  ?? '').trim(),
-        dateFrom:        excelDate(String(row[8]  ?? '').trim()),
+        industry:        String(row[2]  ?? '').trim(),
+        country:         String(row[3]  ?? '').trim(),
+        place:           String(row[4]  ?? '').trim(),
+        status:          String(row[5]  ?? '').trim() || 'Watching',
+        mode:            String(row[6]  ?? '').trim(),
+        dateFrom:        excelDate(String(row[7]  ?? '').trim()),
+        owner:           String(row[8]  ?? '').trim().replace(/^=HYPERLINK\("[^"]*","([^"]*)"\)$/i,'$1'),
         dateTo:          excelDate(String(row[9]  ?? '').trim()),
         webLink:         String(row[10] ?? '').trim(),
         description:     String(row[11] ?? '').trim(),
@@ -578,7 +578,6 @@ const MsProvider = (() => {
     },
 
     async createTask(fields) {
-      // Rev 19+: 12 cols A:L, taskName at col L
       const s     = CFG.microsoft.sheets.tasks;
       const today = new Date().toISOString().slice(0, 10);
       const maxTN = DATA_TASKS.reduce((m,t) => {
@@ -594,11 +593,13 @@ const MsProvider = (() => {
         fields.taskName || '', '', fields.outlookEventId || '']]);
     },
 
-    // ── Events write methods ────────────────────────────────────────
+    // ── Events write methods ───────────────────────────────────────
+    // Column order: A=id,B=name,C=industry,D=country,E=place,F=status,G=mode,
+    // H=dateFrom,I=owner,J=dateTo,K=webLink,...,S=updDate,T=archived
     async saveEventStatus(ev, newS) {
       const today = new Date().toISOString().slice(0,10);
       const s  = CFG.microsoft.sheets.events;
-      const ok = await this.patchRange(s, `G${ev._row}`, [[newS]]);
+      const ok = await this.patchRange(s, `F${ev._row}`, [[newS]]);  // F = Status (col 5)
       if (ok) await this.patchRange(s, `S${ev._row}`, [[today]]).catch(()=>{});
       return ok;
     },
@@ -608,11 +609,11 @@ const MsProvider = (() => {
       const s     = CFG.microsoft.sheets.events;
       return this.patchRange(s, `A${ev._row}:T${ev._row}`, [[
         ev.id,
-        fields.name, fields.owner, fields.place, fields.country,
-        fields.mode, fields.status, fields.industry,
-        fields.dateFrom, fields.dateTo, fields.webLink, fields.description,
-        fields.audience, fields.followup,
-        fields.linkedCompanies, fields.linkedOpps, fields.linkedContacts,
+        fields.name, fields.industry||'', fields.country||'', fields.place||'',
+        fields.status||'Watching', fields.mode||'', fields.dateFrom||'',
+        fields.owner||'', fields.dateTo||'', fields.webLink||'', fields.description||'',
+        fields.audience||'', fields.followup||'',
+        fields.linkedCompanies||'', fields.linkedOpps||'', fields.linkedContacts||'',
         ev.createdDate || today, today, ''
       ]]);
     },
@@ -626,9 +627,9 @@ const MsProvider = (() => {
       },0);
       const newId = `E-${String(maxEN+1).padStart(3,'0')}`;
       return this.appendRow(s, [[
-        newId, fields.name, fields.owner||'', fields.place||'', fields.country||'',
-        fields.mode||'', fields.status||'Watching', fields.industry||'',
-        fields.dateFrom||'', fields.dateTo||'', fields.webLink||'', fields.description||'',
+        newId, fields.name, fields.industry||'', fields.country||'', fields.place||'',
+        fields.status||'Watching', fields.mode||'', fields.dateFrom||'',
+        fields.owner||'', fields.dateTo||'', fields.webLink||'', fields.description||'',
         fields.audience||'', fields.followup||'',
         fields.linkedCompanies||'', fields.linkedOpps||'', fields.linkedContacts||'',
         today, today, ''
