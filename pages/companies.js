@@ -138,7 +138,7 @@ function openCompanyDrawer(safeId) {
     ? opps.map(o=>`<div class="linked-opp-item"><span class="linked-opp-link" onclick="openOppFromContact('${esc(o.c+(o.p?' · '+o.p:''))}')">${o.p||o.c}</span>${badge(o.s)}</div>`).join('')
     : '<div style="color:var(--slate2);font-size:.77rem">No opportunities</div>';
   const contList = contacts.length
-    ? contacts.map(c=>{const name=((c.firstName||'')+' '+(c.lastName||'')).trim();return `<div class="linked-opp-item"><span class="linked-opp-link" onclick="openContactFromPipeline('${esc(name)}')">${name}</span><span style="font-size:.7rem;color:var(--slate)">${c.email||''}</span></div>`;}).join('')
+    ? contacts.map(c=>{const name=contactDisplayName(c);const stored=((c.firstName||'')+' '+(c.lastName||'')).trim();return `<div class="linked-opp-item"><span class="linked-opp-link" onclick="openContactFromPipeline('${esc(stored)}')">${name}</span><span style="font-size:.7rem;color:var(--slate)">${c.email||''}</span></div>`;}).join('')
     : '<div style="color:var(--slate2);font-size:.77rem">No contacts</div>';
 
   const indOpts = INDUSTRIES.map(i=>`<option${co.industry===i?' selected':''}>${i}</option>`).join('');
