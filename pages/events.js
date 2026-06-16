@@ -184,7 +184,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
         <td style="font-size:.77rem">${ev.mode||'—'}</td>
         <td style="font-size:.75rem;color:var(--slate)">${ev.dateFrom||'—'}</td>
         <td style="font-size:.75rem;color:var(--slate)">${ev.dateTo||'—'}</td>
-        <td style="font-size:.77rem"><div style="display:flex;align-items:center;gap:4px">${ev.country?countryFlag(ev.country):''}<span>${ev.place||'—'}</span></div></td>
+        <td style="font-size:.77rem"><div style="display:flex;align-items:center;gap:4px">${ev.mode==='Online'?'<span title="Online" style="font-size:.95rem">🌐</span>':(ev.country?countryFlag(ev.country):'')}<span>${ev.place||ev.mode==='Online'?'Online':'—'}</span></div></td>
         <td style="font-size:.75rem">${ev.industry||'—'}</td>
         <td style="font-size:.75rem">${ev.owner||'—'}</td>
         <td style="font-size:.72rem">${url?`<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">🔗 Website</a>`:'—'}</td>
@@ -275,7 +275,7 @@ function openEventDrawer(safeId) {
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   const _evLogo = ev.webLink ? eventLogo(ev.webLink, ev.name, 28) : '';
-  const _evFlag = ev.country ? countryFlag(ev.country) : '';
+  const _evFlag = ev.mode === 'Online' ? '<span title="Online" style="font-size:1.1rem">🌐</span>' : (ev.country ? countryFlag(ev.country) : '');
   openDrawer(ev.name || 'Event', body, foot, 'event', id);
   setTimeout(()=>{const dh=$('drawer-title');if(dh)dh.innerHTML=`<span style="display:flex;align-items:center;gap:8px">${_evLogo}${_evFlag}<span>${esc(ev.name||'Event')}</span></span>`;},0);
 }
