@@ -96,6 +96,62 @@ function timingBadge(t) {
   return `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:600;${s[t]||s.Unknown}">${t}</span>`;
 }
 
+// ── Chip add/remove helpers ─────────────────────────────────────
+function _updateChipHidden(chipsId, hiddenId) {
+  const chips = document.getElementById(chipsId);
+  const hidden = document.getElementById(hiddenId);
+  if (!chips || !hidden) return;
+  const vals = [...chips.querySelectorAll('span[data-val]')].map(s=>s.dataset.val);
+  hidden.value = vals.join(', ');
+}
+function removeAudChip(safeVal) {
+  const val = safeVal.replace(/__SQ__/g,"'");
+  const chips = document.getElementById('dev-aud-chips');
+  if (!chips) return;
+  chips.querySelectorAll('span[data-val]').forEach(s=>{ if(s.dataset.val===val) s.remove(); });
+  _updateChipHidden('dev-aud-chips','dev-aud');
+}
+function addAudChip(sel) {
+  const val = sel.value; if (!val) return;
+  const hidden = document.getElementById('dev-aud');
+  if (hidden && hidden.value && hidden.value.includes(val)) { sel.value=''; return; }
+  const m = val.match(/^(.*?)\s*\(O-\d+\)$/);
+  const label = m ? m[1].trim() : val;
+  const chips = document.getElementById('dev-aud-chips');
+  if (!chips) return;
+  const span = document.createElement('span');
+  span.dataset.val = val;
+  span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--blue-t);color:var(--blue);border:1px solid var(--blue-l);border-radius:12px;font-size:.72rem;font-weight:600';
+  span.innerHTML = `${label}<span onclick="this.parentElement.remove();_updateChipHidden('dev-aud-chips','dev-aud')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span>`;
+  chips.appendChild(span);
+  _updateChipHidden('dev-aud-chips','dev-aud');
+  sel.value = '';
+}
+function removeCoChip(safeVal) {
+  const val = safeVal.replace(/__SQ__/g,"'");
+  const chips = document.getElementById('dev-lco-chips');
+  if (!chips) return;
+  chips.querySelectorAll('span[data-val]').forEach(s=>{ if(s.dataset.val===val) s.remove(); });
+  _updateChipHidden('dev-lco-chips','dev-lco');
+}
+function addCoChip(sel) {
+  const val = sel.value; if (!val) return;
+  const hidden = document.getElementById('dev-lco');
+  if (hidden && hidden.value && hidden.value.includes(val)) { sel.value=''; return; }
+  const m = val.match(/^(.*?)\s*\((CO-\d+)\)$/);
+  const coName = m ? m[1].trim() : val; const coId = m ? m[2] : '';
+  const co = DATA_COMPANIES.find(c=>c.id===coId||c.name===coName);
+  const chips = document.getElementById('dev-lco-chips');
+  if (!chips) return;
+  const span = document.createElement('span');
+  span.dataset.val = val;
+  span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--green-t);border:1px solid var(--green-l);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--green)';
+  span.innerHTML = `${companyLogo(co?.website||'',coName,14)}<span>${coName}</span><span onclick="this.parentElement.remove();_updateChipHidden('dev-lco-chips','dev-lco')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span>`;
+  chips.appendChild(span);
+  _updateChipHidden('dev-lco-chips','dev-lco');
+  sel.value = '';
+}
+
 // ════════════════════════════════════════════════════════════════
 // EVENTS PAGE — table view
 // ════════════════════════════════════════════════════════════════
@@ -184,7 +240,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
         <td style="font-size:.77rem">${ev.mode||'—'}</td>
         <td style="font-size:.75rem;color:var(--slate)">${ev.dateFrom||'—'}</td>
         <td style="font-size:.75rem;color:var(--slate)">${ev.dateTo||'—'}</td>
-        <td style="font-size:.77rem"><div style="display:flex;align-items:center;gap:4px">${ev.mode==='Online'?'<span title="Online" style="font-size:.95rem">🌐</span>':(ev.country?countryFlag(ev.country):'')}<span>${ev.place||ev.mode==='Online'?'Online':'—'}</span></div></td>
+        <td style="font-size:.77rem"><div style="display:flex;align-items:center;gap:4px">${ev.mode==='Online'?'<span title="Online" style="font-size:.95rem">🌐</span>':(ev.country?countryFlag(ev.country):'')}<span>${ev.place||(ev.mode==='Online'?'Online':'—')}</span></div></td>
         <td style="font-size:.75rem">${ev.industry||'—'}</td>
         <td style="font-size:.75rem">${ev.owner||'—'}</td>
         <td style="font-size:.72rem">${url?`<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">🔗 Website</a>`:'—'}</td>
@@ -246,7 +302,12 @@ function openEventDrawer(safeId) {
     </div>
     <div class="field-row">
       <div class="field-group"><label>Place</label><input id="dev-place" value="${esc(ev.place||'')}"></div>
-      <div class="field-group"><label>Country</label><input id="dev-country" value="${esc(ev.country||'')}"></div>
+      <div class="field-group"><label>Country</label>
+      <select id="dev-country">
+        <option value="">— Select country —</option>
+        ${['Albania','Australia','Austria','Belgium','Bosnia','Brazil','Bulgaria','Canada','China','Croatia','Cyprus','Czech Republic','Denmark','Estonia','Finland','France','Germany','Greece','Hungary','India','Ireland','Israel','Italy','Japan','Latvia','Lithuania','Luxembourg','Malta','Mexico','Moldova','Montenegro','Netherlands','New Zealand','North Macedonia','Norway','Poland','Portugal','Romania','Russia','Serbia','Singapore','Slovakia','Slovenia','South Africa','Spain','Sweden','Switzerland','Turkey','UAE','UK','USA','Ukraine'].map(c=>`<option value="${c}"${ev.country===c?' selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
     </div>
     <div class="field-row">
       <div class="field-group"><label>Industry</label><select id="dev-ind"><option value="">— Select —</option>${indOpts}</select></div>
@@ -256,11 +317,39 @@ function openEventDrawer(safeId) {
     </div>
     <div class="field-group"><label>Website / Registration</label><input id="dev-link" value="${esc(ev.webLink||'')}" placeholder="https://…"></div>
     <div class="field-group"><label>Description</label><textarea id="dev-desc">${esc(ev.description||'')}</textarea></div>
-    <div class="field-group"><label>Suggested Audience</label><input id="dev-aud" value="${esc(ev.audience||'')}" placeholder="Display (O-NN), …"></div>
-    <div class="field-group"><label>Linked Companies</label>${parseLinks(ev.linkedCompanies,'CO')}
-      <input id="dev-lco" value="${esc(ev.linkedCompanies||'')}" style="margin-top:4px" placeholder="Name (CO-NNN), …"></div>
-    <div class="field-group"><label>Linked Opportunities</label>${parseLinks(ev.linkedOpps,'P')}
-      <input id="dev-lopp" value="${esc(ev.linkedOpps||'')}" style="margin-top:4px" placeholder="Name (P-NNN), …"></div>
+    <div class="field-group"><label>Suggested Audience</label>
+      <div id="dev-aud-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;background:#fff;margin-bottom:4px">
+        ${(ev.audience||'').split(',').filter(x=>x.trim()).map(a=>{
+          const m=a.trim().match(/^(.*?)\s*\(O-\d+\)$/) ;
+          const label=m?m[1].trim():a.trim();
+          const safeA=a.trim().replace(/'/g,'__SQ__');
+          return `<span data-val="${a.trim()}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--blue-t);color:var(--blue);border:1px solid var(--blue-l);border-radius:12px;font-size:.72rem;font-weight:600">${label}<span onclick="removeAudChip('${safeA}')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span></span>`;
+        }).join('')}
+      </div>
+      <input type="hidden" id="dev-aud" value="${esc(ev.audience||'')}">
+      <select id="dev-aud-add" onchange="addAudChip(this)" style="font-size:.78rem">
+        <option value="">+ Add owner to audience…</option>
+        ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();const oid=o.id||'';return `<option value="${esc(n+' ('+oid+')')}">${n}</option>`;}).join('')}
+      </select>
+    </div>
+    <div class="field-group"><label>Linked Companies</label>
+      <div id="dev-lco-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;padding:5px 8px;border:1px solid var(--border);border-radius:7px;background:#fff;margin-bottom:4px">
+        ${(ev.linkedCompanies||'').split(',').filter(x=>x.trim()).map(a=>{
+          const m=a.trim().match(/^(.*?)\s*\((CO-\d+)\)$/);
+          const coName=m?m[1].trim():a.trim(); const coId=m?m[2]:'';
+          const co=DATA_COMPANIES.find(c=>c.id===coId||c.name===coName);
+          const safeA=a.trim().replace(/'/g,'__SQ__');
+          return `<span data-val="${a.trim()}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--green-t);border:1px solid var(--green-l);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--green)">${companyLogo(co?.website||'',coName,14)}<span>${coName}</span><span onclick="removeCoChip('${safeA}')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span></span>`;
+        }).join('')}
+      </div>
+      <input type="hidden" id="dev-lco" value="${esc(ev.linkedCompanies||'')}">
+      <select id="dev-lco-add" onchange="addCoChip(this)" style="font-size:.78rem">
+        <option value="">+ Add company…</option>
+        ${[...(DATA_COMPANIES||[])].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(c=>`<option value="${esc(c.name+' ('+c.id+')')}">${c.name}</option>`).join('')}
+      </select>
+    </div>
+    <!-- Linked Opportunities hidden — maintained via pipeline drawer -->
+    <input type="hidden" id="dev-lopp" value="${esc(ev.linkedOpps||'')}">
     <div class="field-group"><label>Linked Contacts</label>${parseLinks(ev.linkedContacts,'C')}
       <input id="dev-lcont" value="${esc(ev.linkedContacts||'')}" style="margin-top:4px" placeholder="Name (C-NNN), …"></div>
     <div class="field-group"><label>Followup / Result</label>
@@ -381,7 +470,12 @@ function openNewEventDrawer() {
     </div>
     <div class="field-row">
       <div class="field-group"><label>Place</label><input id="dev-place" placeholder="City…"></div>
-      <div class="field-group"><label>Country</label><input id="dev-country" placeholder="CZ…"></div>
+      <div class="field-group"><label>Country</label>
+      <select id="dev-country">
+        <option value="">— Select country —</option>
+        ${['Albania','Australia','Austria','Belgium','Bosnia','Brazil','Bulgaria','Canada','China','Croatia','Cyprus','Czech Republic','Denmark','Estonia','Finland','France','Germany','Greece','Hungary','India','Ireland','Israel','Italy','Japan','Latvia','Lithuania','Luxembourg','Malta','Mexico','Moldova','Montenegro','Netherlands','New Zealand','North Macedonia','Norway','Poland','Portugal','Romania','Russia','Serbia','Singapore','Slovakia','Slovenia','South Africa','Spain','Sweden','Switzerland','Turkey','UAE','UK','USA','Ukraine'].map(c=>`<option value="${c}">${c}</option>`).join('')}
+      </select>
+    </div>
     </div>
     <div class="field-row">
       <div class="field-group"><label>Industry</label><select id="dev-ind"><option value="">— Select —</option>${indOpts}</select></div>
