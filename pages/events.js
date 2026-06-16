@@ -182,7 +182,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
   if (q       === undefined) { const el=$('evq');    q       = el?el.value:''; }
   if (ftiming === undefined) { const el=$('evtim');  ftiming = el?el.value:''; }
   if (fstatus === undefined) { const el=$('evstat'); fstatus = el?el.value:''; }
-  if (fmode   === undefined) { const el=$('evmode'); fmode   = el?el.value:''; }
+  fmode = '';
   if (fown    === undefined) { const el=$('evown');  fown    = el?el.value:''; }
   q=''; // reset search — re-apply below
   const qEl = $('evq'); if(qEl) q = qEl.value.toLowerCase();
@@ -230,10 +230,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
       <option value="">All Statuses</option>
       ${EVENT_STATUSES.map(s=>`<option value="${s}"${fstatus===s?' selected':''}>${s}</option>`).join('')}
     </select>
-    <select id="evmode" onchange="renderEvents()">
-      <option value="">All Modes</option>
-      ${EVENT_MODES.map(m=>`<option value="${m}"${fmode===m?' selected':''}>${m}</option>`).join('')}
-    </select>
+
     <select id="evown" onchange="renderEvents()">
       <option value="">All Owners</option>
       ${owners.map(o=>`<option value="${o}"${fown===o?' selected':''}>${o}</option>`).join('')}
@@ -249,7 +246,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
     </div>` :
   `<div class="tbl-wrap"><table>
     <thead><tr>
-      <th>Timing</th><th>Event</th><th>Status</th><th>Mode</th>
+      <th>Timing</th><th>Event</th><th>Status</th>
       <th>Date From</th><th>Date To</th><th>Place</th>
       <th>Industry</th><th>Owner</th><th>Link</th>
     </tr></thead>
@@ -260,7 +257,6 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
         <td>${timingBadge(ev._timing)}</td>
         <td><div style="display:flex;align-items:center;gap:6px">${ev.webLink?eventLogo(ev.webLink,ev.name,18):''}<div><b style="color:var(--navy2)">${ev.name||'—'}</b>${ev.country?`<div class="dc" style="font-size:.67rem">${ev.country}</div>`:''}</div></div></td>
         <td onclick="event.stopPropagation()">${buildEventStatusDrop(ev)}</td>
-        <td style="font-size:.77rem">${ev.mode||'—'}</td>
         <td style="font-size:.75rem;color:var(--slate)">${ev.dateFrom||'—'}</td>
         <td style="font-size:.75rem;color:var(--slate)">${ev.dateTo||'—'}</td>
         <td style="font-size:.77rem"><div style="display:flex;align-items:center;gap:4px">${ev.mode==='Online'?'<span title="Online" style="font-size:.95rem">🌐</span>':(ev.country?countryFlag(ev.country):'')}<span>${ev.place||(ev.mode==='Online'?'Online':'—')}</span></div></td>
@@ -315,10 +311,8 @@ function openEventDrawer(safeId) {
     <div class="field-group"><label>Event Name</label><input id="dev-name" value="${esc(ev.name||'')}"></div>
     <div class="field-row">
       <div class="field-group"><label>Status</label>${buildDrawerEventStatusDrop('dev-status', ev.status)}</div>
-      <div class="field-group"><label>Mode</label>
-        <select id="dev-mode">${modeOpts}</select>
-      </div>
     </div>
+    <input type="hidden" id="dev-mode" value="${esc(ev.mode||'')}">
     <div class="field-row">
       <div class="field-group"><label>Date From</label><input id="dev-dfrom" type="date" value="${ev.dateFrom||''}"></div>
       <div class="field-group"><label>Date To</label><input id="dev-dto" type="date" value="${ev.dateTo||''}"></div>
@@ -500,10 +494,8 @@ function openNewEventDrawer() {
     <div class="field-group"><label>Event Name</label><input id="dev-name" placeholder="Conference name…"></div>
     <div class="field-row">
       <div class="field-group"><label>Status</label>${buildDrawerEventStatusDrop('dev-status','Watching')}</div>
-      <div class="field-group"><label>Mode</label>
-        <select id="dev-mode">${EVENT_MODES.map(m=>`<option>${m}</option>`).join('')}</select>
-      </div>
     </div>
+    <input type="hidden" id="dev-mode" value="Offline">
     <div class="field-row">
       <div class="field-group"><label>Date From</label><input id="dev-dfrom" type="date"></div>
       <div class="field-group"><label>Date To</label><input id="dev-dto" type="date"></div>
