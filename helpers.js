@@ -166,6 +166,13 @@ function statusDot(s) {
                 Prospect:'var(--amber)',Done:'var(--slate2)',Cancelled:'var(--red)'};
   return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[s]||'#ccc'};display:inline-block;flex-shrink:0"></span>`;
 }
+// ── Contact display name — Surname Name format ──────────────────
+function contactDisplayName(c) {
+  const last  = (c.lastName  || '').trim();
+  const first = (c.firstName || '').trim();
+  return last && first ? `${last} ${first}` : (last || first);
+}
+
 function taskStatusDot(s) {
   const cols = {Open:'var(--blue)', Done:'var(--green)', Cancelled:'#94a3b8'};
   return `<span style="width:7px;height:7px;border-radius:50%;background:${cols[s]||'#94a3b8'};display:inline-block;flex-shrink:0"></span>`;
