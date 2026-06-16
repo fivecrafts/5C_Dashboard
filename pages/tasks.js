@@ -155,16 +155,17 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
 
 // ── Task Form (shared by edit + new) ─────────────────────────
 function buildTaskForm(row, preOpp, preCont, preCo) {
-  const oppOptions = DATA_PIPE.map(r => {
+  const oppOptions = [...DATA_PIPE].sort((a,b)=>(a.c||'').localeCompare(b.c||'')||(a.p||'').localeCompare(b.p||'')).map(r => {
     const label = r.c + (r.p ? ' · ' + r.p : '');
     const sel   = row ? row.linkedOpp === label : (preOpp && preOpp === label);
     return `<option value="${esc(label)}"${sel ? ' selected' : ''}>${label}</option>`;
   }).join('');
 
-  const contOptions = DATA_CONTACTS.map(r => {
-    const name = ((r.firstName || '') + ' ' + (r.lastName || '')).trim();
-    const sel  = row ? row.linkedContact === name : (preCont && preCont === name);
-    return `<option value="${esc(name)}"${sel ? ' selected' : ''}>${name}</option>`;
+  const contOptions = [...DATA_CONTACTS].sort((a,b)=>(a.lastName||'').localeCompare(b.lastName||'')||(a.firstName||'').localeCompare(b.firstName||'')).map(r => {
+    const stored = ((r.firstName || '') + ' ' + (r.lastName || '')).trim();
+    const name   = contactDisplayName(r);
+    const sel    = row ? row.linkedContact === stored : (preCont && preCont === stored);
+    return `<option value="${esc(stored)}"${sel ? ' selected' : ''}>${name}</option>`;
   }).join('');
 
   const typeOpts = TASK_TYPES.map(t  => `<option${row?.type     === t                    ? ' selected' : ''}>${t}</option>`).join('');
@@ -197,7 +198,7 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
     <div class="field-group"><label>Linked Company</label>
       <select id="dt-comp">
         <option value="">— None —</option>
-        ${(DATA_COMPANIES||[]).map(co => {const selVal=row?.linkedCompany||preCo||'';const sel=selVal&&(selVal===co.id||selVal===co.name);return `<option value="${esc(co.name)}"${sel?' selected':''}>${co.name}</option>`;}).join('')}
+        ${[...(DATA_COMPANIES||[])].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(co => {const selVal=row?.linkedCompany||preCo||'';const sel=selVal&&(selVal===co.id||selVal===co.name);return `<option value="${esc(co.name)}"${sel?' selected':''}>${co.name}</option>`;}).join('')}
       </select>
     </div>
     <div class="field-group"><label>Notes</label><textarea id="dt-notes">${esc(row?.notes || '')}</textarea></div>
