@@ -94,13 +94,13 @@ const FLOW = {
 const ALL_S          = ['Running','Bidding','Pipeline','Prospect','Done','Cancelled'];
 const OWNER_PALETTE  = ['#2563eb','#059669','#7c3aed','#d97706','#dc2626','#0891b2','#65a30d','#c2410c'];
 
-// Events sheet columns — ACTUAL Excel column order (observed from live data)
-// A=id, B=name, C=industry, D=country, E=place, F=status, G=mode, H=dateFrom,
-// I=owner, J=dateTo, K=webLink, L=description, M=audience, N=followup,
+// Events sheet columns — confirmed from actual Excel file
+// A=id, B=name, C=owner, D=place, E=country, F=mode, G=status, H=industry,
+// I=dateFrom, J=dateTo, K=webLink, L=description, M=audience, N=followup,
 // O=linkedCompanies, P=linkedOpps, Q=linkedContacts, R=createdDate, S=updDate, T=archived
 const EVENT_COLS = {
-  id:0, name:1, industry:2, country:3, place:4, status:5, mode:6, dateFrom:7,
-  owner:8, dateTo:9, webLink:10, description:11, audience:12, followup:13,
+  id:0, name:1, owner:2, place:3, country:4, mode:5, status:6, industry:7,
+  dateFrom:8, dateTo:9, webLink:10, description:11, audience:12, followup:13,
   linkedCompanies:14, linkedOpps:15, linkedContacts:16,
   createdDate:17, updDate:18, archived:19
 };
