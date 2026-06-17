@@ -1,6 +1,11 @@
 // 5C Dashboard v1.30.0 · 2026-06-17 10:00 · Five Crafts s.r.o.
 'use strict';
 
+// Defensive init — in case state.js update wasn't uploaded
+if (typeof DATA_HR      === 'undefined') window.DATA_HR      = [];
+if (typeof DATA_HR_COLS === 'undefined') window.DATA_HR_COLS = {};
+
+
 // ════════════════════════════════════════════════════════════════
 // HR POOL — helpers
 // ════════════════════════════════════════════════════════════════
