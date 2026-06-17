@@ -27,6 +27,13 @@ const App = {
       DATA_TASKS     = P.parseTasks(tj);
       DATA_EVENTS    = P.parseEvents(ej);
       DATA_OWNERS    = P.parseOwners(oj);
+      // Load HR Candidates in background — separate SharePoint file
+      P.loadHRSheet().then(hrj => {
+        DATA_HR = P.parseHRCandidates(hrj);
+        const el = document.getElementById('pl-hr');
+        if (el) el.textContent = DATA_HR.length;
+      }).catch(() => {});
+
       // Fetch M365 profile photos in background — non-blocking
       OWNER_PHOTOS = {};
       DATA_OWNERS.forEach(o => {
@@ -66,6 +73,7 @@ const App = {
       else if (id === 'contacts')    renderContacts('', '');
       else if (id === 'tasks')       renderTasks('', '', '');
       else if (id === 'events')      { if(typeof renderEvents==='function') renderEvents(); }
+      else if (id === 'hr')          { if(typeof renderHR==='function') renderHR(); }
       else if (id === 'owners')      renderOwners();
       else if (id === 'companies')   renderCompanies('', '');
     } else {
@@ -146,7 +154,7 @@ const UI = {
     await P.signOut().catch(() => {});
     $('app-shell').classList.remove('visible');
     $('login-screen').style.display = 'flex';
-    DATA_PIPE = []; DATA_CONTACTS = []; DATA_TASKS = []; DATA_OWNERS = []; DATA_EVENTS = []; CHANGES = {};
+    DATA_PIPE = []; DATA_CONTACTS = []; DATA_TASKS = []; DATA_OWNERS = []; DATA_EVENTS = []; DATA_HR = []; DATA_HR_COLS = {}; CHANGES = {};
   },
 
   _onLogin(user) {
@@ -187,7 +195,7 @@ const UI = {
     document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
     $('page-' + id).classList.add('active');
     if (el) el.classList.add('active');
-    const titles = { mydashboard:'My Dashboard', dashboard:'Overview', pipeline:'All Opportunities', contacts:'Contacts', tasks:'Tasks', owners:'5C Dashboard', events:'Events 📅', companies:'Companies', events:'Events' };
+    const titles = { mydashboard:'My Dashboard', dashboard:'Overview', pipeline:'All Opportunities', contacts:'Contacts', tasks:'Tasks', owners:'5C Dashboard', events:'Events 📅', hr:'HR Pool', companies:'Companies', events:'Events' };
     const subs   = { mydashboard:'Your companies · opportunities · tasks', dashboard:'Five Crafts BD · all data', pipeline:'Edit status · confirm to write back', contacts:'Contact database', tasks:'Tasks & follow-ups', owners:'Team overview · Opportunities · Companies', companies:'Company profiles' };
     $('tb-t').textContent = titles[id] || id;
     $('tb-s').textContent = subs[id]   || '';
@@ -202,6 +210,7 @@ const UI = {
     else if (id === 'contacts')    renderContacts('', '');
     else if (id === 'tasks')       renderTasks('', '', '');
       else if (id === 'events')      { if(typeof renderEvents==='function') renderEvents(); }
+      else if (id === 'hr')          { if(typeof renderHR==='function') renderHR(); }
     else if (id === 'owners')      renderOwners();
     else if (id === 'companies')   renderCompanies('', '');
   },
