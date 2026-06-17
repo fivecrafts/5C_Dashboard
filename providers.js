@@ -446,14 +446,21 @@ const MsProvider = (() => {
       const gUrl = (row, fmls, name) => {
         const i = DATA_HR_COLS[name];
         if (i === undefined) return '';
+        // Try formula first — handles =HYPERLINK("url","text") with double OR single quotes
         const formula = String(fmls?.[i] ?? '');
         if (formula.toUpperCase().startsWith('=HYPERLINK(')) {
-          const m = formula.match(/=HYPERLINK\("([^"]+)"/i);
+          const m = formula.match(/=HYPERLINK\(["']([^"']+)["']/i);
           if (m && m[1]) return m[1];
         }
-        // Fallback: cell might store URL directly
+        // Cell value may already be the full URL (plain hyperlink, no formula)
         const val = String(row[i] ?? '').trim();
-        return val.startsWith('http') ? val : '';
+        if (val.startsWith('http')) return val;
+        // Some cells store display text with the URL as hyperlink metadata —
+        // try stripping any Excel display text (e.g. "CV" or "LinkedIn")
+        // If value is a short word and formula has a URL somewhere, extract it
+        const urlMatch = formula.match(/https?:\/\/[^\s"')]+/i);
+        if (urlMatch) return urlMatch[0];
+        return '';
       };
       return rows.slice(1).map((row, i) => {  // i+1 = formula row index
         if (!row.some(v => v !== null && v !== '')) return null;
@@ -532,6 +539,8 @@ const MsProvider = (() => {
       set('Status',          fields.status);
       set('Odpovědný',       fields.owner);
       set('Projekty navržené', fields.proposedProjects);
+      if (fields.role         !== undefined) set('Role',             fields.role);
+      if (fields.seniority    !== undefined) set('Seniorita',         fields.seniority);
       if (fields.phone        !== undefined) set('Telefon',          fields.phone);
       if (fields.email        !== undefined) set('Email',            fields.email);
       if (fields.competencies !== undefined) set('Competencies',     fields.competencies);
