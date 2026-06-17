@@ -301,7 +301,9 @@ function _saveFocus() {
 }
 function _restoreFocus(saved) {
   if (!saved?.id) return;
-  const el = document.getElementById(saved.id);
-  if (!el) return;
-  try { el.focus(); el.setSelectionRange(saved.start, saved.end); } catch {}
+  requestAnimationFrame(() => {
+    const el = document.getElementById(saved.id);
+    if (!el) return;
+    try { el.focus(); el.setSelectionRange(saved.start ?? 0, saved.end ?? 0); } catch {}
+  });
 }
