@@ -333,7 +333,13 @@ function openHRDrawer(safeId) {
         <div class="field-group"><label>Email</label><input id="hrd-email" type="email" value="${esc(c.email||'')}"></div>
       </div>
       ${c.linkedin ? `<div style="margin-bottom:4px"><a href="${esc(c.linkedin)}" target="_blank" style="color:var(--blue);font-size:.78rem">in LinkedIn →</a></div>` : ''}
-      ${c.cv       ? `<div><a href="${esc(c.cv)}"       target="_blank" style="color:var(--blue);font-size:.78rem">📄 Open CV →</a></div>` : ''}
+      ${c.cv ? `<div style="margin-top:6px">
+        <a href="${esc(c.cv)}" target="_blank"
+          style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--blue-t);color:var(--blue);border:1px solid var(--blue-l);border-radius:7px;font-size:.78rem;font-weight:600;text-decoration:none">
+          📄 Open CV
+        </a>
+        <div style="font-size:.62rem;color:var(--slate2);margin-top:3px;word-break:break-all">${esc(c.cv)}</div>
+      </div>` : ''}
     </div>
 
     <!-- Section 2: Availability & Financials -->
