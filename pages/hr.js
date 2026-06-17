@@ -10,7 +10,8 @@ if (typeof DATA_HR_COLS === 'undefined') window.DATA_HR_COLS = {};
 // HR POOL — helpers
 // ════════════════════════════════════════════════════════════════
 
-let _hrShowRates = false; // rates hidden by default
+let _hrShowRates     = false; // rates hidden in list by default
+let _hrDrawerRates  = false; // rates hidden in drawer by default
 
 function hrStatusBadge(status) {
   const s = status || '—';
@@ -126,6 +127,7 @@ function renderHR(q, frole, fsen, fstat, fown) {
   // Role options
   const roles = [...new Set(DATA_HR.map(c=>c.role).filter(Boolean))].sort();
 
+  const _foc = _saveFocus();
   $('hr-out').innerHTML = `
   <div class="kpi-row">
     <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_HR.length}</div><div class="sub">Candidates</div></div>
@@ -139,7 +141,8 @@ function renderHR(q, frole, fsen, fstat, fown) {
     <input type="text" id="hrq" placeholder="🔍  Search name, role, skills…" value="${esc(q)}" oninput="renderHR()">
     <select id="hrole" onchange="renderHR()">
       <option value="">All Roles</option>
-      ${roles.map(r=>`<option value="${esc(r)}"${frole===r?' selected':''}>${r}</option>`).join('')}
+      ${roles.map(r=>`
+  _restoreFocus(_foc);<option value="${esc(r)}"${frole===r?' selected':''}>${r}</option>`).join('')}
     </select>
     <select id="hrsen" onchange="renderHR()">
       <option value="">All Seniority</option>
@@ -267,21 +270,35 @@ function openHRDrawer(safeId) {
     </div>
 
     <!-- Section 1: Contact -->
-    ${sect('Identity & Contact',[
-      ['ID',    c.id],
-      ['Phone', c.phone ? `<span onclick="navigator.clipboard?.writeText('${c.phone}')" style="cursor:pointer" title="Copy">${c.phone} 📋</span>` : ''],
-      ['Email', c.email ? `<span onclick="navigator.clipboard?.writeText('${c.email}')" style="cursor:pointer" title="Copy">${c.email} 📋</span>` : ''],
-      ['LinkedIn', c.linkedin ? `<a href="${esc(c.linkedin)}" target="_blank" style="color:var(--blue)">LinkedIn →</a>` : ''],
-      ['CV', c.cv ? `<a href="${esc(c.cv)}" target="_blank" style="color:var(--blue)">Open CV →</a>` : ''],
-    ],'👤',false)}
+    <div style="margin-bottom:14px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--slate);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)">👤 Identity & Contact</div>
+      <div style="font-size:.7rem;color:var(--slate2);margin-bottom:2px">${c.id}</div>
+      <div class="field-row">
+        <div class="field-group"><label>Phone</label><input id="hrd-phone" value="${esc(c.phone||'')}"></div>
+        <div class="field-group"><label>Email</label><input id="hrd-email" type="email" value="${esc(c.email||'')}"></div>
+      </div>
+      ${c.linkedin ? `<div style="margin-bottom:4px"><a href="${esc(c.linkedin)}" target="_blank" style="color:var(--blue);font-size:.78rem">in LinkedIn →</a></div>` : ''}
+      ${c.cv       ? `<div><a href="${esc(c.cv)}"       target="_blank" style="color:var(--blue);font-size:.78rem">📄 Open CV →</a></div>` : ''}
+    </div>
 
     <!-- Section 2: Availability & Financials -->
-    ${sect('Availability & Financials',[
-      ['Rate requested', c.rateRequested],
-      ['Rate agreed',    c.rateAgreed ? `<b style="color:${c.rateAgreed!==c.rateRequested?'var(--green)':'inherit'}">${c.rateAgreed}</b>` : ''],
-      ['Available from', c.availableFrom],
-      ['Commitment',     c.commitment],
-    ],'💰',false)}
+    <div style="margin-bottom:14px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--slate);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span>💰 Availability & Financials</span>
+        <button onclick="_hrDrawerRates=!_hrDrawerRates;openHRDrawer('${esc(id)}')" style="font-size:.65rem;border:1px solid var(--border);background:${_hrDrawerRates?'var(--blue-t)':'#f8fafc'};color:${_hrDrawerRates?'var(--blue)':'var(--slate)'};border-radius:5px;padding:2px 8px;cursor:pointer">${_hrDrawerRates?'Hide Rates':'Show Rates'}</button>
+      </div>
+      ${_hrDrawerRates ? `
+        <div style="display:flex;gap:8px;margin-bottom:6px;align-items:flex-start">
+          <div style="font-size:.7rem;color:var(--slate2);min-width:110px;padding-top:2px">Rate requested</div>
+          <div style="font-size:.8rem;color:var(--navy2);flex:1">${c.rateRequested||'—'}</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;align-items:flex-start">
+          <div style="font-size:.7rem;color:var(--slate2);min-width:110px;padding-top:2px">Rate agreed</div>
+          <div style="font-size:.8rem;flex:1"><b style="color:${c.rateAgreed&&c.rateAgreed!==c.rateRequested?'var(--green)':'var(--navy2)'}">${c.rateAgreed||'—'}</b></div>
+        </div>` : ''}
+      ${c.availableFrom ? `<div style="display:flex;gap:8px;margin-bottom:6px"><div style="font-size:.7rem;color:var(--slate2);min-width:110px;padding-top:2px">Available from</div><div style="font-size:.8rem;color:var(--navy2)">${c.availableFrom}</div></div>` : ''}
+      ${c.commitment    ? `<div style="display:flex;gap:8px;margin-bottom:6px"><div style="font-size:.7rem;color:var(--slate2);min-width:110px;padding-top:2px">Commitment</div><div style="font-size:.8rem;color:var(--navy2)">${c.commitment}</div></div>` : ''}
+    </div>
 
     <!-- Section 3: Pipeline -->
     ${sect('Pipeline',[
@@ -297,10 +314,11 @@ function openHRDrawer(safeId) {
     <!-- Section 4: HR Interview -->
     ${hrSection}
 
-    <!-- Section 5: Competencies -->
-    <div style="margin-bottom:14px">
-      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--slate);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)">🏷 Competencies</div>
-      <div style="line-height:1.8">${tagCloud}</div>
+    <!-- Section 5: Competencies (editable) -->
+    <div class="field-group">
+      <label>🏷 Competencies</label>
+      <textarea id="hrd-comp" rows="3" style="font-size:.75rem" placeholder="Comma-separated: Payments, AML, Cards…">${esc(c.competencies||'')}</textarea>
+      <div style="margin-top:4px;line-height:1.8">${tagCloud}</div>
     </div>
 
     <!-- Section 5: Notes timeline -->
@@ -335,12 +353,16 @@ async function saveHRDrawer(origId) {
     status:          $('hrd-status').value,
     owner:           $('hrd-owner').value,
     proposedProjects:$('hrd-projects').value.trim(),
+    phone:           $('hrd-phone') ? $('hrd-phone').value.trim() : c.phone,
+    email:           $('hrd-email') ? $('hrd-email').value.trim() : c.email,
+    competencies:    $('hrd-comp')  ? $('hrd-comp').value.trim()  : c.competencies,
     notes:           updNotes,
   };
   try {
     const ok = await P.saveHRRow(c, fields);
     if (ok) {
-      Object.assign(c, fields, { notes: updNotes, updatedAt: today });
+      Object.assign(c, fields, { notes: updNotes, updatedAt: today,
+        phone: fields.phone, email: fields.email, competencies: fields.competencies });
       renderHR();
       toast('✓ Saved','success');
       closeDrawer();
