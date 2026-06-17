@@ -1,4 +1,4 @@
-// 5C Dashboard v1.30.0 · 2026-06-17 10:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
@@ -125,7 +125,7 @@ function addAudChip(sel) {
   const span = document.createElement('span');
   span.dataset.val = val;
   span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--blue-t);color:var(--blue);border:1px solid var(--blue-l);border-radius:12px;font-size:.72rem;font-weight:600';
-  span.innerHTML = `${label}<span onclick="this.parentElement.remove();_updateChipHidden('dev-aud-chips','dev-aud')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span>`;
+  span.innerHTML = `${esc(label)}<span onclick="this.parentElement.remove();_updateChipHidden('dev-aud-chips','dev-aud')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span>`;
   chips.appendChild(span);
   _updateChipHidden('dev-aud-chips','dev-aud');
   sel.value = '';
@@ -148,7 +148,7 @@ function addContChip(sel) {
   const span = document.createElement('span');
   span.dataset.val = val;
   span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--purple-t,#f3e8ff);border:1px solid var(--purple-l,#e9d5ff);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--accent5)';
-  span.innerHTML = `${cName}<span onclick="this.parentElement.remove();_updateChipHidden('dev-lcont-chips','dev-lcont')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span>`;
+  span.innerHTML = `${esc(cName)}<span onclick="this.parentElement.remove();_updateChipHidden('dev-lcont-chips','dev-lcont')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span>`;
   chips.appendChild(span);
   _updateChipHidden('dev-lcont-chips','dev-lcont');
   sel.value = '';
@@ -172,7 +172,7 @@ function addCoChip(sel) {
   const span = document.createElement('span');
   span.dataset.val = val;
   span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--green-t);border:1px solid var(--green-l);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--green)';
-  span.innerHTML = `${companyLogo(co?.website||'',coName,14)}<span>${coName}</span><span onclick="this.parentElement.remove();_updateChipHidden('dev-lco-chips','dev-lco')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span>`;
+  span.innerHTML = `${companyLogo(co?.website||'',coName,14)}<span>${esc(coName)}</span><span onclick="this.parentElement.remove();_updateChipHidden('dev-lco-chips','dev-lco')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span>`;
   chips.appendChild(span);
   _updateChipHidden('dev-lco-chips','dev-lco');
   sel.value = '';
@@ -317,7 +317,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
         <td style="font-size:.77rem"><div style="display:flex;align-items:center;gap:4px">${ev.mode==='Online'?'<span title="Online" style="font-size:.95rem">🌐</span>':(ev.country?countryFlag(ev.country):'')}<span>${ev.place||(ev.mode==='Online'?'Online':'—')}</span></div></td>
         <td style="font-size:.75rem">${ev.industry||'—'}</td>
         <td style="font-size:.75rem">${ev.owner||'—'}</td>
-        <td style="font-size:.72rem">${url?`<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">🔗 Website</a>`:'—'}</td>
+        <td style="font-size:.72rem">${url?`<a href="${safeUrl(url)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">🔗 Website</a>`:'—'}</td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`}`;
@@ -397,7 +397,7 @@ function openEventDrawer(safeId) {
           const m=a.trim().match(/^(.*?)\s*\(O-\d+\)$/) ;
           const label=m?m[1].trim():a.trim();
           const safeA=a.trim().replace(/'/g,'__SQ__');
-          return `<span data-val="${a.trim()}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--blue-t);color:var(--blue);border:1px solid var(--blue-l);border-radius:12px;font-size:.72rem;font-weight:600">${label}<span onclick="removeAudChip('${safeA}')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span></span>`;
+          return `<span data-val="${a.trim()}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--blue-t);color:var(--blue);border:1px solid var(--blue-l);border-radius:12px;font-size:.72rem;font-weight:600">${esc(label)}<span onclick="removeAudChip('${safeA}')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span></span>`;
         }).join('')}
       </div>
       <input type="hidden" id="dev-aud" value="${esc(ev.audience||'')}">
@@ -413,7 +413,7 @@ function openEventDrawer(safeId) {
           const coName=m?m[1].trim():a.trim(); const coId=m?m[2]:'';
           const co=DATA_COMPANIES.find(c=>c.id===coId||c.name===coName);
           const safeA=a.trim().replace(/'/g,'__SQ__');
-          return `<span data-val="${a.trim()}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--green-t);border:1px solid var(--green-l);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--green)">${companyLogo(co?.website||'',coName,14)}<span>${coName}</span><span onclick="removeCoChip('${safeA}')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span></span>`;
+          return `<span data-val="${a.trim()}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--green-t);border:1px solid var(--green-l);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--green)">${companyLogo(co?.website||'',coName,14)}<span>${esc(coName)}</span><span onclick="removeCoChip('${safeA}')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span></span>`;
         }).join('')}
       </div>
       <input type="hidden" id="dev-lco" value="${esc(ev.linkedCompanies||'')}">
@@ -430,7 +430,7 @@ function openEventDrawer(safeId) {
           const m=a.trim().match(/^(.*?)\s*\((C-\d+)\)$/);
           const cName=m?m[1].trim():a.trim();
           const safeA=a.trim().replace(/'/g,'__SQ__');
-          return `<span data-val="${a.trim()}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--purple-t,#f3e8ff);border:1px solid var(--purple-l,#e9d5ff);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--accent5)">${cName}<span onclick="removeContChip('${safeA}')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span></span>`;
+          return `<span data-val="${a.trim()}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--purple-t,#f3e8ff);border:1px solid var(--purple-l,#e9d5ff);border-radius:12px;font-size:.72rem;font-weight:600;color:var(--accent5)">${esc(cName)}<span onclick="removeContChip('${safeA}')" style="cursor:pointer;font-weight:700;margin-left:2px">×</span></span>`;
         }).join('')}
       </div>
       <input type="hidden" id="dev-lcont" value="${esc(ev.linkedContacts||'')}">
