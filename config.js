@@ -111,3 +111,21 @@ const EVENT_MODES     = ['Offline','Online','Hybrid'];
 // ── Dashboard version ────────────────────────────────────────────
 const DASHBOARD_VERSION      = 'v1.30.0';
 const DASHBOARD_VERSION_DATE = '2026-06-17 10:00';
+
+// ── HR Candidates file (separate SharePoint site: Hiring) ────────
+const HR_CFG = {
+  driveId:   'b!Qf__fE3UsEmhPGc-IR_mmlRRmYCEfTVIuZNk-vm3qRtip2w9wPpTS73_2bnbUkgG',
+  fileId:    '014PLZ7ZIRZ5NYATW225HIYOI2H4E2FFBT',
+  sheet:     '5C Candidates',
+};
+const HR_OWNERS    = ['Petr Macalík','Václav Malý','Marián Vandas','Viktor Gřešek','Eva Malková'];
+const HR_STATUSES  = ['Sourced','Contacted','Engaged','HR Screen','5C Interview','On Hold',
+                      'Proposed','Contracted','Placed','Not Interested','Rejected','Blacklisted'];
+const HR_SENIORITY = ['Junior','Medior','Medior-Senior','Senior','Principal','Executive'];
+const HR_STATUS_GROUP = {
+  gray:  ['Sourced','Contacted','Engaged'],
+  blue:  ['HR Screen','5C Interview'],
+  amber: ['On Hold'],
+  green: ['Proposed','Contracted','Placed'],
+  red:   ['Not Interested','Rejected','Blacklisted'],
+};
