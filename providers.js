@@ -420,6 +420,115 @@ const MsProvider = (() => {
       return this.patchRange(sheet, `${col}${rowNum}`, [['Y']]);
     },
 
+    // ── HR Candidates — separate SharePoint file ──────────────────
+    async loadHRSheet() {
+      const t   = await token();
+      const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_CFG.sheet)}/usedRange?$select=values`;
+      const res = await fetch(url, { headers: { Authorization: 'Bearer '+t } });
+      if (!res.ok) throw new Error('HR load failed: '+res.status);
+      return res.json();
+    },
+
+    parseHRCandidates(json) {
+      const rows = json?.values || [];
+      if (rows.length < 2) return [];
+      const headers = rows[0].map(h => String(h||'').trim());
+      // Build column index map (store globally for save operations)
+      DATA_HR_COLS = {};
+      headers.forEach((h,i) => { DATA_HR_COLS[h] = i; });
+      const g = (row, name) => {
+        const i = DATA_HR_COLS[name];
+        return i !== undefined ? String(row[i]??'').trim() : '';
+      };
+      return rows.slice(1).filter(r => r.some(v => v !== null && v !== '')).map((row, i) => {
+        const fn = g(row,'Jméno'), ln = g(row,'Příjmení');
+        return {
+          _row:            i + 2,
+          _raw:            [...row],
+          id:              g(row,'ID'),
+          firstName:       fn,
+          lastName:        ln,
+          name:            ln && fn ? `${fn} ${ln}` : (fn||ln),
+          displayName:     ln && fn ? `${ln} ${fn}` : (fn||ln),  // Surname Name
+          role:            g(row,'Role'),
+          seniority:       g(row,'Seniorita'),
+          status:          g(row,'Status'),
+          owner:           g(row,'Odpovědný'),
+          competencies:    g(row,'Competencies'),
+          rateRequested:   g(row,'Cena požadovaná'),
+          rateAgreed:      g(row,'Cena smluvená'),
+          proposedProjects:g(row,'Projekty navržené'),
+          updatedAt:       g(row,'UpdateDate'),
+          linkedin:        g(row,'LI'),
+          cv:              g(row,'CV'),
+          country:         g(row,'Country'),
+          commitment:      g(row,'Úvazek'),
+          availableFrom:   g(row,'Nástup'),
+          source:          g(row,'Source'),
+          hrRole:          g(row,'HR | Role'),
+          hrInterviewDate: g(row,'HR | Interview Date'),
+          hrKnowhow:       g(row,'HR | Key Know-how'),
+          hrMotivation:    g(row,'HR | Motivation'),
+          hrExpectations:  g(row,'HR | Expectations'),
+          hrSummary:       g(row,'HR | Summary'),
+          phone:           g(row,'Telefon'),
+          email:           g(row,'Email'),
+          dob:             g(row,'DoB'),
+          createdAt:       g(row,'CreateDate'),
+          notes:           g(row,'Poznámka'),
+          oldStatus:       g(row,'Old Status'),
+        };
+      }).filter(r => r.id || r.name);
+    },
+
+    async saveHRStatus(candidate, newStatus) {
+      const colIdx = DATA_HR_COLS['Status'];
+      if (colIdx === undefined) return false;
+      const col = _colLetter(colIdx + 1);
+      const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_CFG.sheet)}/range(address='${col}${candidate._row}')`;
+      const t = await token();
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer '+t, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [[newStatus]] }),
+      });
+      return res.ok;
+    },
+
+    async saveHRNotes(candidate, newNotes) {
+      const colIdx = DATA_HR_COLS['Poznámka'];
+      if (colIdx === undefined) return false;
+      const col = _colLetter(colIdx + 1);
+      const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_CFG.sheet)}/range(address='${col}${candidate._row}')`;
+      const t = await token();
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer '+t, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [[newNotes]] }),
+      });
+      return res.ok;
+    },
+
+    async saveHRRow(candidate, fields) {
+      const today = new Date().toISOString().slice(0,10);
+      const raw   = [...candidate._raw];
+      const set   = (name, val) => { const i=DATA_HR_COLS[name]; if(i!==undefined) raw[i]=val; };
+      set('Status',          fields.status);
+      set('Odpovědný',       fields.owner);
+      set('Projekty navržené', fields.proposedProjects);
+      set('Poznámka',        fields.notes);
+      set('UpdateDate',      today);
+      const lastCol = _colLetter(raw.length);
+      const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_CFG.sheet)}/range(address='A${candidate._row}:${lastCol}${candidate._row}')`;
+      const t = await token();
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer '+t, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [raw] }),
+      });
+      return res.ok;
+    },
+
     // Archive a Task — col O = Archived
     async archiveTask(row) {
       return this.patchRange(CFG.microsoft.sheets.tasks, `O${row._row}`, [['Y']]);
@@ -647,6 +756,13 @@ const MsProvider = (() => {
 })();
 
 // ── GOOGLE (stub — same interface, ready for migration) ──────────
+// ── Column letter helper (1→A, 26→Z, 27→AA, 32→AF) ──────────────
+function _colLetter(n) {
+  let s = '';
+  while (n > 0) { n--; s = String.fromCharCode(65+(n%26))+s; n = Math.floor(n/26); }
+  return s;
+}
+
 const GglProvider = (() => {
   const c = CFG.google;
   let accessToken = null;
@@ -723,6 +839,11 @@ const GglProvider = (() => {
     async createEvent(f)     { return false; },
     async archiveEvent(e)    { return false; },
     async archiveTask(row)   { return false; },
+    async loadHRSheet()      { return { values: [] }; },
+    parseHRCandidates(j)    { return MsProvider.parseHRCandidates.call(this, j); },
+    async saveHRStatus(c,s) { return false; },
+    async saveHRNotes(c,n)  { return false; },
+    async saveHRRow(c,f)    { return false; },
     async updateCalendarEvent(id, d){ return false; },
     async saveContactRow(row, f)   { return MsProvider.saveContactRow.call(this, row, f); },
     async createContact(f)         { return MsProvider.createContact.call(this, f); },
