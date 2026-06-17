@@ -59,6 +59,7 @@ function renderCompanies(q, ft, fown, fprio, find) {
   const owners    = [...new Set(DATA_COMPANIES.map(r=>r.owner).filter(Boolean))].sort();
   const industries= [...new Set(DATA_COMPANIES.map(r=>r.industry).filter(Boolean))].sort();
 
+  const _foc = _saveFocus();
   $('companies-out').innerHTML = `
   <div class="kpi-row">
     <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_COMPANIES.length}</div><div class="sub">Companies</div></div>
@@ -77,7 +78,8 @@ function renderCompanies(q, ft, fown, fprio, find) {
     </select>
     <select id="cofown" onchange="renderCompanies(undefined,undefined,this.value)">
       <option value="">All Owners</option>
-      ${owners.map(o=>`<option value="${o}"${fown===o?' selected':''}>${o}</option>`).join('')}
+      ${owners.map(o=>`
+  _restoreFocus(_foc);<option value="${o}"${fown===o?' selected':''}>${o}</option>`).join('')}
     </select>
     <select id="cofprio" onchange="renderCompanies(undefined,undefined,undefined,this.value)">
       <option value="">All Priorities</option>
