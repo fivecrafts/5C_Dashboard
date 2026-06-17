@@ -106,13 +106,7 @@ function _calDay(dateStr) {
 }
 
 // ── Chip add/remove helpers ─────────────────────────────────────
-function _updateChipHidden(chipsId, hiddenId) {
-  const chips = document.getElementById(chipsId);
-  const hidden = document.getElementById(hiddenId);
-  if (!chips || !hidden) return;
-  const vals = [...chips.querySelectorAll('span[data-val]')].map(s=>s.dataset.val);
-  hidden.value = vals.join(', ');
-}
+// _updateChipHidden moved to helpers.js
 function removeAudChip(safeVal) {
   const val = safeVal.replace(/__SQ__/g,"'");
   const chips = document.getElementById('dev-aud-chips');
