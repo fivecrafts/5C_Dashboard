@@ -292,3 +292,16 @@ function updateCounts() {
   s_('chg-n', n);
   const chip = $('chip-chg'); if (chip) chip.style.display = n > 0 ? 'inline-flex' : 'none';
 }
+
+// ── Search focus save/restore — prevents re-render from breaking continuous typing ──
+function _saveFocus() {
+  const el = document.activeElement;
+  if (!el || el === document.body || !el.id) return null;
+  return { id: el.id, start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0 };
+}
+function _restoreFocus(saved) {
+  if (!saved?.id) return;
+  const el = document.getElementById(saved.id);
+  if (!el) return;
+  try { el.focus(); el.setSelectionRange(saved.start, saved.end); } catch {}
+}
