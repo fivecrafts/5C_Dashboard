@@ -217,6 +217,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
   const cnt = (t) => withTiming.filter(e=>e._timing===t).length;
   const owners = [...new Set(DATA_EVENTS.map(e=>e.owner).filter(Boolean))].sort();
 
+  const _foc = _saveFocus();
   $('events-out').innerHTML = `
   <!-- 3-month event calendar -->
   ${(()=>{
@@ -342,6 +343,8 @@ function openEventDrawer(safeId) {
     return cell.split(',').map(part => {
       const m = part.trim().match(/^(.*?)\s*\(([A-Z]+-\d+)\)\s*$/);
       if (!m) return `<span style="font-size:.77rem">${part.trim()}</span>`;
+
+  _restoreFocus(_foc);
       const [, display, linkId] = m;
       let onclick = '';
       if (type === 'CO') onclick = `openCompanyDrawer('${linkId.replace(/'/g,'__SQ__')}')`;
