@@ -97,6 +97,45 @@ async function saveHRStatusDirect(safeId, newS) {
   } catch(e) { toast('Error: '+e.message,'error'); }
 }
 
+// ── Competency chip helpers ─────────────────────────────────────
+function hrRemoveComp(safeVal) {
+  const val = safeVal.replace(/__SQ__/g,"'");
+  const chips = document.getElementById('hrd-comp-chips');
+  if (!chips) return;
+  chips.querySelectorAll('span[data-val]').forEach(s => { if (s.dataset.val === val) s.remove(); });
+  _updateChipHidden('hrd-comp-chips', 'hrd-comp');
+  // Refresh the add dropdown (add back removed item)
+  const sel = document.getElementById('hrd-comp-add');
+  if (sel) {
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = val;
+    // Insert alphabetically
+    const opts = [...sel.options].filter(o => o.value);
+    const insertBefore = opts.find(o => o.value.localeCompare(val) > 0);
+    if (insertBefore) sel.insertBefore(opt, insertBefore);
+    else sel.appendChild(opt);
+  }
+}
+function hrAddComp(sel) {
+  const val = sel.value; if (!val) return;
+  const hidden = document.getElementById('hrd-comp');
+  const chips  = document.getElementById('hrd-comp-chips');
+  if (!chips) return;
+  // Avoid duplicates
+  if ([...chips.querySelectorAll('span[data-val]')].some(s => s.dataset.val === val)) { sel.value=''; return; }
+  const safeVal = val.replace(/'/g,'__SQ__');
+  const span = document.createElement('span');
+  span.dataset.val = val;
+  span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:1px';
+  span.innerHTML = `${val}<span onclick="hrRemoveComp('${safeVal}')" style="cursor:pointer;font-weight:700;margin-left:2px;opacity:.7">×</span>`;
+  chips.appendChild(span);
+  _updateChipHidden('hrd-comp-chips', 'hrd-comp');
+  // Remove from dropdown
+  const opt = [...sel.options].find(o => o.value === val);
+  if (opt) opt.remove();
+  sel.value = '';
+}
+
 // ════════════════════════════════════════════════════════════════
 // HR LIST VIEW
 // ════════════════════════════════════════════════════════════════
@@ -261,6 +300,22 @@ function openHRDrawer(safeId) {
 
     <!-- Editable pipeline fields -->
     <div class="field-row">
+      <div class="field-group"><label>Role</label>
+        <select id="hrd-role">
+          ${['IT Analyst','Business Analyst','Solution Architect','IT Architect','Project Manager',
+             'Delivery Manager','Product Manager','Product Owner','Card Specialist','Acquiring Specialist',
+             'Risk Specialist','Compliance Specialist','Cyber Security Specialist','Finance Specialist',
+             'CFO','Software Developer','Mobile Developer','QA / Test Manager','IT Administrator',
+             'HR Generalist','Legal Specialist','Other'].map(r=>`<option value="${r}"${c.role===r?' selected':''}>${r}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field-group"><label>Seniority</label>
+        <select id="hrd-seniority">
+          ${HR_SENIORITY.map(s=>`<option value="${s}"${c.seniority===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
       <div class="field-group"><label>Status</label>
         <select id="hrd-status">${statusOpts}</select>
       </div>
@@ -314,11 +369,21 @@ function openHRDrawer(safeId) {
     <!-- Section 4: HR Interview -->
     ${hrSection}
 
-    <!-- Section 5: Competencies (editable) -->
+    <!-- Section 5: Competencies (chip add/remove) -->
     <div class="field-group">
       <label>🏷 Competencies</label>
-      <textarea id="hrd-comp" rows="3" style="font-size:.75rem" placeholder="Comma-separated: Payments, AML, Cards…">${esc(c.competencies||'')}</textarea>
-      <div style="margin-top:4px;line-height:1.8">${tagCloud}</div>
+      <div id="hrd-comp-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:32px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;background:#fff;margin-bottom:6px">
+        ${(c.competencies||'').split(',').filter(x=>x.trim()).map(t=>{
+          const tag = t.trim();
+          const safeTag = tag.replace(/'/g,'__SQ__');
+          return `<span data-val="${tag}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:1px">${tag}<span onclick="hrRemoveComp('${safeTag}')" style="cursor:pointer;font-weight:700;margin-left:2px;opacity:.7">×</span></span>`;
+        }).join('')}
+      </div>
+      <input type="hidden" id="hrd-comp" value="${esc(c.competencies||'')}">
+      <select id="hrd-comp-add" onchange="hrAddComp(this)" style="font-size:.78rem;width:100%">
+        <option value="">+ Add competency…</option>
+        ${(HR_COMPETENCIES||[]).filter(comp => !(c.competencies||'').split(',').map(x=>x.trim()).includes(comp)).map(comp=>`<option value="${esc(comp)}">${comp}</option>`).join('')}
+      </select>
     </div>
 
     <!-- Section 5: Notes timeline -->
@@ -350,6 +415,8 @@ async function saveHRDrawer(origId) {
     ? (c.notes ? c.notes + ` | ${c.owner||'User'} (${today}): ${newNote}` : `${c.owner||'User'} (${today}): ${newNote}`)
     : c.notes;
   const fields = {
+    role:            $('hrd-role')     ? $('hrd-role').value     : c.role,
+    seniority:       $('hrd-seniority')? $('hrd-seniority').value: c.seniority,
     status:          $('hrd-status').value,
     owner:           $('hrd-owner').value,
     proposedProjects:$('hrd-projects').value.trim(),
