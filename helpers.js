@@ -1,4 +1,4 @@
-// 5C Dashboard v1.30.0 · 2026-06-17 10:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -315,4 +315,11 @@ function _updateChipHidden(chipsId, hiddenId) {
   if (!chips || !hidden) return;
   const vals = [...chips.querySelectorAll('span[data-val]')].map(s => s.dataset.val);
   hidden.value = vals.join(', ');
+}
+
+// ── Safe URL — blocks javascript: and data: injection ────────────
+function safeUrl(u) {
+  if (!u || typeof u !== 'string') return '#';
+  const s = u.trim();
+  return /^https?:\/\//i.test(s) ? s : '#';
 }
