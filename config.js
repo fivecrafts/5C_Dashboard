@@ -129,3 +129,18 @@ const HR_STATUS_GROUP = {
   green: ['Proposed','Contracted','Placed'],
   red:   ['Not Interested','Rejected','Blacklisted'],
 };
+
+// ── HR competency codelist (61 values) ─────────────────────────
+const HR_COMPETENCIES = [
+  'Acquiring','Issuing','Card Payments','POS Terminals','Payment Gateway','Tokenization',
+  'Apple Pay / Google Pay','ISO 8583','EMV','Clearing & Settlement','Authorization','Chargebacks',
+  'Core Banking','Temenos T24','Digital Banking','Internet Banking','Mobile Banking','Digital Channels',
+  'Open Banking','PSD2 / AISP / PISP','SEPA','SWIFT','ISO 20022','CERTIS','Payment Hub',
+  'AML','KYC','Fraud','Risk Management','Compliance','GDPR','PCI DSS','DORA','NIS2','MiFID','ESG',
+  'Licensing & Regulation','IT Security','Cyber Security','ISO 27001',
+  'Solution Architecture','Integration Architecture','Enterprise Architecture',
+  'API Design','Data Architecture','Agile / SAFe','ITIL','BPMN / Process Modeling',
+  'Business Analysis','Test Management / UAT','Project Delivery','Atlassian (Jira/Confluence)',
+  'SQL / Data','AI / Automation','Crypto / DLT','Digital Wallet (EU)',
+  'Fintech','Banking','Insurance','Public Sector','Transport',
+];
