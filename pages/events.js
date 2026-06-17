@@ -1,3 +1,4 @@
+// 5C Dashboard v1.30.0 · 2026-06-17 10:00 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
