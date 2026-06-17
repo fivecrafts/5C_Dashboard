@@ -91,6 +91,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
   const cancelled = DATA_TASKS.filter(t => t.status === 'Cancelled').length;
   const overdue   = DATA_TASKS.filter(t => t.status === 'Open' && t.dueDate && t.dueDate < today).length;
 
+  const _foc = _saveFocus();
   $('tasks-out').innerHTML = `
   <div class="kpi-row">
     <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_TASKS.length}</div><div class="sub">All tasks</div></div>
@@ -110,7 +111,8 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
     </select>
     <select id="tft" onchange="renderTasks(undefined,undefined,undefined,this.value)">
       <option value="">All Types</option>
-      ${TASK_TYPES.map(t=>`<option value="${t}"${ftype===t?' selected':''}>${t}</option>`).join('')}
+      ${TASK_TYPES.map(t=>`
+  _restoreFocus(_foc);<option value="${t}"${ftype===t?' selected':''}>${t}</option>`).join('')}
     </select>
     <select id="tfprio" onchange="renderTasks(undefined,undefined,undefined,undefined,this.value)">
       <option value="">All Priorities</option>
