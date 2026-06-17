@@ -25,7 +25,9 @@ const INDUSTRIES  = ['Banking','Payments','Card Issuing','Card Acquiring','Crypt
 let CHANGES = {};
 let PRIO_CHANGES = {};  // pending priority edits, same pattern as CHANGES
 let OWNER_PHOTOS  = {};
-let DATA_EVENTS   = [];  // Events sheet  // email → object URL from Graph /photo/$value
+let DATA_EVENTS   = [];  // Events sheet
+let DATA_HR       = [];  // HR Candidates
+let DATA_HR_COLS  = {};  // header→colIndex map  // email → object URL from Graph /photo/$value
 
 // ── Owner color map (built dynamically from DATA_PIPE) ──
 let OC = {};
