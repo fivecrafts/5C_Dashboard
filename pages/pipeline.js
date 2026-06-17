@@ -69,12 +69,14 @@ function renderPipe(q, fs, fp, fo) {
   const cols   = ['c','p','d','prio','s','owner','contact'];
   const labels = ['Client','Project / Scope','Detail','Priority','Status','Owner','Contact'];
 
+  const _foc = _saveFocus();
   $('pipe-out').innerHTML = `
   <div class="legend" style="margin-bottom:14px;">
     <h3>Legend</h3>
     <div class="legend-grid">
       <div class="legend-section"><h4>Status</h4><div class="legend-items">
-        ${ALL_S.map(s => `<span class="legend-item"><span class="legend-dot" style="background:var(--${
+        ${ALL_S.map(s => `
+  _restoreFocus(_foc);<span class="legend-item"><span class="legend-dot" style="background:var(--${
           s==='Running'?'green':s==='Bidding'?'purple':s==='Pipeline'?'blue':s==='Prospect'?'amber':s==='Done'?'slate2':'red'
         })"></span>${s}</span>`).join('')}
       </div></div>
