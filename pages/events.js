@@ -208,18 +208,60 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
   const owners = [...new Set(DATA_EVENTS.map(e=>e.owner).filter(Boolean))].sort();
 
   $('events-out').innerHTML = `
-  <!-- KPI row -->
-  <div class="kpi-row">
-    <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_EVENTS.length}</div><div class="sub">Events</div></div>
-    <div class="kpi k-pip" style="cursor:pointer" onclick="renderEvents('','Upcoming')"><div class="lbl">Upcoming</div><div class="val" style="color:var(--blue)">${cnt('Upcoming')}</div></div>
-    <div class="kpi k-run" style="cursor:pointer" onclick="renderEvents('','Ongoing')"><div class="lbl">Ongoing</div><div class="val" style="color:var(--green)">${cnt('Ongoing')}</div></div>
-    <div class="kpi k-tot" style="cursor:pointer" onclick="renderEvents('','Past')"><div class="lbl">Past</div><div class="val" style="color:var(--slate2)">${cnt('Past')}</div></div>
-    <div class="kpi k-run"><div class="lbl">Active</div><div class="val" style="color:var(--green)">${DATA_EVENTS.filter(e=>e.status==='Active').length}</div></div>
-    <div class="kpi k-pip"><div class="lbl">Watching</div><div class="val" style="color:var(--blue)">${DATA_EVENTS.filter(e=>e.status==='Watching').length}</div></div>
-    <div class="kpi k-tot"><div class="lbl">Not Int.</div><div class="val" style="color:var(--slate2)">${DATA_EVENTS.filter(e=>e.status==='Not Interested').length}</div></div>
-  </div>
+  <!-- 3-month event calendar -->
+  ${(()=>{
+    const todayD = new Date(); todayD.setHours(0,0,0,0);
+    const todayStr = todayD.toISOString().slice(0,10);
+    const evMap = {};
+    DATA_EVENTS.forEach(ev => {
+      if (!ev.dateFrom) return;
+      const from = new Date(ev.dateFrom); from.setHours(0,0,0,0);
+      const to   = ev.dateTo ? new Date(ev.dateTo) : new Date(from);
+      to.setHours(0,0,0,0);
+      for (let d = new Date(from); d <= to; d.setDate(d.getDate()+1)) {
+        const k = d.toISOString().slice(0,10);
+        if (!evMap[k]) evMap[k] = [];
+        evMap[k].push(ev);
+      }
+    });
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const DAYS   = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+    let html = '<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">';
+    for (let m = 0; m < 3; m++) {
+      const base = new Date(todayD.getFullYear(), todayD.getMonth()+m, 1);
+      const yr = base.getFullYear(), mo = base.getMonth();
+      const daysInMonth = new Date(yr, mo+1, 0).getDate();
+      const firstDow = (new Date(yr, mo, 1).getDay()+6)%7;
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;flex:1;min-width:200px">';
+      html += '<div style="font-size:.78rem;font-weight:700;color:var(--navy2);margin-bottom:8px;text-align:center">'+MONTHS[mo]+' '+yr+'</div>';
+      html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">';
+      html += DAYS.map(d=>'<div style="font-size:.6rem;color:var(--slate2);font-weight:600;padding:2px 0">'+d+'</div>').join('');
+      html += Array(firstDow).fill('<div></div>').join('');
+      for (let i=1; i<=daysInMonth; i++) {
+        const dateStr = yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
+        const evs = evMap[dateStr] || [];
+        const isToday = dateStr === todayStr;
+        const isPast  = dateStr < todayStr;
+        const hasEv   = evs.length > 0;
+        const dotColor = hasEv ? (evs[0].status==='Active'?'var(--green)':evs[0].status==='Not Interested'?'var(--red)':'var(--blue)') : '';
+        const title = evs.map(e=>e.name).join(', ');
+        html += '<div title="'+title+'" '
+          +(hasEv?'onclick="renderEvents(undefined,\''+eventTiming(evs[0])+'\',undefined,undefined,undefined)" ':'' )
+          +'style="font-size:.68rem;padding:3px 1px;border-radius:4px;'
+          +'cursor:'+(hasEv?'pointer':'default')+';'
+          +'background:'+(isToday?'var(--navy2)':hasEv?'var(--blue-t)':'transparent')+';'
+          +'color:'+(isToday?'#fff':isPast?'var(--slate2)':'var(--navy2)')+';'
+          +'font-weight:'+(hasEv||isToday?'700':'400')+'">'+i
+          +(hasEv?'<span style="display:block;width:4px;height:4px;border-radius:50%;background:'+dotColor+';margin:1px auto 0"></span>':'<span style="display:block;height:5px"></span>')
+          +'</div>';
+      }
+      html += '</div></div>';
+    }
+    html += '</div>';
+    return html;
+  })()}
 
-  <!-- Filters -->
+    <!-- Filters -->
   <div class="filter-bar">
     <input type="text" id="evq" placeholder="🔍  Search name, place, industry…" value="${q}" oninput="renderEvents(undefined,undefined,undefined,undefined,undefined)">
     <select id="evtim" onchange="renderEvents()">
