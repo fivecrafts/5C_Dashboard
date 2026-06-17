@@ -1,4 +1,4 @@
-// 5C Dashboard v1.30.0 · 2026-06-17 10:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
 'use strict';
 
 // Defensive init — in case state.js update wasn't uploaded
@@ -42,7 +42,7 @@ function hrCompTags(competencies, max) {
   const tags = competencies.split(',').map(t=>t.trim()).filter(Boolean);
   const shown = tags.slice(0, max);
   const rest  = tags.length - max;
-  const html  = shown.map(t => `<span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:.65rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:1px">${t}</span>`).join('');
+  const html  = shown.map(t => `<span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:.65rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:1px">${esc(t)}</span>`).join('');
   return html + (rest > 0 ? `<span style="font-size:.68rem;color:var(--slate);margin-left:3px" title="${tags.slice(max).join(', ')}">+${rest}</span>` : '');
 }
 
@@ -56,10 +56,10 @@ function hrNotesTimeline(notes) {
           <span style="font-size:.65rem;font-weight:700;color:var(--blue)">${m[2]}</span>
           <span style="font-size:.65rem;color:var(--slate2)">${m[1].trim()}</span>
         </div>
-        <div style="font-size:.78rem;color:var(--navy2)">${m[3].trim()}</div>
+        <div style="font-size:.78rem;color:var(--navy2)">${esc(m[3].trim())}</div>
       </div>`;
     }
-    return `<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--navy2)">${entry.trim()}</div>`;
+    return `<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--navy2)">${esc(entry.trim())}</div>`;
   }).join('');
 }
 
@@ -127,7 +127,7 @@ function hrAddComp(sel) {
   const span = document.createElement('span');
   span.dataset.val = val;
   span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:1px';
-  span.innerHTML = `${val}<span onclick="hrRemoveComp('${safeVal}')" style="cursor:pointer;font-weight:700;margin-left:2px;opacity:.7">×</span>`;
+  span.innerHTML = `${esc(val)}<span onclick="hrRemoveComp('${safeVal}')" style="cursor:pointer;font-weight:700;margin-left:2px;opacity:.7">×</span>`;
   chips.appendChild(span);
   _updateChipHidden('hrd-comp-chips', 'hrd-comp');
   // Remove from dropdown
@@ -212,14 +212,14 @@ function renderHR(q, frole, fsen, fstat, fown) {
     </tr></thead>
     <tbody>${filtered.map(c => {
       const safeId = (c.id||'').replace(/'/g,'__SQ__');
-      const li = c.linkedin ? `<a href="${esc(c.linkedin)}" target="_blank" onclick="event.stopPropagation()" title="LinkedIn" style="color:var(--blue);text-decoration:none;font-size:1rem">in</a>` : '';
-      const cv = c.cv       ? `<a href="${esc(c.cv)}"       target="_blank" onclick="event.stopPropagation()" title="CV / Resume" style="color:var(--slate);font-size:.85rem">📄</a>` : '';
+      const li = c.linkedin ? `<a href="${safeUrl(c.linkedin)}" target="_blank" onclick="event.stopPropagation()" title="LinkedIn" style="color:var(--blue);text-decoration:none;font-size:1rem">in</a>` : '';
+      const cv = c.cv       ? `<a href="${safeUrl(c.cv)}"       target="_blank" onclick="event.stopPropagation()" title="CV / Resume" style="color:var(--slate);font-size:.85rem">📄</a>` : '';
       return `<tr class="edit-row" onclick="openHRDrawer('${safeId}')">
         <td>
           <div style="display:flex;align-items:center;gap:9px">
             ${hrAvatar(c,30)}
             <div>
-              <div style="font-weight:600;font-size:.82rem;color:var(--navy2)">${c.displayName||c.name||'—'}</div>
+              <div style="font-weight:600;font-size:.82rem;color:var(--navy2)">${esc(c.displayName||c.name||'—')}</div>
               <div style="font-size:.68rem;color:var(--slate)">${c.country?countryFlag(c.country)+' ':''} ${c.id||''}</div>
             </div>
           </div>
@@ -332,9 +332,9 @@ function openHRDrawer(safeId) {
         <div class="field-group"><label>Phone</label><input id="hrd-phone" value="${esc(c.phone||'')}"></div>
         <div class="field-group"><label>Email</label><input id="hrd-email" type="email" value="${esc(c.email||'')}"></div>
       </div>
-      ${c.linkedin ? `<div style="margin-bottom:4px"><a href="${esc(c.linkedin)}" target="_blank" style="color:var(--blue);font-size:.78rem">in LinkedIn →</a></div>` : ''}
+      ${c.linkedin ? `<div style="margin-bottom:4px"><a href="${safeUrl(c.linkedin)}" target="_blank" style="color:var(--blue);font-size:.78rem">in LinkedIn →</a></div>` : ''}
       ${c.cv ? `<div style="margin-top:6px">
-        <a href="${esc(c.cv)}" target="_blank"
+        <a href="${safeUrl(c.cv)}" target="_blank"
           style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--blue-t);color:var(--blue);border:1px solid var(--blue-l);border-radius:7px;font-size:.78rem;font-weight:600;text-decoration:none">
           📄 Open CV
         </a>
@@ -382,7 +382,7 @@ function openHRDrawer(safeId) {
         ${(c.competencies||'').split(',').filter(x=>x.trim()).map(t=>{
           const tag = t.trim();
           const safeTag = tag.replace(/'/g,'__SQ__');
-          return `<span data-val="${tag}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:1px">${tag}<span onclick="hrRemoveComp('${safeTag}')" style="cursor:pointer;font-weight:700;margin-left:2px;opacity:.7">×</span></span>`;
+          return `<span data-val="${tag}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:1px">${esc(tag)}<span onclick="hrRemoveComp('${safeTag}')" style="cursor:pointer;font-weight:700;margin-left:2px;opacity:.7">×</span></span>`;
         }).join('')}
       </div>
       <input type="hidden" id="hrd-comp" value="${esc(c.competencies||'')}">
