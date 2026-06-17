@@ -1,4 +1,4 @@
-// 5C Dashboard v1.30.0 · 2026-06-17 10:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -109,8 +109,8 @@ const EVENT_STATUSES  = ['Active','Watching','Not Interested'];
 const EVENT_MODES     = ['Offline','Online','Hybrid'];
 
 // ── Dashboard version ────────────────────────────────────────────
-const DASHBOARD_VERSION      = 'v1.30.0';
-const DASHBOARD_VERSION_DATE = '2026-06-17 10:00';
+const DASHBOARD_VERSION      = 'v1.31.0';
+const DASHBOARD_VERSION_DATE = '2026-06-17 22:00';
 
 // ── HR Candidates file (separate SharePoint site: Hiring) ────────
 const HR_CFG = {
