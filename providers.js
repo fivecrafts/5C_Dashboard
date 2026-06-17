@@ -423,14 +423,16 @@ const MsProvider = (() => {
     // ── HR Candidates — separate SharePoint file ──────────────────
     async loadHRSheet() {
       const t   = await token();
-      const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_CFG.sheet)}/usedRange?$select=values`;
+      // Request both values AND formulas — formulas needed to extract HYPERLINK("url","text") hrefs
+      const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_CFG.sheet)}/usedRange?$select=values,formulas`;
       const res = await fetch(url, { headers: { Authorization: 'Bearer '+t } });
       if (!res.ok) throw new Error('HR load failed: '+res.status);
       return res.json();
     },
 
     parseHRCandidates(json) {
-      const rows = json?.values || [];
+      const rows     = json?.values   || [];
+      const formulas = json?.formulas || [];
       if (rows.length < 2) return [];
       const headers = rows[0].map(h => String(h||'').trim());
       // Build column index map (store globally for save operations)
@@ -440,7 +442,21 @@ const MsProvider = (() => {
         const i = DATA_HR_COLS[name];
         return i !== undefined ? String(row[i]??'').trim() : '';
       };
-      return rows.slice(1).filter(r => r.some(v => v !== null && v !== '')).map((row, i) => {
+      // Extract href from =HYPERLINK("url","text") formula, else use cell value
+      const gUrl = (row, fmls, name) => {
+        const i = DATA_HR_COLS[name];
+        if (i === undefined) return '';
+        const formula = String(fmls?.[i] ?? '');
+        if (formula.toUpperCase().startsWith('=HYPERLINK(')) {
+          const m = formula.match(/=HYPERLINK\("([^"]+)"/i);
+          if (m && m[1]) return m[1];
+        }
+        // Fallback: cell might store URL directly
+        const val = String(row[i] ?? '').trim();
+        return val.startsWith('http') ? val : '';
+      };
+      return rows.slice(1).map((row, i) => {  // i+1 = formula row index
+        if (!row.some(v => v !== null && v !== '')) return null;
         const fn = g(row,'Jméno'), ln = g(row,'Příjmení');
         return {
           _row:            i + 2,
@@ -459,8 +475,8 @@ const MsProvider = (() => {
           rateAgreed:      g(row,'Cena smluvená'),
           proposedProjects:g(row,'Projekty navržené'),
           updatedAt:       g(row,'UpdateDate'),
-          linkedin:        g(row,'LI'),
-          cv:              g(row,'CV'),
+          linkedin:        gUrl(row, formulas[i+1], 'LI'),
+          cv:              gUrl(row, formulas[i+1], 'CV'),
           country:         g(row,'Country'),
           commitment:      g(row,'Úvazek'),
           availableFrom:   g(row,'Nástup'),
@@ -478,7 +494,7 @@ const MsProvider = (() => {
           notes:           g(row,'Poznámka'),
           oldStatus:       g(row,'Old Status'),
         };
-      }).filter(r => r.id || r.name);
+            }).filter(r => r && (r.id || r.name));
     },
 
     async saveHRStatus(candidate, newStatus) {
