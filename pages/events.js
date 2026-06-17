@@ -1,4 +1,5 @@
 'use strict';
+let _calOffset = 0; // months offset from current month for calendar navigation
 
 // ── Country flag emoji from country name ─────────────────────────
 function countryFlag(country) {
@@ -96,6 +97,13 @@ function timingBadge(t) {
   return `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:600;${s[t]||s.Unknown}">${t}</span>`;
 }
 
+// ── Calendar day click helper ────────────────────────────────────
+function _calDay(dateStr) {
+  const el = document.getElementById('ev-fdate');
+  if (el) el.value = dateStr;
+  renderEvents();
+}
+
 // ── Chip add/remove helpers ─────────────────────────────────────
 function _updateChipHidden(chipsId, hiddenId) {
   const chips = document.getElementById(chipsId);
@@ -178,12 +186,13 @@ function addCoChip(sel) {
 // ════════════════════════════════════════════════════════════════
 // EVENTS PAGE — table view
 // ════════════════════════════════════════════════════════════════
-function renderEvents(q, ftiming, fstatus, fmode, fown) {
+function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
   if (q       === undefined) { const el=$('evq');    q       = el?el.value:''; }
   if (ftiming === undefined) { const el=$('evtim');  ftiming = el?el.value:''; }
   if (fstatus === undefined) { const el=$('evstat'); fstatus = el?el.value:''; }
   fmode = '';
   if (fown    === undefined) { const el=$('evown');  fown    = el?el.value:''; }
+  if (fdate   === undefined) { const el=$('ev-fdate'); fdate  = el?el.value:''; }
   q=''; // reset search — re-apply below
   const qEl = $('evq'); if(qEl) q = qEl.value.toLowerCase();
 
@@ -194,7 +203,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
     (!q       || (ev.name+ev.place+ev.country+ev.description+ev.industry+ev.owner).toLowerCase().includes(q)) &&
     (!ftiming || ev._timing === ftiming) &&
     (!fstatus || ev.status  === fstatus) &&
-    (!fmode   || ev.mode    === fmode) &&
+    (!fdate   || (ev.dateFrom && ev.dateFrom <= fdate && (!ev.dateTo || ev.dateTo >= fdate))) &&
     (!fown    || ev.owner   === fown)
   ).sort((a,b) => {
     // Upcoming first → Ongoing → Past → Unknown; within each: dateFrom asc
@@ -210,16 +219,24 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
   $('events-out').innerHTML = `
   <!-- 3-month event calendar -->
   ${(()=>{
-    const todayD = new Date(); todayD.setHours(0,0,0,0);
-    const todayStr = todayD.toISOString().slice(0,10);
+    const _tn = new Date();
+    const todayStr = _tn.getFullYear()+'-'+String(_tn.getMonth()+1).padStart(2,'0')+'-'+String(_tn.getDate()).padStart(2,'0');
+    const todayD = new Date(_tn.getFullYear(), _tn.getMonth(), _tn.getDate());
     const evMap = {};
+    const _parseLocal = s => { const p=s.split('-'); return p.length===3?new Date(+p[0],+p[1]-1,+p[2]):null; };
+    const _fmtDate = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     DATA_EVENTS.forEach(ev => {
       if (!ev.dateFrom) return;
-      const from = new Date(ev.dateFrom); from.setHours(0,0,0,0);
-      const to   = ev.dateTo ? new Date(ev.dateTo) : new Date(from);
-      to.setHours(0,0,0,0);
+      const from = _parseLocal(ev.dateFrom);
+      const to   = ev.dateTo ? _parseLocal(ev.dateTo) : new Date(from);
+      if (!from || !to || from > to) { // single day or invalid range
+        const k = ev.dateFrom;
+        if (!evMap[k]) evMap[k] = [];
+        evMap[k].push(ev);
+        return;
+      }
       for (let d = new Date(from); d <= to; d.setDate(d.getDate()+1)) {
-        const k = d.toISOString().slice(0,10);
+        const k = _fmtDate(d);
         if (!evMap[k]) evMap[k] = [];
         evMap[k].push(ev);
       }
@@ -246,7 +263,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown) {
         const dotColor = hasEv ? (evs[0].status==='Active'?'var(--green)':evs[0].status==='Not Interested'?'var(--red)':'var(--blue)') : '';
         const title = evs.map(e=>e.name).join(', ');
         html += '<div title="'+title+'" '
-          +(hasEv?'onclick="renderEvents(undefined,\''+eventTiming(evs[0])+'\',undefined,undefined,undefined)" ':'' )
+          +(hasEv?'onclick="_calDay(\''+dateStr+'\')" ':'' )
           +'style="font-size:.68rem;padding:3px 1px;border-radius:4px;'
           +'cursor:'+(hasEv?'pointer':'default')+';'
           +'background:'+(isToday?'var(--navy2)':hasEv?'var(--blue-t)':'transparent')+';'
