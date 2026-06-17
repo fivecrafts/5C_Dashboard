@@ -532,6 +532,9 @@ const MsProvider = (() => {
       set('Status',          fields.status);
       set('Odpovědný',       fields.owner);
       set('Projekty navržené', fields.proposedProjects);
+      if (fields.phone        !== undefined) set('Telefon',          fields.phone);
+      if (fields.email        !== undefined) set('Email',            fields.email);
+      if (fields.competencies !== undefined) set('Competencies',     fields.competencies);
       set('Poznámka',        fields.notes);
       set('UpdateDate',      today);
       const lastCol = _colLetter(raw.length);
