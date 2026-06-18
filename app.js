@@ -1,4 +1,4 @@
-// 5C Dashboard v1.37.0 · 2026-06-18 · sourcing · Five Crafts s.r.o.
+// 5C Dashboard v1.37.2 · 2026-06-19 · sourcing-persist · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -41,6 +41,12 @@ const App = {
           DATA_POOL = P.parsePoolCandidates(pj);
           const el = document.getElementById('pl-hr');
           if (el) el.textContent = DATA_HR.length + (DATA_POOL.length ? '+'+DATA_POOL.length : '');
+          // Load persisted sourcing history after pool is ready
+          setTimeout(() => {
+            if (typeof loadSourcingRuns === 'function') {
+              loadSourcingRuns().catch(e => console.warn('Sourcing log load failed:', e.message));
+            }
+          }, 1500);
         }).catch(e => console.warn('Pool load failed:', e.message));
       }, 1500);
 
