@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.1 · 2026-06-18 18:30 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.3 · 2026-06-18 19:30 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -109,8 +109,8 @@ const EVENT_STATUSES  = ['Active','Watching','Not Interested'];
 const EVENT_MODES     = ['Offline','Online','Hybrid'];
 
 // ── Dashboard version ────────────────────────────────────────────
-const DASHBOARD_VERSION      = 'v1.36.1';
-const DASHBOARD_VERSION_DATE = '2026-06-18 18:30';
+const DASHBOARD_VERSION      = 'v1.36.3';
+const DASHBOARD_VERSION_DATE = '2026-06-18 19:30';
 
 // ── HR Candidates file (separate SharePoint site: Hiring) ────────
 const HR_CFG = {
@@ -161,3 +161,15 @@ const POOL_NOTES = [
 ];
 // Pool read-only cols — never written by App
 const POOL_READONLY = ['Code','Duplicate Flag','DateCreated','Candidate FC ID'];
+
+// ── HR Role Groups — shared between hr.js stats and filtering ────
+const HR_ROLE_GROUPS = [
+  { icon:'🧩', label:'Analyst',          roles:['IT Analyst','Business Analyst','Solution Architect','IT Architect'] },
+  { icon:'💳', label:'Cards',            roles:['Card Specialist','Acquiring Specialist'] },
+  { icon:'🧭', label:'Management',       roles:['Project Manager','Delivery Manager','Product Manager','Product Owner'] },
+  { icon:'🛡️', label:'Risk & Compliance',roles:['Risk Specialist','Compliance Specialist','Cyber Security Specialist'] },
+  { icon:'💰', label:'Finance',          roles:['Finance Specialist','CFO'] },
+  { icon:'💻', label:'Technology',       roles:['Software Developer','Mobile Developer','IT Administrator','QA / Test Manager'] },
+  { icon:'🤝', label:'People',           roles:['HR Generalist','Legal Specialist'] },
+  { icon:'🙋', label:'Other',            roles:['Other'] },
+];
