@@ -1,4 +1,4 @@
-// 5C Dashboard v1.37.2 · 2026-06-19 · sourcing-persist · Five Crafts s.r.o.
+// 5C Dashboard v1.37.3 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -310,8 +310,6 @@ function _srcTogglePool(mode) {
 function _srcScoreLocally(candidates, competencies, opp, jd, minScore) {
   const reqComps   = competencies.map(c => c.toLowerCase());
   const oppText    = ((opp.d||'')+(opp.c||'')+(opp.p||'')+(jd||'')).toLowerCase();
-  const reqGroup   = hrRoleGroup ? hrRoleGroup(opp.role || '') : null;
-
   // Status weight — prefer available candidates
   const statusScore = s => {
     s = (s||'').toLowerCase();
