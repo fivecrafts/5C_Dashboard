@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.32.0 · 2026-06-18 12:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -422,11 +422,15 @@ const MsProvider = (() => {
 
     // ── HR Candidates — separate SharePoint file ──────────────────
     async loadHRSheet() {
-      const t   = await token();
+      const t = await token();
+      if (!t) throw new Error('HR: empty access token — try reloading');
       // Request both values AND formulas — formulas needed to extract HYPERLINK("url","text") hrefs
       const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_CFG.sheet)}/usedRange?$select=values,formulas`;
-      const res = await fetch(url, { headers: { Authorization: 'Bearer '+t } });
-      if (!res.ok) throw new Error('HR load failed: '+res.status);
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + t } });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(`HR load ${res.status}: ${body?.error?.message || 'unknown'}`);
+      }
       return res.json();
     },
 
@@ -555,6 +559,132 @@ const MsProvider = (() => {
         body: JSON.stringify({ values: [raw] }),
       });
       return res.ok;
+    },
+
+
+    // ── HR Search Tracking Pool ───────────────────────────────────
+    async loadPoolSheet() {
+      const t = await token();
+      if (!t) throw new Error('Pool: empty access token');
+      const url = `https://graph.microsoft.com/v1.0/drives/${HR_POOL_CFG.driveId}/items/${HR_POOL_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_POOL_CFG.sheet)}/usedRange?$select=values,formulas`;
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + t } });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(`Pool load ${res.status}: ${body?.error?.message || 'unknown'}`);
+      }
+      return res.json();
+    },
+
+    parsePoolCandidates(json) {
+      const rows     = json?.values   || [];
+      const formulas = json?.formulas || [];
+      if (rows.length < 2) return [];
+      const headers = rows[0].map(h => String(h||'').trim());
+      DATA_POOL_COLS = {};
+      headers.forEach((h,i) => { DATA_POOL_COLS[h] = i; });
+      const g   = (row, name) => { const i=DATA_POOL_COLS[name]; return i!==undefined?String(row[i]??'').trim():''; };
+      const gUrl= (row, fmls, name) => {
+        const i = DATA_POOL_COLS[name];
+        if (i===undefined) return '';
+        const formula = String(fmls?.[i]??'');
+        if (formula.toUpperCase().startsWith('=HYPERLINK(')) {
+          const m = formula.match(/=HYPERLINK\(["']([^"']+)["']/i);
+          if (m&&m[1]) return m[1];
+        }
+        const urlMatch = formula.match(/https?:\/\/[^\s"')]+/i);
+        if (urlMatch) return urlMatch[0];
+        const val = String(row[i]??'').trim();
+        return val.startsWith('http') ? val : '';
+      };
+      return rows.slice(1).map((row, i) => {
+        if (!row.some(v => v!==null && v!=='')) return null;
+        const fmls   = formulas[i+1] || [];
+        const code   = g(row,'Code');
+        const fcId   = g(row,'Candidate FC ID');
+        const arch   = g(row,'Archived');
+        // Scope filter: Archived=N AND Candidate FC ID blank
+        if (arch==='Y' || fcId) return null;
+        const fn = g(row,'Name'), ln = g(row,'Surname');
+        return {
+          _row:       i + 2,
+          _source:    'pool',
+          _raw:       [...row],
+          id:         code || `ST-${i+2}`,
+          firstName:  fn,
+          lastName:   ln,
+          name:       fn&&ln ? `${fn} ${ln}` : (fn||ln),
+          displayName:fn&&ln ? `${ln} ${fn}` : (fn||ln),
+          role:       g(row,'Role'),
+          seniority:  g(row,'Seniority'),
+          status:     g(row,'Status') || 'Sourced',
+          owner:      g(row,'Owner'),
+          linkedin:   gUrl(row, fmls, 'LI Profile'),
+          email:      g(row,'Email'),
+          phone:      g(row,'Phone'),
+          specializace:g(row,'Specializace'),
+          activeSearch:g(row,'Active Search'),
+          competencies:g(row,'Competencies'),
+          hrNote:     g(row,'HR Poznámka'),
+          approval5c: g(row,'5C Schválení'),
+          note5c:     g(row,'5C Poznámka'),
+          result:     g(row,'Výsledek'),
+          noteGeneral:g(row,'NOTE'),
+          duplicateFlag:g(row,'Duplicate Flag'),
+          createdAt:  g(row,'DateCreated'),
+          updatedAt:  g(row,'DateUpdated'),
+          archived:   arch,
+        };
+      }).filter(r => r && (r.id || r.name));
+    },
+
+    async savePoolRow(candidate, fields) {
+      const today = new Date().toISOString().slice(0,10);
+      const raw   = [...candidate._raw];
+      const set   = (name, val) => {
+        if (POOL_READONLY.includes(name)) return; // never write protected cols
+        const i = DATA_POOL_COLS[name];
+        if (i !== undefined) raw[i] = val;
+      };
+      set('Surname',      fields.lastName  || candidate.lastName);
+      set('Name',         fields.firstName || candidate.firstName);
+      set('Role',         fields.role);
+      set('Status',       fields.status);
+      set('LI Profile',   fields.linkedin  || candidate.linkedin);
+      set('Email',        fields.email);
+      set('Phone',        fields.phone);
+      set('Seniority',    fields.seniority);
+      set('Owner',        fields.owner);
+      set('Competencies', fields.competencies);
+      set('Active Search',fields.activeSearch);
+      set('5C Poznámka',  fields.note5c);
+      set('Výsledek',     fields.result);
+      set('NOTE',         fields.noteGeneral);
+      set('Archived',     fields.archived || candidate.archived || 'N');
+      set('DateUpdated',  today);
+      const lastCol = _colLetter(raw.length);
+      const url = `https://graph.microsoft.com/v1.0/drives/${HR_POOL_CFG.driveId}/items/${HR_POOL_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_POOL_CFG.sheet)}/range(address='A${candidate._row}:${lastCol}${candidate._row}')`;
+      const t = await token();
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer '+t, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [raw] }),
+      });
+      return res.ok;
+    },
+
+    async archivePool(candidate) {
+      const colIdx = DATA_POOL_COLS['Archived'];
+      if (colIdx === undefined) return false;
+      const col = _colLetter(colIdx + 1);
+      const today = new Date().toISOString().slice(0,10);
+      const t = await token();
+      // Archive + update DateUpdated
+      const updIdx = DATA_POOL_COLS['DateUpdated'];
+      const prom1 = fetch(
+        `https://graph.microsoft.com/v1.0/drives/${HR_POOL_CFG.driveId}/items/${HR_POOL_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_POOL_CFG.sheet)}/range(address='${col}${candidate._row}')`,
+        { method:'PATCH', headers:{ Authorization:'Bearer '+t,'Content-Type':'application/json' }, body: JSON.stringify({values:[['Y']]}) }
+      );
+      return (await prom1).ok;
     },
 
     // Archive a Task — col O = Archived
@@ -867,6 +997,10 @@ const GglProvider = (() => {
     async createEvent(f)     { return false; },
     async archiveEvent(e)    { return false; },
     async archiveTask(row)   { return false; },
+    async loadPoolSheet()    { return { values:[] }; },
+    parsePoolCandidates(j)  { return MsProvider.parsePoolCandidates.call(this, j); },
+    async savePoolRow(c,f)   { return false; },
+    async archivePool(c)     { return false; },
     async loadHRSheet()      { return { values: [] }; },
     parseHRCandidates(j)    { return MsProvider.parseHRCandidates.call(this, j); },
     async saveHRStatus(c,s) { return false; },
