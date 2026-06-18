@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -8,7 +8,7 @@ function renderContacts(q, fc) {
   q = q || ''; fc = fc || '';
   const filtered = DATA_CONTACTS.filter(r => {
     const name = contactDisplayName(r);  // Surname Name format
-    return (!q  || (name + r.email + r.company + r.phone).toLowerCase().includes(q.toLowerCase())) &&
+    return (!q  || [(name),(r.email||''),(r.company||''),(r.phone||''),(r.web||''),(r.src||''),(r.linkedOpps||'')].join(' ').toLowerCase().includes(q.toLowerCase())) &&
            (!fc || r.company === fc);
   }).sort((a,b)=>{
     const sl=(a.lastName||'').localeCompare(b.lastName||'');
@@ -21,8 +21,12 @@ function renderContacts(q, fc) {
 
   const _foc = _saveFocus();
   $('contacts-out').innerHTML = `
-  <div class="kpi-row">
-    <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_CONTACTS.length}</div><div class="sub">Contacts</div></div>
+  <div class="stats-row">
+    <div class="stat-card s-blue"><div class="sc-icon">👤</div><div class="sc-val">${DATA_CONTACTS.length}</div><div class="sc-lbl">Total Contacts</div></div>
+    <div class="stat-card s-green"><div class="sc-icon">📧</div><div class="sc-val">${withEmail}</div><div class="sc-lbl">With Email</div><div class="sc-sub">${Math.round(withEmail/DATA_CONTACTS.length*100)||0}%</div></div>
+    <div class="stat-card s-amber"><div class="sc-icon">📞</div><div class="sc-val">${withPhone}</div><div class="sc-lbl">With Phone</div><div class="sc-sub">${Math.round(withPhone/DATA_CONTACTS.length*100)||0}%</div></div>
+    <div class="stat-card s-purple"><div class="sc-icon">🔗</div><div class="sc-val">${linked}</div><div class="sc-lbl">Linked to Opps</div></div>
+  </div>
     <div class="kpi k-teal"><div class="lbl">With Email</div><div class="val">${withEmail}</div><div class="sub">${Math.round(withEmail / DATA_CONTACTS.length * 100) || 0}%</div></div>
     <div class="kpi k-pip"><div class="lbl">With Phone</div><div class="val">${withPhone}</div><div class="sub">${Math.round(withPhone / DATA_CONTACTS.length * 100) || 0}%</div></div>
     <div class="kpi k-pro"><div class="lbl">Linked to Opps</div><div class="val">${linked}</div><div class="sub">of ${DATA_CONTACTS.length}</div></div>
