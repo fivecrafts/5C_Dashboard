@@ -1,4 +1,4 @@
-// 5C Dashboard v1.37.1 · 2026-06-19 · sourcing-fix · Five Crafts s.r.o.
+// 5C Dashboard v1.37.2 · 2026-06-19 · sourcing-persist · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -26,6 +26,8 @@ const CFG = {
       owners:    'Owners',
       codelists: 'Codelists',
       companies: 'Companies',
+      sourcing:  'Sourcing',
+      sourcing:  'Sourcing',
     }
   },
 
@@ -109,8 +111,8 @@ const EVENT_STATUSES  = ['Active','Watching','Not Interested'];
 const EVENT_MODES     = ['Offline','Online','Hybrid'];
 
 // ── Dashboard version ────────────────────────────────────────────
-const DASHBOARD_VERSION      = 'v1.37.1';
-const DASHBOARD_VERSION_DATE = '2026-06-19 · sourcing-fix';
+const DASHBOARD_VERSION      = 'v1.37.2';
+const DASHBOARD_VERSION_DATE = '2026-06-19 · sourcing-persist';
 
 // ── HR Candidates file (separate SharePoint site: Hiring) ────────
 const HR_CFG = {
