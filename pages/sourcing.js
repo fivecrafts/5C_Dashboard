@@ -1,4 +1,4 @@
-// 5C Dashboard v1.37.1 · 2026-06-19 · sourcing-fix · Five Crafts s.r.o.
+// 5C Dashboard v1.37.2 · 2026-06-19 · sourcing-persist · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -31,6 +31,22 @@ function candidateStatusBadge(status) {
   if (['on hold'].includes(s))
     return `<span class="sb2 s-prospect">${status}</span>`;
   return `<span class="sb2 s-prospect">${status||'Sourced'}</span>`;
+}
+
+// ── Load persisted runs from Excel on login ─────────────────────
+async function loadSourcingRuns() {
+  try {
+    const json = await P.loadSourcingLog();
+    const runs = P.parseSourcingLog(json);
+    if (runs.length) {
+      // Merge with session runs — Excel history first, session runs on top
+      const sessionIds = new Set((DATA_SOURCING_RUNS||[]).map(r=>r.id));
+      runs.forEach(r => { if (!sessionIds.has(r.id)) DATA_SOURCING_RUNS.push(r); });
+    }
+    if ($('sourcing-out')?.closest('.page.active')) renderSourcing();
+  } catch(e) {
+    console.warn('Sourcing log load failed:', e.message);
+  }
 }
 
 function renderSourcing() {
@@ -394,6 +410,8 @@ async function _srcRun() {
     DATA_SOURCING_RUNS.unshift(run);
     _srcShowResults(results, resWrap, run);
     if ($('sourcing-out')?.closest('.page.active')) renderSourcing();
+    // Persist to Excel in background (fire-and-forget)
+    P.saveSourcingRun(run).catch(e => console.warn('Sourcing save failed:', e.message));
 
   } catch(e) {
     if (resWrap) resWrap.innerHTML = `<div style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:12px 14px;font-size:.82rem">⚠ Sourcing failed: ${esc(e.message)}</div>`;
