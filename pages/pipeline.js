@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.35.1 · 2026-06-18 17:30 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -75,8 +75,7 @@ function renderPipe(q, fs, fp, fo) {
     <h3>Legend</h3>
     <div class="legend-grid">
       <div class="legend-section"><h4>Status</h4><div class="legend-items">
-        ${ALL_S.map(s => `
-  _restoreFocus(_foc);<span class="legend-item"><span class="legend-dot" style="background:var(--${
+        ${ALL_S.map(s => `<span class="legend-item"><span class="legend-dot" style="background:var(--${
           s==='Running'?'green':s==='Bidding'?'purple':s==='Pipeline'?'blue':s==='Prospect'?'amber':s==='Done'?'slate2':'red'
         })"></span>${s}</span>`).join('')}
       </div></div>
@@ -121,7 +120,7 @@ function renderPipe(q, fs, fp, fo) {
         ? `<span class="contact-link" onclick="openContactFromPipeline('${r.contact.replace(/'/g, '__SQ__')}')" title="View contact profile">${r.contact}</span>`
         : '—';
       return `<tr class="edit-row" onclick="openPipeDrawer('${safeKey}')">
-        <td onclick="event.stopPropagation()"><div style="display:flex;align-items:center;gap:7px">${companyLogoFromName(r.c,20)}<span class="contact-link" style="font-size:.82rem;font-weight:600" onclick="openCompanyFromName('${r.c.replace(/'/g,'__SQ__')}')" title="View company">${r.c}</span></div></td>
+        <td onclick="event.stopPropagation()"><div style="display:flex;align-items:center;gap:7px">${companyLogoFromName(r.c,20,'🎯')}<span class="contact-link" style="font-size:.82rem;font-weight:600" onclick="openCompanyFromName('${r.c.replace(/'/g,'__SQ__')}')" title="View company">${r.c}</span></div></td>
         <td style="font-size:.73rem;color:var(--slate)">${r.p || '—'}</td>
         <td><div class="dc" title="${(r.d || '').replace(/"/g, "'")}">${r.d || '—'}</div></td>
         <td onclick="event.stopPropagation()">${buildPrioDrop(r, k, safeKey)}</td>
@@ -131,6 +130,7 @@ function renderPipe(q, fs, fp, fo) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
+  _restoreFocus(_foc);
 
   $('save-bar').className = 'save-bar' + (nch > 0 ? ' on' : '');
   $('chg-count').textContent = nch + (nch === 1 ? ' change' : ' changes');
