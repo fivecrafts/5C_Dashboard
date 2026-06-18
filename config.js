@@ -148,7 +148,7 @@ const HR_COMPETENCIES = [
 // ── HR Search Tracking Pool (5C_POOL_Dasboard sheet) ─────────────
 const HR_POOL_CFG = {
   driveId: 'b!Qf__fE3UsEmhPGc-IR_mmlRRmYCEfTVIuZNk-vm3qRtip2w9wPpTS73_2bnbUkgG',
-  fileId:  '014PLZ7ZJKFCECDXMMHBC3M4YF4Y2SX2S5',
+  fileId:  '014PLZ7ZLV6A5CQ3I7O5AZTGCSWUKS5SVU',
   sheet:   '5C_POOL_Dasboard',   // intentional typo — missing h
 };
 // Pool note field labels (cols K–O)
