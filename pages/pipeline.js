@@ -1,4 +1,4 @@
-// 5C Dashboard v1.35.1 · 2026-06-18 17:30 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -46,7 +46,7 @@ function renderPipe(q, fs, fp, fo) {
   const SO2= {'Running':0,'Bidding':1,'Pipeline':2,'Prospect':3,'Done':4,'Cancelled':5};
   const filtered = DATA_PIPE
     .filter(r =>
-      (!q  || (r.c + r.p + r.d + r.owner + r.contact).toLowerCase().includes(q)) &&
+      (!q  || [(r.c||''),(r.p||''),(r.d||''),(r.owner||''),(r.rsp||''),(r.cat||''),(r.src||''),(r.s||'')].join(' ').toLowerCase().includes(q)) &&
       (!fs || r.s === fs) &&
       (!fp || (r.prio||'Medium') === fp) &&
       (!fo || r.owner === fo)
