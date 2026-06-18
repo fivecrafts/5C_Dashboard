@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.32.0 · 2026-06-18 12:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -27,12 +27,22 @@ const App = {
       DATA_TASKS     = P.parseTasks(tj);
       DATA_EVENTS    = P.parseEvents(ej);
       DATA_OWNERS    = P.parseOwners(oj);
-      // Load HR Candidates in background — separate SharePoint file
-      P.loadHRSheet().then(hrj => {
-        DATA_HR = P.parseHRCandidates(hrj);
-        const el = document.getElementById('pl-hr');
-        if (el) el.textContent = DATA_HR.length;
-      }).catch(() => {});
+      // Load HR Candidates + Search Pool in background
+      setTimeout(() => {
+        P.loadHRSheet().then(hrj => {
+          DATA_HR = P.parseHRCandidates(hrj);
+          const el = document.getElementById('pl-hr');
+          if (el) el.textContent = DATA_HR.length + (DATA_POOL.length ? '+'+DATA_POOL.length : '');
+        }).catch(e => {
+          console.warn('HR load failed:', e.message);
+          const el = document.getElementById('pl-hr'); if (el) el.textContent = '⚠';
+        });
+        P.loadPoolSheet().then(pj => {
+          DATA_POOL = P.parsePoolCandidates(pj);
+          const el = document.getElementById('pl-hr');
+          if (el) el.textContent = DATA_HR.length + (DATA_POOL.length ? '+'+DATA_POOL.length : '');
+        }).catch(e => console.warn('Pool load failed:', e.message));
+      }, 1500);
 
       // Fetch M365 profile photos in background — non-blocking
       OWNER_PHOTOS = {};
@@ -154,7 +164,7 @@ const UI = {
     await P.signOut().catch(() => {});
     $('app-shell').classList.remove('visible');
     $('login-screen').style.display = 'flex';
-    DATA_PIPE = []; DATA_CONTACTS = []; DATA_TASKS = []; DATA_OWNERS = []; DATA_EVENTS = []; DATA_HR = []; DATA_HR_COLS = {}; CHANGES = {};
+    DATA_PIPE = []; DATA_CONTACTS = []; DATA_TASKS = []; DATA_OWNERS = []; DATA_EVENTS = []; DATA_HR = []; DATA_HR_COLS = {}; DATA_POOL = []; DATA_POOL_COLS = {}; CHANGES = {};
   },
 
   _onLogin(user) {
