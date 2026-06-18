@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.37.0 · 2026-06-18 · sourcing · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -353,6 +353,7 @@ function openPipeDrawer(safeKey) {
     <button class="sbtn sbtn-p" onclick="savePipeDrawer()" style="flex:1">✓ Save Changes</button>
     <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('opp','${esc(row.c + (row.p ? ' · ' + row.p : ''))}','')">+ Task</button>
     <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archiveOpp('${esc(k)}')">⊘ Archive</button>
+    <button class="sbtn" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe" onclick="openSourcingFromOpp('${safeKey}')">🔍 Source</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   openDrawer((row.c + (row.p ? ' · ' + row.p : '')) || 'Edit Opportunity', body, foot, 'pipeline', k);
