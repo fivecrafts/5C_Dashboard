@@ -1,4 +1,4 @@
-// 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.1 · 2026-06-18 18:30 · Five Crafts s.r.o.
 // 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
 'use strict';
 
@@ -14,6 +14,13 @@ if (typeof DATA_HR_COLS === 'undefined') window.DATA_HR_COLS = {};
 let _hrShowRates     = false; // rates hidden in list by default
 let _hrDrawerRates  = false; // rates hidden in drawer by default
 let _hrSource       = 'both'; // 'hr' | 'pool' | 'both'
+let _hrActiveGroups = new Set(); // clicked group labels for multi-select filter
+
+function hrToggleGroup(label) {
+  if (_hrActiveGroups.has(label)) _hrActiveGroups.delete(label);
+  else _hrActiveGroups.add(label);
+  renderHR();
+}
 
 function hrSeniorityStars(seniority) {
   const s = (seniority||'').toLowerCase();
@@ -181,13 +188,22 @@ function renderHR(q, frole, fsen, fstat, fown) {
     ...(_hrSource === 'pool' ? [] : DATA_HR.map(c => ({...c, _source:'hr'}))),
     ...(_hrSource === 'hr'   ? [] : DATA_POOL),
   ];
-  const filtered = _allCands.filter(c =>
-    (!qLow  || (c.name+c.role+(c.competencies||'')+(c.notes||c.note5c||'')+(c.proposedProjects||'')).toLowerCase().includes(qLow)) &&
-    (!frole || c.role === frole) &&
-    (!fsen  || c.seniority === fsen) &&
-    (!fstat || c.status === fstat) &&
-    (!fown  || c.owner === fown)
-  ).sort((a,b) => (a.lastName||'').localeCompare(b.lastName||'')||(a.firstName||'').localeCompare(b.firstName||''));
+  const filtered = _allCands.filter(c => {
+    if (!qLow  && !frole && !fsen && !fstat && !fown && !_hrActiveGroups.size) return true;
+    const fields = [(c.name||''),(c.displayName||''),(c.role||''),(c.competencies||''),(c.notes||''),(c.note5c||''),(c.result||''),(c.noteGeneral||''),(c.owner||''),(c.seniority||''),(c.email||''),(c.phone||''),(c.activeSearch||''),(c.specializace||'')].join(' ').toLowerCase();
+    if (qLow   && !fields.includes(qLow))   return false;
+    if (frole  && c.role !== frole)          return false;
+    if (fsen   && c.seniority !== fsen)      return false;
+    if (fstat  && c.status !== fstat)        return false;
+    if (fown   && c.owner !== fown)          return false;
+    if (_hrActiveGroups.size) {
+      // Match against HR_ROLE_GROUPS roles arrays (same logic as stat cards)
+      const matchedGroup = HR_ROLE_GROUPS.find(g => g.roles.some(r => (c.role||'').toLowerCase().includes(r.toLowerCase())));
+      const grpLabel = matchedGroup ? matchedGroup.label : 'Other';
+      if (!_hrActiveGroups.has(grpLabel)) return false;
+    }
+    return true;
+  }).sort((a,b) => (a.lastName||'').localeCompare(b.lastName||'')||(a.firstName||'').localeCompare(b.firstName||''));
 
   const total = filtered.length;
 
@@ -198,47 +214,31 @@ function renderHR(q, frole, fsen, fstat, fown) {
   $('hr-out').innerHTML = `
   <!-- Role group comparison: HR Candidates vs Search Pool -->
   ${(()=>{
-    const groups = [
-      { icon:'🧩', label:'Analysts',    test: r => /analyst|architect/i.test(r) },
-      { icon:'💳', label:'Cards',       test: r => /card|acquiring/i.test(r) },
-      { icon:'🧭', label:'Management',  test: r => /project|delivery|product|owner/i.test(r) },
-      { icon:'🛡️', label:'Risk & Comp', test: r => /risk|compliance|cyber|security/i.test(r) },
-      { icon:'💰', label:'Finance',     test: r => /finance|cfo|financial/i.test(r) },
-      { icon:'💻', label:'Technology',  test: r => /developer|software|mobile|qa|test|admin/i.test(r) },
-      { icon:'🤝', label:'HR & Legal',  test: r => /hr|legal|generalist/i.test(r) },
-    ];
-    const hrData   = DATA_HR;
-    const poolData = DATA_POOL;
-    const totHR   = hrData.length, totPool = poolData.length;
-    let html = '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px">';
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
-    html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--slate)">Role Groups</div>';
-    html += '<div style="display:flex;gap:16px;font-size:.72rem;font-weight:600">';
-    html += `<span style="color:var(--blue)">HR Candidates <b>${totHR}</b></span>`;
-    html += `<span style="color:var(--amber)">Search Pool <b>${totPool}</b></span>`;
-    html += '</div></div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">';
-    groups.forEach(g => {
-      const hrCnt   = hrData.filter(c=>g.test(c.role||'')).length;
-      const poolCnt = poolData.filter(c=>g.test(c.role||'')).length;
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f8fafc;border-radius:7px">';
-      html += `<span style="font-size:1.1rem">${g.icon}</span>`;
-      html += `<div><div style="font-size:.72rem;font-weight:600;color:var(--navy2)">${g.label}</div>`;
-      html += `<div style="font-size:.7rem"><span style="color:var(--blue);font-weight:700">${hrCnt}</span>`;
-      html += `<span style="color:var(--slate2)"> / </span>`;
-      html += `<span style="color:var(--amber);font-weight:700">${poolCnt}</span></div></div>`;
-      html += '</div>';
-    });
-    html += '</div></div>';
-    return html;
+     let html = '<div class="stats-row">';
+     HR_ROLE_GROUPS.forEach(g => {
+       const hrCnt   = (DATA_HR   ||[]).filter(c => g.roles.some(r => (c.role||'').toLowerCase().includes(r.toLowerCase()))).length;
+       const poolCnt = (DATA_POOL ||[]).filter(c => g.roles.some(r => (c.role||'').toLowerCase().includes(r.toLowerCase()))).length;
+       if (hrCnt + poolCnt === 0) return;
+       const isActive = _hrActiveGroups.has(g.label);
+       const bg = isActive ? 'background:var(--accent);border-color:var(--accent)' : '';
+       const lc = isActive ? 'color:rgba(255,255,255,.85)' : '';
+       const p1 = isActive ? 'background:rgba(255,255,255,.25);color:#fff' : 'background:#eff6ff;color:var(--accent)';
+       const p2 = isActive ? 'background:rgba(255,255,255,.25);color:#fff' : 'background:#fffbeb;color:var(--amber)';
+       html += '<div class="stat-card clickable' + (isActive ? ' active' : '') + '" style="' + bg + ';cursor:pointer" onclick="hrToggleGroup(\'' + g.label.replace(/'/g,"\\'") + '\')" title="Filter by ' + g.label + '">';
+       html += '<div class="sc-icon">' + g.icon + '</div>';
+       html += '<div class="sc-lbl" style="' + lc + '">' + g.label + '</div>';
+       html += '<div class="sc-pills"><span class="sc-pill" style="' + p1 + '">HR ' + hrCnt + '</span><span class="sc-pill" style="' + p2 + '">Pool ' + poolCnt + '</span></div>';
+       html += '</div>';
+     });
+     html += '</div>';
+     return html;
   })()}
 
-  <div class="filter-bar">
+    <div class="filter-bar">
     <input type="text" id="hrq" placeholder="🔍  Search name, role, skills…" value="${esc(q)}" oninput="renderHR()">
     <select id="hrole" onchange="renderHR()">
       <option value="">All Roles</option>
-      ${roles.map(r=>`
-  _restoreFocus(_foc);<option value="${esc(r)}"${frole===r?' selected':''}>${r}</option>`).join('')}
+      ${roles.map(r=>`<option value="${esc(r)}"${frole===r?' selected':''}>${r}</option>`).join('')}
     </select>
     <select id="hrsen" onchange="renderHR()">
       <option value="">All Seniority</option>
@@ -253,6 +253,7 @@ function renderHR(q, frole, fsen, fstat, fown) {
       ${HR_OWNERS.map(o=>`<option value="${o}"${fown===o?' selected':''}>${o}</option>`).join('')}
     </select>
     <span class="cnt">${total}/${_allCands.length}</span>
+    ${_hrActiveGroups.size ? `<button class="btn btn-secondary btn-sm" onclick="_hrActiveGroups.clear();renderHR()">✕ Clear filter</button>` : ''}
     <div style="display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;flex-shrink:0">
       ${['hr','both','pool'].map(s=>`<button onclick="_hrSource='${s}';renderHR()" style="padding:5px 10px;font-size:.72rem;font-weight:600;border:none;cursor:pointer;background:${_hrSource===s?'var(--navy2)':'var(--card)'};color:${_hrSource===s?'#fff':'var(--slate)'}">${s==='hr'?'HR Candidates':s==='pool'?'Search Pool':'Both'}</button>`).join('')}
     </div>
@@ -268,7 +269,7 @@ function renderHR(q, frole, fsen, fstat, fown) {
   `<div class="tbl-wrap"><table>
     <thead><tr>
       <th>Candidate</th><th>Role</th><th>Seniority</th><th>Status</th>
-      <th>Owner</th><th>Skills</th>${_hrShowRates?'<th>Rate</th>':''}<th>Updated</th><th></th>
+      <th>Owner</th><th>Skills</th>${_hrShowRates?'<th>Rate</th>':''}<th></th>
     </tr></thead>
     <tbody>${filtered.map(c => {
       const safeId = (c.id||'').replace(/'/g,'__SQ__');
@@ -342,7 +343,7 @@ function openHRDrawer(safeId) {
     </div>` : '';
 
   const statusOpts = HR_STATUSES.map(s=>`<option value="${s}"${c.status===s?' selected':''}>${s}</option>`).join('');
-  const ownerOpts  = HR_OWNERS.map(o=>`<option value="${o}"${c.owner===o?' selected':''}>${o}</option>`).join('');
+  const ownerOpts  = `<option value="">— Not assigned —</option>` + HR_OWNERS.map(o=>`<option value="${o}"${c.owner===o?' selected':''}>${o}</option>`).join('');
 
   const body = `
     <!-- Header -->
@@ -508,7 +509,7 @@ async function saveHRDrawer(origId) {
 // ════════════════════════════════════════════════════════════════
 function openPoolDrawer(c) {
   const statusOpts  = HR_STATUSES.map(s=>`<option value="${s}"${c.status===s?' selected':''}>${s}</option>`).join('');
-  const ownerOpts   = HR_OWNERS.map(o=>`<option value="${o}"${c.owner===o?' selected':''}>${o}</option>`).join('');
+  const ownerOpts   = `<option value="">— Not assigned —</option>` + HR_OWNERS.map(o=>`<option value="${o}"${c.owner===o?' selected':''}>${o}</option>`).join('');
   const senOpts     = `<option value="">— Unknown —</option>` + HR_SENIORITY.map(s=>`<option value="${s}"${c.seniority===s?' selected':''}>${s}</option>`).join('');
   const roleOpts    = ['IT Analyst','Business Analyst','Solution Architect','IT Architect','Project Manager',
     'Delivery Manager','Product Manager','Product Owner','Card Specialist','Acquiring Specialist',
