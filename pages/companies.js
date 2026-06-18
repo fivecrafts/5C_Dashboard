@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.35.0 · 2026-06-18 17:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -114,7 +114,7 @@ function renderCompanies(q, ft, fown, fprio, find) {
       const url = co.website ? (co.website.match(/^https?:\/\//) ? co.website : 'https://'+co.website) : '';
       return `<tr class="edit-row" onclick="openCompanyDrawer('${safeId}')">
         <td style="font-size:.7rem;color:var(--slate2)">${co.id||'—'}</td>
-        <td><div style="display:flex;align-items:center;gap:8px">${companyLogo(co.website,co.name,28)}<b style="color:var(--navy2)">${co.name||'—'}</b></div></td>
+        <td><div style="display:flex;align-items:center;gap:8px">${companyLogo(co.website,co.name,28,'🏦')}<b style="color:var(--navy2)">${co.name||'—'}</b></div></td>
         <td>${compTypeBadge(co.type)}</td>
         <td onclick="event.stopPropagation()">${buildCoPrioDrop(co,safeId)}</td>
         <td style="font-size:.77rem">${co.industry||'—'}</td>
