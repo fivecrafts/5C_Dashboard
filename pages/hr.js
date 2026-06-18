@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.32.0 · 2026-06-18 12:00 · Five Crafts s.r.o.
 'use strict';
 
 // Defensive init — in case state.js update wasn't uploaded
@@ -12,6 +12,12 @@ if (typeof DATA_HR_COLS === 'undefined') window.DATA_HR_COLS = {};
 
 let _hrShowRates     = false; // rates hidden in list by default
 let _hrDrawerRates  = false; // rates hidden in drawer by default
+let _hrSource       = 'both'; // 'hr' | 'pool' | 'both'
+
+function hrSourceBadge(src) {
+  if (src === 'pool') return '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:.6rem;font-weight:700;background:#fef3c7;color:#92400e;margin-left:4px">POOL</span>';
+  return '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:.6rem;font-weight:700;background:#dbeafe;color:#1e40af;margin-left:4px">HR</span>';
+}
 
 function hrRoleIcon(role) {
   const MAP = {
@@ -159,8 +165,13 @@ function renderHR(q, frole, fsen, fstat, fown) {
   if (fown  === undefined) { const el=$('hrown');  fown  = el?el.value:''; }
   const qLow = (q||'').toLowerCase();
 
-  const filtered = DATA_HR.filter(c =>
-    (!qLow  || (c.name+c.role+c.competencies+c.notes+c.proposedProjects).toLowerCase().includes(qLow)) &&
+  // Merge sources based on toggle
+  const _allCands = [
+    ...(_hrSource === 'pool' ? [] : DATA_HR.map(c => ({...c, _source:'hr'}))),
+    ...(_hrSource === 'hr'   ? [] : DATA_POOL),
+  ];
+  const filtered = _allCands.filter(c =>
+    (!qLow  || (c.name+c.role+(c.competencies||'')+(c.notes||c.note5c||'')+(c.proposedProjects||'')).toLowerCase().includes(qLow)) &&
     (!frole || c.role === frole) &&
     (!fsen  || c.seniority === fsen) &&
     (!fstat || c.status === fstat) &&
@@ -207,7 +218,10 @@ function renderHR(q, frole, fsen, fstat, fown) {
       <option value="">All Owners</option>
       ${HR_OWNERS.map(o=>`<option value="${o}"${fown===o?' selected':''}>${o}</option>`).join('')}
     </select>
-    <span class="cnt">${total}/${DATA_HR.length}</span>
+    <span class="cnt">${total}/${_allCands.length}</span>
+    <div style="display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;flex-shrink:0">
+      ${['hr','both','pool'].map(s=>`<button onclick="_hrSource='${s}';renderHR()" style="padding:5px 10px;font-size:.72rem;font-weight:600;border:none;cursor:pointer;background:${_hrSource===s?'var(--navy2)':'var(--card)'};color:${_hrSource===s?'#fff':'var(--slate)'}">${s==='hr'?'HR Candidates':s==='pool'?'Search Pool':'Both'}</button>`).join('')}
+    </div>
     <button onclick="_hrShowRates=!_hrShowRates;renderHR()" style="border:1px solid var(--border);background:${_hrShowRates?'var(--blue-t)':'var(--card)'};color:${_hrShowRates?'var(--blue)':'var(--slate)'};border-radius:7px;padding:5px 11px;cursor:pointer;font-size:.78rem">${_hrShowRates?'💰 Hide Rates':'💰 Show Rates'}</button>
   </div>
 
@@ -232,7 +246,7 @@ function renderHR(q, frole, fsen, fstat, fown) {
             ${hrAvatar(c,30)}
             <div>
               <div style="font-weight:600;font-size:.82rem;color:var(--navy2)">${esc(c.displayName||c.name||'—')}</div>
-              <div style="font-size:.68rem;color:var(--slate)">${c.country?countryFlag(c.country)+' ':''} ${c.id||''}</div>
+              <div style="font-size:.68rem;color:var(--slate);display:flex;align-items:center">${c.country?countryFlag(c.country)+' ':''} ${c.id||''} ${_hrSource==='both'?hrSourceBadge(c._source):''}</div>
             </div>
           </div>
         </td>
@@ -257,8 +271,9 @@ function renderHR(q, frole, fsen, fstat, fown) {
 // ════════════════════════════════════════════════════════════════
 function openHRDrawer(safeId) {
   const id = safeId.replace(/__SQ__/g,"'");
-  const c  = DATA_HR.find(r => r.id === id);
+  const c = DATA_HR.find(r => r.id === id) || DATA_POOL.find(r => r.id === id);
   if (!c) return;
+  if (c._source === 'pool') { openPoolDrawer(c); return; }
 
   const sect = (title, rows, icon, collapsed) => {
     if (rows.every(r => !r[1])) return '';
@@ -452,5 +467,174 @@ async function saveHRDrawer(origId) {
       toast('✓ Saved','success');
       closeDrawer();
     } else toast('⚠ Save failed','error');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// POOL DETAIL DRAWER — HR Search Tracking (5C_POOL_Dasboard)
+// ════════════════════════════════════════════════════════════════
+function openPoolDrawer(c) {
+  const statusOpts  = HR_STATUSES.map(s=>`<option value="${s}"${c.status===s?' selected':''}>${s}</option>`).join('');
+  const ownerOpts   = HR_OWNERS.map(o=>`<option value="${o}"${c.owner===o?' selected':''}>${o}</option>`).join('');
+  const senOpts     = HR_SENIORITY.map(s=>`<option value="${s}"${c.seniority===s?' selected':''}>${s}</option>`).join('');
+  const roleOpts    = ['IT Analyst','Business Analyst','Solution Architect','IT Architect','Project Manager',
+    'Delivery Manager','Product Manager','Product Owner','Card Specialist','Acquiring Specialist',
+    'Risk Specialist','Compliance Specialist','Cyber Security Specialist','Finance Specialist',
+    'CFO','Software Developer','Mobile Developer','QA / Test Manager','IT Administrator',
+    'HR Generalist','Legal Specialist','Other'].map(r=>`<option value="${r}"${c.role===r?' selected':''}>${r}</option>`).join('');
+
+  // Competency chips
+  const allTags  = (c.competencies||'').split(',').map(t=>t.trim()).filter(Boolean);
+  const tagCloud = allTags.length
+    ? allTags.map(t=>`<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:2px">${esc(t)}</span>`).join('')
+    : '<span style="color:var(--slate2);font-size:.77rem">None</span>';
+
+  const body = `
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      ${hrAvatar(c,44)}
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-weight:700;font-size:.95rem;color:var(--navy2)">${esc(c.displayName||c.name)}</span>
+          ${hrSourceBadge('pool')}
+        </div>
+        <div style="font-size:.78rem;color:var(--slate)">${esc(c.role||'')}${c.seniority?' · '+c.seniority:''}</div>
+        <div style="margin-top:4px">${hrStatusBadge(c.status)}</div>
+      </div>
+    </div>
+
+    <!-- Editable fields row 1 -->
+    <div class="field-row">
+      <div class="field-group"><label>First Name</label><input id="pd-fname" value="${esc(c.firstName||'')}"></div>
+      <div class="field-group"><label>Surname</label><input id="pd-lname" value="${esc(c.lastName||'')}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Role</label><select id="pd-role">${roleOpts}</select></div>
+      <div class="field-group"><label>Seniority</label><select id="pd-seniority">${senOpts}</select></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Status</label><select id="pd-status">${statusOpts}</select></div>
+      <div class="field-group"><label>Owner</label><select id="pd-owner">${ownerOpts}</select></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Phone</label><input id="pd-phone" value="${esc(c.phone||'')}"></div>
+      <div class="field-group"><label>Email</label><input id="pd-email" type="email" value="${esc(c.email||'')}"></div>
+    </div>
+    ${c.linkedin?`<div style="margin-bottom:10px"><a href="${safeUrl(c.linkedin)}" target="_blank" style="color:var(--blue);font-size:.78rem">in LinkedIn →</a></div>`:''}
+
+    <!-- Specializace + Active Search -->
+    ${c.specializace?`<div class="field-group"><label>Specializace</label><div style="font-size:.78rem;padding:6px;background:#f8fafc;border-radius:6px">${esc(c.specializace)}</div></div>`:''}
+    <div class="field-group"><label>Active Search</label><input id="pd-active" value="${esc(c.activeSearch||'')}"></div>
+
+    <!-- Competencies chip editor -->
+    <div class="field-group">
+      <label>🏷 Competencies</label>
+      <div id="pd-comp-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:32px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;background:#fff;margin-bottom:6px">
+        ${allTags.map(tag=>{const s=tag.replace(/'/g,'__SQ__');return `<span data-val="${tag}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:1px">${esc(tag)}<span onclick="poolRemoveComp('${s}')" style="cursor:pointer;font-weight:700;margin-left:2px;opacity:.7">×</span></span>`;}).join('')}
+      </div>
+      <input type="hidden" id="pd-comp" value="${esc(c.competencies||'')}">
+      <select id="pd-comp-add" onchange="poolAddComp(this)" style="font-size:.78rem;width:100%">
+        <option value="">+ Add competency…</option>
+        ${(HR_COMPETENCIES||[]).filter(comp=>!allTags.includes(comp)).map(comp=>`<option value="${esc(comp)}">${comp}</option>`).join('')}
+      </select>
+    </div>
+
+    <!-- Note fields (5 types) -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--slate);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)">📝 Notes</div>
+      ${(POOL_NOTES||[]).map(n=>`
+        <div style="margin-bottom:10px">
+          <div style="font-size:.7rem;font-weight:600;color:${n.editable?'var(--navy2)':'var(--slate2)'};margin-bottom:3px">
+            ${n.label}${!n.editable?' 🔒':''}
+          </div>
+          ${n.editable
+            ? `<textarea id="pd-note-${n.col.replace(/[^a-z0-9]/gi,'_')}" rows="2" style="font-size:.77rem">${esc(c[n.col==='5C Poznámka'?'note5c':n.col==='Výsledek'?'result':n.col==='NOTE'?'noteGeneral':'']||'')}</textarea>`
+            : `<div style="font-size:.77rem;background:#f8fafc;padding:7px 10px;border-radius:6px;color:var(--slate)">${esc(c[n.col==='HR Poznámka'?'hrNote':'approval5c']||'—')}</div>`
+          }
+        </div>`).join('')}
+    </div>
+
+    <!-- System -->
+    <div style="font-size:.68rem;color:var(--slate2)">
+      ${c.id} · Duplicates: ${c.duplicateFlag||'—'} · Created ${(c.createdAt||'').slice(0,10)||'—'} · Updated ${(c.updatedAt||'').slice(0,10)||'—'}
+    </div>`;
+
+  const foot = `
+    <button class="sbtn sbtn-p" onclick="savePoolDrawer('${esc(c.id)}')" style="flex:1">✓ Save</button>
+    <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archivePoolCheck('${esc(c.id)}')">⊘ Archive</button>
+    <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
+
+  openDrawer((c.displayName||c.name||'Candidate'), body, foot, 'pool', c.id);
+}
+
+// ── Pool competency chips ─────────────────────────────────────────
+function poolRemoveComp(safeVal) {
+  const val   = safeVal.replace(/__SQ__/g,"'");
+  const chips = document.getElementById('pd-comp-chips');
+  if (!chips) return;
+  chips.querySelectorAll('span[data-val]').forEach(s=>{ if(s.dataset.val===val) s.remove(); });
+  _updateChipHidden('pd-comp-chips','pd-comp');
+  const sel = document.getElementById('pd-comp-add');
+  if (sel) { const opt=document.createElement('option'); opt.value=val; opt.textContent=val; sel.appendChild(opt); }
+}
+function poolAddComp(sel) {
+  const val = sel.value; if (!val) return;
+  const chips = document.getElementById('pd-comp-chips'); if (!chips) return;
+  if ([...chips.querySelectorAll('span[data-val]')].some(s=>s.dataset.val===val)) { sel.value=''; return; }
+  const s = val.replace(/'/g,'__SQ__');
+  const span = document.createElement('span');
+  span.dataset.val = val;
+  span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600;background:#ede9fe;color:#6d28d9;margin:1px';
+  span.innerHTML = `${esc(val)}<span onclick="poolRemoveComp('${s}')" style="cursor:pointer;font-weight:700;margin-left:2px;opacity:.7">×</span>`;
+  chips.appendChild(span);
+  _updateChipHidden('pd-comp-chips','pd-comp');
+  const opt=[...sel.options].find(o=>o.value===val); if(opt) opt.remove();
+  sel.value='';
+}
+
+// ── Pool save + archive ──────────────────────────────────────────
+async function savePoolDrawer(origId) {
+  const c = DATA_POOL.find(r => r.id === origId);
+  if (!c) return;
+  toast('Saving…','info');
+  const fields = {
+    firstName:    $('pd-fname')?.value.trim() || c.firstName,
+    lastName:     $('pd-lname')?.value.trim() || c.lastName,
+    role:         $('pd-role')?.value,
+    seniority:    $('pd-seniority')?.value,
+    status:       $('pd-status')?.value,
+    owner:        $('pd-owner')?.value,
+    phone:        $('pd-phone')?.value.trim(),
+    email:        $('pd-email')?.value.trim(),
+    activeSearch: $('pd-active')?.value.trim(),
+    competencies: $('pd-comp')?.value.trim(),
+    note5c:       $('pd-note-5C_Poznámka')?.value?.trim() ?? c.note5c,
+    result:       $('pd-note-Výsledek')?.value?.trim()    ?? c.result,
+    noteGeneral:  $('pd-note-NOTE')?.value?.trim()        ?? c.noteGeneral,
+  };
+  try {
+    const ok = await P.savePoolRow(c, fields);
+    if (ok) {
+      Object.assign(c, fields, {
+        name:        `${fields.firstName} ${fields.lastName}`.trim(),
+        displayName: `${fields.lastName} ${fields.firstName}`.trim(),
+        updatedAt:   new Date().toISOString().slice(0,10),
+      });
+      renderHR(); toast('✓ Saved','success'); closeDrawer();
+    } else toast('⚠ Save failed','error');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+async function archivePoolCheck(origId) {
+  const c = DATA_POOL.find(r => r.id === origId);
+  if (!c) return;
+  if (!confirm(`Archive "${c.displayName||c.name}"?\nRow will be hidden from App (Archived = Y in Excel).`)) return;
+  try {
+    const ok = await P.archivePool(c);
+    if (ok) {
+      toast('✓ Archived','success'); closeDrawer();
+      DATA_POOL = DATA_POOL.filter(r => r.id !== origId);
+      renderHR();
+    } else toast('⚠ Archive failed','error');
   } catch(e) { toast('Error: '+e.message,'error'); }
 }
