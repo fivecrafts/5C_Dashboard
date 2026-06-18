@@ -12,11 +12,18 @@
   --blue:#2563eb;--blue-l:#dbeafe;--blue-t:#eff6ff;
   --green:#059669;--green-l:#d1fae5;--green-t:#ecfdf5;
   --amber:#d97706;--amber-l:#fef3c7;--amber-t:#fffbeb;
-  --red:#7c3aed;--red-l:#ede9fe;--red-t:#fef2f2;
+  --red:#dc2626;--red-l:#fee2e2;--red-t:#fef2f2;
   --purple:#7c3aed;--purple-l:#ede9fe;--purple-t:#f5f3ff;
   --slate:#64748b;--slate2:#94a3b8;
   --teal:#0891b2;--teal-l:#cffafe;--teal-t:#ecfeff;
   --pink:#db2777;--pink-l:#fce7f3;--pink-t:#fdf2f8;
+  /* Semantic aliases — used by unified design system */
+  --accent:#2563eb;   /* = --blue */
+  --accent2:#059669;  /* = --green */
+  --accent3:#d97706;  /* = --amber */
+  --accent4:#dc2626;  /* = --red */
+  --accent5:#7c3aed;  /* = --purple */
+  --muted:#64748b;    /* = --slate */
   --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
   --mono:'Courier New',monospace;
 }
@@ -211,7 +218,7 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfd;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 
 /* ═══════════════════════════════════════════════════════════════
-   UNIFIED DESIGN SYSTEM — v1.36.4
+   UNIFIED DESIGN SYSTEM — v1.37.0
    Shared classes used by all pages for consistent UI
 ════════════════════════════════════════════════════════════════ */
 
@@ -334,9 +341,10 @@ table.ds-table tr.sel td{background:#eff6ff;}
       <div class="ni" onclick="UI.nav('contacts',this)"><span class="ic">👥</span><span> Contacts</span><span class="pl" id="pl-contacts">—</span></div>
       <div class="sbg">HR</div>
       <div class="ni" onclick="UI.nav('hr',this)"><span class="ic">👤</span><span> HR Pool</span><span class="pl" id="pl-hr">—</span></div>
+      <div class="ni" onclick="UI.nav('sourcing',this)"><span class="ic">🔍</span><span> Sourcing</span><span class="pl" id="pl-sourcing">—</span></div>
 
     </nav>
-    <div class="sb-ft">Source: <b>5C_Pipeline.xlsx</b><br>Provider: <b id="sb-pvdr-lbl">—</b><br>Loaded: <b id="sb-loaded">—</b><br><span style="opacity:.55;font-size:.6rem;letter-spacing:.3px"><b id="dash-ver">v1.36.4</b> &nbsp;·&nbsp; <span id="dash-verdate">2026-06-17 22:00</span></span></div>
+    <div class="sb-ft">Source: <b>5C_Pipeline.xlsx</b><br>Provider: <b id="sb-pvdr-lbl">—</b><br>Loaded: <b id="sb-loaded">—</b><br><span style="opacity:.55;font-size:.6rem;letter-spacing:.3px"><b id="dash-ver">v1.37.0</b> &nbsp;·&nbsp; <span id="dash-verdate">2026-06-17 22:00</span></span></div>
     <button class="signout-btn" onclick="UI.signOut()">↩ Sign out</button>
   </div>
 
@@ -374,6 +382,7 @@ table.ds-table tr.sel td{background:#eff6ff;}
       
   <div class="page" id="page-events"><div id="events-out"></div></div>
       <div class="page" id="page-hr"><div id="hr-out"></div></div>
+      <div class="page" id="page-sourcing"><div id="sourcing-out"></div></div>
       <div class="page" id="page-companies"><div id="companies-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
       <div class="page active" id="page-owners"><div id="owners-out"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div></div>
     </div>
@@ -439,6 +448,7 @@ table.ds-table tr.sel td{background:#eff6ff;}
 <script src="pages/tasks.js"></script>
 <script src="pages/events.js"></script>
 <script src="pages/hr.js"></script>
+<script src="pages/sourcing.js"></script>
 <script src="pages/companies.js"></script>
 <script src="pages/owners.js"></script>
 
