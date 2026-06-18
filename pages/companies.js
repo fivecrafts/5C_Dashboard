@@ -1,4 +1,4 @@
-// 5C Dashboard v1.35.0 · 2026-06-18 17:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -43,7 +43,7 @@ function renderCompanies(q, ft, fown, fprio, find) {
 
   const CPO = {'Critical':0,'High':1,'Medium':2,'Low':3};
   const filtered = DATA_COMPANIES.filter(r =>
-    (!q  || (r.name+r.industry+r.country+r.owner+r.notes).toLowerCase().includes(q.toLowerCase())) &&
+    (!q  || [(r.name||''),(r.industry||''),(r.country||''),(r.owner||''),(r.notes||''),(r.website||''),(r.type||'')].join(' ').toLowerCase().includes(q.toLowerCase())) &&
     (!ft   || r.type === ft) &&
     (!fown || r.owner === fown) &&
     (!fprio|| r.prio === fprio) &&
@@ -61,8 +61,12 @@ function renderCompanies(q, ft, fown, fprio, find) {
 
   const _foc = _saveFocus();
   $('companies-out').innerHTML = `
-  <div class="kpi-row">
-    <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_COMPANIES.length}</div><div class="sub">Companies</div></div>
+  <div class="stats-row">
+    <div class="stat-card s-blue"><div class="sc-icon">🏢</div><div class="sc-val">${DATA_COMPANIES.length}</div><div class="sc-lbl">Total</div></div>
+    <div class="stat-card s-green"><div class="sc-icon">🤝</div><div class="sc-val">${customers}</div><div class="sc-lbl">Customers</div></div>
+    <div class="stat-card s-purple"><div class="sc-icon">🔗</div><div class="sc-val">${partners}</div><div class="sc-lbl">Partners</div></div>
+    <div class="stat-card s-amber"><div class="sc-icon">⚡</div><div class="sc-val">${withOpps}</div><div class="sc-lbl">With Opps</div></div>
+  </div>
     <div class="kpi k-run"><div class="lbl">Customers</div><div class="val" style="color:var(--green)">${customers}</div><div class="sub">Customer / Both</div></div>
     <div class="kpi k-pip"><div class="lbl">Partners</div><div class="val" style="color:var(--blue)">${partners}</div><div class="sub">Partnership / Both</div></div>
     <div class="kpi k-pro"><div class="lbl">With Opps</div><div class="val" style="color:var(--amber)">${withOpps}</div><div class="sub">Linked to pipeline</div></div>
