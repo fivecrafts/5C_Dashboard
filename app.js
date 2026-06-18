@@ -1,4 +1,4 @@
-// 5C Dashboard v1.32.0 · 2026-06-18 12:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.37.0 · 2026-06-18 · sourcing · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -84,6 +84,7 @@ const App = {
       else if (id === 'tasks')       renderTasks('', '', '');
       else if (id === 'events')      { if(typeof renderEvents==='function') renderEvents(); }
       else if (id === 'hr')          { if(typeof renderHR==='function') renderHR(); }
+      else if (id === 'sourcing')  { if(typeof renderSourcing==='function') renderSourcing(); }
       else if (id === 'owners')      renderOwners();
       else if (id === 'companies')   renderCompanies('', '');
     } else {
@@ -221,6 +222,7 @@ const UI = {
     else if (id === 'tasks')       renderTasks('', '', '');
       else if (id === 'events')      { if(typeof renderEvents==='function') renderEvents(); }
       else if (id === 'hr')          { if(typeof renderHR==='function') renderHR(); }
+      else if (id === 'sourcing')  { if(typeof renderSourcing==='function') renderSourcing(); }
     else if (id === 'owners')      renderOwners();
     else if (id === 'companies')   renderCompanies('', '');
   },
