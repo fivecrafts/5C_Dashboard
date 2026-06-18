@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -75,7 +75,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
   const filtered = DATA_TASKS.filter(r => {
     const overdue  = r.status === 'Open' && r.dueDate && r.dueDate < today;
     const fsMatch  = !fs || (fs === 'Overdue' ? overdue : r.status === fs);
-    return (!q     || (r.type + r.linkedOpp + r.linkedContact + r.notes).toLowerCase().includes(q.toLowerCase())) &&
+    return (!q     || [(r.type||''),(r.linkedOpp||''),(r.linkedContact||''),(r.linkedCompany||''),(r.notes||''),(r.responsible||''),(r.priority||''),(r.taskName||'')].join(' ').toLowerCase().includes(q.toLowerCase())) &&
            fsMatch &&
            (!fr    || r.responsible === fr) &&
            (!ftype || r.type === ftype) &&
@@ -93,8 +93,12 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
 
   const _foc = _saveFocus();
   $('tasks-out').innerHTML = `
-  <div class="kpi-row">
-    <div class="kpi k-tot"><div class="lbl">Total</div><div class="val">${DATA_TASKS.length}</div><div class="sub">All tasks</div></div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="sc-icon">📋</div><div class="sc-val" style="color:var(--navy)">${DATA_TASKS.length}</div><div class="sc-lbl">Total</div></div>
+    <div class="stat-card s-amber clickable" onclick="renderTasks('','Open','')"><div class="sc-icon">✅</div><div class="sc-val">${open}</div><div class="sc-lbl">Open</div></div>
+    <div class="stat-card s-green clickable" onclick="renderTasks('','Done','')"><div class="sc-icon">✔️</div><div class="sc-val">${done}</div><div class="sc-lbl">Done</div></div>
+    <div class="stat-card s-red clickable" onclick="renderTasks('','Cancelled','')"><div class="sc-icon">⊘</div><div class="sc-val">${cancelled}</div><div class="sc-lbl">Cancelled</div></div>
+  </div>
     <div class="kpi k-pip"  onclick="renderTasks('','Open','')"><div class="lbl">Open</div><div class="val">${open}</div><div class="sub">Active</div></div>
     <div class="kpi k-done" onclick="renderTasks('','Done','')"><div class="lbl">Done</div><div class="val">${done}</div><div class="sub">Completed</div></div>
     <div class="kpi k-can"  onclick="renderTasks('','Cancelled','')"><div class="lbl">Cancelled</div><div class="val">${cancelled}</div><div class="sub">Dropped</div></div>
