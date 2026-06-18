@@ -476,7 +476,7 @@ async function saveHRDrawer(origId) {
 function openPoolDrawer(c) {
   const statusOpts  = HR_STATUSES.map(s=>`<option value="${s}"${c.status===s?' selected':''}>${s}</option>`).join('');
   const ownerOpts   = HR_OWNERS.map(o=>`<option value="${o}"${c.owner===o?' selected':''}>${o}</option>`).join('');
-  const senOpts     = HR_SENIORITY.map(s=>`<option value="${s}"${c.seniority===s?' selected':''}>${s}</option>`).join('');
+  const senOpts     = `<option value="">— Unknown —</option>` + HR_SENIORITY.map(s=>`<option value="${s}"${c.seniority===s?' selected':''}>${s}</option>`).join('');
   const roleOpts    = ['IT Analyst','Business Analyst','Solution Architect','IT Architect','Project Manager',
     'Delivery Manager','Product Manager','Product Owner','Card Specialist','Acquiring Specialist',
     'Risk Specialist','Compliance Specialist','Cyber Security Specialist','Finance Specialist',
