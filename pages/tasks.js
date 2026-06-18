@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.4 · 2026-06-18 23:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.5 · 2026-06-18 23:30 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -98,7 +98,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
     <div class="stat-card s-amber clickable" onclick="renderTasks('','Open','')"><div class="sc-icon">✅</div><div class="sc-val">${open}</div><div class="sc-lbl">Open</div></div>
     <div class="stat-card s-green clickable" onclick="renderTasks('','Done','')"><div class="sc-icon">✔️</div><div class="sc-val">${done}</div><div class="sc-lbl">Done</div></div>
     <div class="stat-card s-red clickable" onclick="renderTasks('','Cancelled','')"><div class="sc-icon">⊘</div><div class="sc-val">${cancelled}</div><div class="sc-lbl">Cancelled</div></div>
-  </div><div class="val">${open}</div><div class="sub">Active</div></div><div class="val">${done}</div><div class="sub">Completed</div></div><div class="val">${cancelled}</div><div class="sub">Dropped</div></div><div class="val">${overdue}</div><div class="sub">Past due date</div></div>
+  </div>
   </div>
   <div class="filter-bar">
     <input type="text" id="tq" placeholder="🔍  Search…" value="${q}" oninput="renderTasks(this.value)">
