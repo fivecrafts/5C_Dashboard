@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.3 · 2026-06-18 19:30 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -129,14 +129,13 @@ function renderMyDashboard() {
             <div style="font-size:.62rem;color:var(--slate);margin-top:2px">${myOpps.filter(r=>(r.prio||'Medium')===p&&r.s==='Running').length} running</div>
           </div>`).join('')}
       </div>
-      <!-- Status mini-bar -->
-      <div style="display:flex;gap:4px;padding:8px 0 4px;border-top:1px solid var(--border)">
-        ${['Running','Bidding','Pipeline','Prospect','Done','Cancelled'].map(s => {
-          const n   = myOpps.filter(r=>r.s===s).length;
-          const sc  = {Running:'var(--green)',Bidding:'var(--purple)',Pipeline:'var(--blue)',Prospect:'var(--amber)',Done:'var(--slate2)',Cancelled:'var(--red)'}[s];
-          return `<div style="flex:1;text-align:center;padding:5px 2px;border-radius:6px;background:${n>0?'#f8fafc':'transparent'};cursor:pointer" onclick="UI.nf('${s}',null,'${sqMe}')">
-            <div style="font-size:.95rem;font-weight:700;color:${n>0?sc:'var(--slate2)'}">${n}</div>
-            <div style="font-size:.58rem;color:var(--slate)">${s}</div>
+      <!-- Status summary — clickable unified pills -->
+      <div style="display:flex;gap:4px;padding:8px 0 4px;border-top:1px solid var(--border);flex-wrap:wrap">
+        ${[['Running','var(--green)','#ecfdf5'],['Bidding','var(--purple)','#f5f3ff'],['Pipeline','var(--blue)','#eff6ff'],['Prospect','var(--amber)','#fffbeb'],['Done','var(--slate2)','#f1f5f9'],['Cancelled','var(--red)','#fef2f2']].map(([s,c,bg]) => {
+          const n = myOpps.filter(r=>r.s===s).length;
+          return `<div style="flex:1;min-width:48px;text-align:center;padding:5px 3px;border-radius:7px;background:${n>0?bg:'#f8fafc'};border:1px solid ${n>0?'transparent':'var(--border)'};cursor:pointer" onclick="UI.nf('${s}',null,'${sqMe}')">
+            <div style="font-size:.9rem;font-weight:700;color:${n>0?c:'var(--slate2)'}">${n}</div>
+            <div style="font-size:.58rem;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.3px">${s}</div>
           </div>`;
         }).join('')}
       </div>
@@ -145,7 +144,7 @@ function renderMyDashboard() {
     <!-- Opportunities table -->
     ${myOpps.length>0?`
     <div style="border-top:1px solid var(--border)">
-      <table style="width:100%;border-collapse:collapse;background:transparent">
+      <table class="ds-table" style="background:transparent">
         <thead><tr style="background:#f8fafc">
           <th style="padding:7px 14px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Client</th>
           <th style="padding:7px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Project / Scope</th>
@@ -213,7 +212,7 @@ function renderMyDashboard() {
 
     <!-- Companies table — same style as Opportunities table -->
     <div style="border-top:1px solid var(--border)">
-      <table style="width:100%;border-collapse:collapse;background:transparent">
+      <table class="ds-table" style="background:transparent">
         <thead><tr style="background:#f8fafc">
           <th style="padding:7px 14px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Company</th>
           <th style="padding:7px 11px;text-align:left;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--slate);border-bottom:1px solid var(--border)">Type</th>
