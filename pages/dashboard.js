@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.3 · 2026-06-18 19:30 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -14,15 +14,15 @@ function renderDash() {
   ).length;
 
   $('dash-out').innerHTML = `
-  <div class="kpi-row">
-    <div class="kpi k-tot" onclick="UI.nav('pipeline',null)"><div class="lbl">Total Opps</div><div class="val">${DATA_PIPE.length}</div><div class="sub">All opportunities</div></div>
-    <div class="kpi k-run" onclick="UI.nf('Running',null)"><div class="lbl">Running</div><div class="val">${cnt('Running')}</div><div class="sub">Active</div></div>
-    <div class="kpi k-bid" onclick="UI.nf('Bidding',null)"><div class="lbl">Bidding</div><div class="val">${cnt('Bidding')}</div><div class="sub">Proposals</div></div>
-    <div class="kpi k-pip" onclick="UI.nf('Pipeline',null)"><div class="lbl">Pipeline</div><div class="val">${cnt('Pipeline')}</div><div class="sub">Active BD</div></div>
-    <div class="kpi k-pro" onclick="UI.nf('Prospect',null)"><div class="lbl">Prospect</div><div class="val">${cnt('Prospect')}</div><div class="sub">Early stage</div></div>
-    <div class="kpi k-teal" onclick="UI.nav('contacts',null)"><div class="lbl">Contacts</div><div class="val">${DATA_CONTACTS.length}</div><div class="sub">In database</div></div>
-    <div class="kpi" style="--c:#0f766e" onclick="UI.nav('companies',null)"><div class="lbl">Companies</div><div class="val" style="color:#0f766e">${DATA_COMPANIES.length}</div><div class="sub">Customer &amp; partner</div></div>
-    <div class="kpi k-pink" onclick="UI.nav('tasks',null)"><div class="lbl">Open Tasks</div><div class="val">${openTasks}</div><div class="sub">${overdue} overdue</div></div>
+  <div class="stats-row">
+    <div class="stat-card s-blue clickable" onclick="UI.nav('pipeline',null)" title="All Opportunities"><div class="sc-icon">🎯</div><div class="sc-val">${DATA_PIPE.length}</div><div class="sc-lbl">Total Opps</div></div>
+    <div class="stat-card s-green clickable" onclick="UI.nf('Running',null)" title="Running"><div class="sc-icon">▶️</div><div class="sc-val">${cnt('Running')}</div><div class="sc-lbl">Running</div></div>
+    <div class="stat-card s-purple clickable" onclick="UI.nf('Bidding',null)" title="Bidding"><div class="sc-icon">📝</div><div class="sc-val">${cnt('Bidding')}</div><div class="sc-lbl">Bidding</div></div>
+    <div class="stat-card s-blue clickable" onclick="UI.nf('Pipeline',null)" title="Pipeline"><div class="sc-icon">⚡</div><div class="sc-val">${cnt('Pipeline')}</div><div class="sc-lbl">Pipeline</div></div>
+    <div class="stat-card s-amber clickable" onclick="UI.nf('Prospect',null)" title="Prospect"><div class="sc-icon">🔭</div><div class="sc-val">${cnt('Prospect')}</div><div class="sc-lbl">Prospect</div></div>
+    <div class="stat-card s-green clickable" onclick="UI.nav('contacts',null)" title="Contacts"><div class="sc-icon">👤</div><div class="sc-val">${DATA_CONTACTS.length}</div><div class="sc-lbl">Contacts</div></div>
+    <div class="stat-card clickable" onclick="UI.nav('companies',null)" title="Companies" style="--sc-val-color:#0f766e"><div class="sc-icon">🏦</div><div class="sc-val" style="color:#0f766e">${DATA_COMPANIES.length}</div><div class="sc-lbl">Companies</div></div>
+    <div class="stat-card s-red clickable" onclick="UI.nav('tasks',null)" title="Tasks"><div class="sc-icon">✅</div><div class="sc-val">${openTasks}</div><div class="sc-lbl">Open Tasks</div><div class="sc-sub">${overdue} overdue</div></div>
   </div>
 
   <div class="legend">
