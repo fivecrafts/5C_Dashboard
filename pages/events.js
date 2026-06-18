@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.35.0 · 2026-06-18 17:00 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
@@ -33,15 +33,15 @@ function countryFlag(country) {
 // ── Event logo from website favicon ──────────────────────────────
 function eventLogo(webLink, name, size) {
   size = size || 20;
-  if (!webLink) return '';
+  // Use shared _fallbackBadge — 📅 when no favicon loads or no link given
+  const fb = _fallbackBadge('📅', size).replace('display:inline-flex', 'display:none');
+  if (!webLink) return _fallbackBadge('📅', size);
   const domain = webLink.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].split('?')[0];
-  if (!domain) return '';
-  const ini = (name || '?')[0].toUpperCase();
-  const avatar = `<span style="display:none;width:${size}px;height:${size}px;border-radius:4px;background:var(--blue-t);color:var(--blue);align-items:center;justify-content:center;font-size:${Math.round(size*0.55)}px;font-weight:700;flex-shrink:0">${ini}</span>`;
+  if (!domain) return _fallbackBadge('📅', size);
   return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" width="${size}" height="${size}"
     style="border-radius:4px;object-fit:contain;vertical-align:middle;flex-shrink:0;border:1px solid var(--border);background:#fff"
     onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"
-    loading="lazy">${avatar}`;
+    loading="lazy">${fb}`;
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -310,7 +310,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
       const url    = ev.webLink ? (ev.webLink.match(/^https?:\/\//) ? ev.webLink : 'https://'+ev.webLink) : '';
       return `<tr class="edit-row" onclick="openEventDrawer('${safeId}')">
         <td>${timingBadge(ev._timing)}</td>
-        <td><div style="display:flex;align-items:center;gap:6px">${ev.webLink?eventLogo(ev.webLink,ev.name,18):''}<div><b style="color:var(--navy2)">${ev.name||'—'}</b>${ev.country?`<div class="dc" style="font-size:.67rem">${ev.country}</div>`:''}</div></div></td>
+        <td><div style="display:flex;align-items:center;gap:6px">${eventLogo(ev.webLink,ev.name,18)}<div><b style="color:var(--navy2)">${ev.name||'—'}</b>${ev.country?`<div class="dc" style="font-size:.67rem">${ev.country}</div>`:''}</div></div></td>
         <td onclick="event.stopPropagation()">${buildEventStatusDrop(ev)}</td>
         <td style="font-size:.75rem;color:var(--slate)">${ev.dateFrom||'—'}</td>
         <td style="font-size:.75rem;color:var(--slate)">${ev.dateTo||'—'}</td>
