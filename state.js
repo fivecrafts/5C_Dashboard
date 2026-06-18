@@ -1,4 +1,4 @@
-// 5C Dashboard v1.32.0 · 2026-06-18 12:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.37.0 · 2026-06-18 · sourcing · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -29,7 +29,8 @@ let DATA_EVENTS   = [];  // Events sheet
 let DATA_HR       = [];  // HR Candidates
 let DATA_HR_COLS  = {};  // header→colIndex map
 let DATA_POOL     = [];  // HR Search Tracking Pool
-let DATA_POOL_COLS= {};  // pool header→colIndex map  // email → object URL from Graph /photo/$value
+let DATA_POOL_COLS= {};  // pool header→colIndex map
+let DATA_SOURCING_RUNS = []; // in-memory sourcing run history  // email → object URL from Graph /photo/$value
 
 // ── Owner color map (built dynamically from DATA_PIPE) ──
 let OC = {};
