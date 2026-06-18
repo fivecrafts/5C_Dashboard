@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.32.0 · 2026-06-18 12:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -27,7 +27,9 @@ let PRIO_CHANGES = {};  // pending priority edits, same pattern as CHANGES
 let OWNER_PHOTOS  = {};
 let DATA_EVENTS   = [];  // Events sheet
 let DATA_HR       = [];  // HR Candidates
-let DATA_HR_COLS  = {};  // header→colIndex map  // email → object URL from Graph /photo/$value
+let DATA_HR_COLS  = {};  // header→colIndex map
+let DATA_POOL     = [];  // HR Search Tracking Pool
+let DATA_POOL_COLS= {};  // pool header→colIndex map  // email → object URL from Graph /photo/$value
 
 // ── Owner color map (built dynamically from DATA_PIPE) ──
 let OC = {};
