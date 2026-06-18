@@ -1,4 +1,4 @@
-// 5C Dashboard v1.37.0 · 2026-06-18 · sourcing · Five Crafts s.r.o.
+// 5C Dashboard v1.37.1 · 2026-06-19 · sourcing-fix · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -289,6 +289,70 @@ function _srcTogglePool(mode) {
   });
 }
 
+// ── Local scoring algorithm (replaces API call) ─────────────────
+// CORS blocks direct fetch to api.anthropic.com from github.io
+function _srcScoreLocally(candidates, competencies, opp, jd, minScore) {
+  const reqComps   = competencies.map(c => c.toLowerCase());
+  const oppText    = ((opp.d||'')+(opp.c||'')+(opp.p||'')+(jd||'')).toLowerCase();
+  const reqGroup   = hrRoleGroup ? hrRoleGroup(opp.role || '') : null;
+
+  // Status weight — prefer available candidates
+  const statusScore = s => {
+    s = (s||'').toLowerCase();
+    if (['sourced','available','interested'].includes(s)) return 2;
+    if (['proposed','hr screen','5c interview'].includes(s)) return 1;
+    if (['placed','contracted','engaged'].includes(s)) return -1;
+    return 0;
+  };
+
+  const scored = candidates.map(cand => {
+    const candComps = (cand.competencies||'').toLowerCase().split(',').map(c=>c.trim()).filter(Boolean);
+
+    // 1. Competency overlap (0–5 pts)
+    const matched   = reqComps.filter(rc => candComps.some(cc => cc.includes(rc) || rc.includes(cc)));
+    const compScore = reqComps.length > 0 ? (matched.length / reqComps.length) * 5 : 0;
+
+    // 2. Role relevance (0–3 pts)
+    const roleText = (cand.role||'').toLowerCase();
+    const roleScore = reqComps.some(c => roleText.includes(c)) ? 2
+      : oppText.split(' ').some(w => w.length > 4 && roleText.includes(w)) ? 1 : 0;
+
+    // 3. Seniority (+1 for Senior)
+    const senScore = (cand.seniority||'').toLowerCase().includes('senior') ? 1 : 0;
+
+    // 4. Status adjustment
+    const stScore = statusScore(cand.status);
+
+    const raw   = compScore + roleScore + senScore + stScore;
+    const score = Math.min(10, Math.max(1, Math.round(raw * 1.2)));
+
+    // Build reason
+    const matchedNames = matched.slice(0,3).map(c => reqComps.find(rc=>rc===c)||c);
+    const reason = matched.length > 0
+      ? `Matches ${matched.length}/${reqComps.length} required competencies (${matchedNames.join(', ')}${matched.length>3?'…':''}).${senScore?' Senior level.':''}${stScore<0?' Currently engaged.':''}`
+      : `Limited competency overlap with required skills. Role: ${cand.role||'—'}.`;
+
+    return {
+      candidateId:  cand.id,
+      source:       cand._source,
+      name:         cand.name,
+      displayName:  cand.displayName,
+      role:         cand.role,
+      seniority:    cand.seniority,
+      status:       cand.status,
+      linkedin:     cand.linkedin,
+      score,
+      reason,
+      _matched:     matched.length,
+    };
+  })
+  .filter(r => r.score >= minScore)
+  .sort((a,b) => b.score - a.score || b._matched - a._matched)
+  .slice(0, 15);
+
+  return scored;
+}
+
 async function _srcRun() {
   const oppVal = $('src-opp-sel')?.value;
   if (!oppVal) { toast('Select an opportunity first','error'); return; }
@@ -312,50 +376,13 @@ async function _srcRun() {
   const btn = $('src-run-btn');
   if (btn) { btn.disabled=true; btn.textContent='⏳ Running AI sourcing…'; }
   const resWrap = $('src-results-wrap');
-  if (resWrap) { resWrap.style.display='block'; resWrap.innerHTML=`<div class="loading"><div class="spinner"></div><span>Evaluating ${candidates.length} candidates…</span></div>`; }
+  if (resWrap) { resWrap.style.display='block'; resWrap.innerHTML=`<div class="loading"><div class="spinner"></div><span>Scoring ${candidates.length} candidates locally…</span></div>`; }
 
   try {
-    const candSample = candidates.slice(0,80).map((c,i)=>
-      `${i+1}. [${c.id||'?'}] ${c.displayName||c.name||'?'} | ${c.role||'?'} | ${c.seniority||'?'} | Status:${c.status||'?'} | Competencies:${c.competencies||'?'}`
-    ).join('\n');
-
-    const prompt = `You are a senior HR consultant at Five Crafts s.r.o., a fintech/payments consultancy.
-
-OPPORTUNITY:
-- Client: ${opp.c}
-- Project: ${opp.p||'—'}
-- Detail: ${opp.d||'—'}
-- Status: ${opp.s}
-
-REQUIRED COMPETENCIES: ${competencies.join(', ')}
-${jd?`\nADDITIONAL CONTEXT:\n${jd}\n`:''}
-
-CANDIDATE POOL (${candidates.length} total, evaluating first ${Math.min(80,candidates.length)}):
-${candSample}
-
-Score each candidate 1–10 (10=excellent). Only include candidates scoring >= ${minScore}.
-Return ONLY valid JSON array, no markdown:
-[{"candidateId":"ID","score":8,"reason":"1-2 sentence explanation"}]
-Return up to 15 best matches sorted by score descending.`;
-
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user',content:prompt}] }),
-    });
-    if (!resp.ok) throw new Error(`API ${resp.status}`);
-    const data = await resp.json();
-    const text = (data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-    let scored = JSON.parse(text);
-
-    const allCands = [...(DATA_HR||[]).map(c=>({...c,_source:'hr'})), ...(DATA_POOL||[]).map(c=>({...c,_source:'pool'}))];
-    const results = scored.map(item => {
-      const cand = allCands.find(c=>c.id===item.candidateId);
-      if (!cand) return null;
-      return { candidateId:cand.id, source:cand._source, name:cand.name, displayName:cand.displayName,
-               role:cand.role, seniority:cand.seniority, status:cand.status,
-               score:item.score, reason:item.reason, linkedin:cand.linkedin };
-    }).filter(Boolean).sort((a,b)=>b.score-a.score);
+    // ── Local scoring — no API call, no CORS, runs in browser ──
+    // Direct fetch to api.anthropic.com is blocked by CORS from GitHub Pages.
+    // Scoring is deterministic: competency overlap + role group + seniority.
+    const results = _srcScoreLocally(candidates, competencies, opp, jd, minScore);
 
     const run = {
       id: 'run-'+Date.now(), oppKey:oppVal,
