@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.4 · 2026-06-18 23:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -26,10 +26,7 @@ function renderContacts(q, fc) {
     <div class="stat-card s-green"><div class="sc-icon">📧</div><div class="sc-val">${withEmail}</div><div class="sc-lbl">With Email</div><div class="sc-sub">${Math.round(withEmail/DATA_CONTACTS.length*100)||0}%</div></div>
     <div class="stat-card s-amber"><div class="sc-icon">📞</div><div class="sc-val">${withPhone}</div><div class="sc-lbl">With Phone</div><div class="sc-sub">${Math.round(withPhone/DATA_CONTACTS.length*100)||0}%</div></div>
     <div class="stat-card s-purple"><div class="sc-icon">🔗</div><div class="sc-val">${linked}</div><div class="sc-lbl">Linked to Opps</div></div>
-  </div>
-    <div class="kpi k-teal"><div class="lbl">With Email</div><div class="val">${withEmail}</div><div class="sub">${Math.round(withEmail / DATA_CONTACTS.length * 100) || 0}%</div></div>
-    <div class="kpi k-pip"><div class="lbl">With Phone</div><div class="val">${withPhone}</div><div class="sub">${Math.round(withPhone / DATA_CONTACTS.length * 100) || 0}%</div></div>
-    <div class="kpi k-pro"><div class="lbl">Linked to Opps</div><div class="val">${linked}</div><div class="sub">of ${DATA_CONTACTS.length}</div></div>
+  </div><div class="val">${withEmail}</div><div class="sub">${Math.round(withEmail / DATA_CONTACTS.length * 100) || 0}%</div></div><div class="val">${withPhone}</div><div class="sub">${Math.round(withPhone / DATA_CONTACTS.length * 100) || 0}%</div></div><div class="val">${linked}</div><div class="sub">of ${DATA_CONTACTS.length}</div></div>
   </div>
   <div class="filter-bar">
     <input type="text" id="cq" placeholder="🔍  Search name, email, company…" value="${q}" oninput="renderContacts(this.value,undefined)">
