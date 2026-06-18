@@ -1,4 +1,4 @@
-// 5C Dashboard v1.32.0 · 2026-06-18 12:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.37.2 · 2026-06-19 · sourcing-persist · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -687,6 +687,100 @@ const MsProvider = (() => {
       return (await prom1).ok;
     },
 
+
+    // ── Sourcing log — read/write to Sourcing sheet ────────────────
+    // Schema: RunID|RunDate|OppKey|OppLabel|Competencies|JD|
+    //         CandidateID|CandidateName|Role|Seniority|CandStatus|Score|Reason|Source
+    async loadSourcingLog() {
+      const t = await token();
+      if (!t) return { values: [] };
+      const sheet = encodeURIComponent(activeCfg.sheets.sourcing || 'Sourcing');
+      const url = `https://graph.microsoft.com/v1.0/drives/${activeCfg.driveId}/items/${activeCfg.fileId}/workbook/worksheets/${sheet}/usedRange?$select=values`;
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + t } });
+      if (!res.ok) return { values: [] };
+      return res.json();
+    },
+
+    parseSourcingLog(json) {
+      const rows = json?.values || [];
+      if (rows.length < 2) return [];
+      // Group rows by RunID (col A)
+      const runs = {};
+      rows.slice(1).forEach(row => {
+        if (!row[0]) return;
+        const runId = String(row[0]);
+        if (!runs[runId]) {
+          runs[runId] = {
+            id:           runId,
+            runDate:      String(row[1]||''),
+            oppKey:       String(row[2]||''),
+            oppLabel:     String(row[3]||''),
+            competencies: String(row[4]||'').split(',').map(c=>c.trim()).filter(Boolean),
+            jd:           String(row[5]||''),
+            results:      [],
+          };
+        }
+        if (row[6]) {  // CandidateID present
+          runs[runId].results.push({
+            candidateId:  String(row[6]||''),
+            name:         String(row[7]||''),
+            displayName:  String(row[7]||''),
+            role:         String(row[8]||''),
+            seniority:    String(row[9]||''),
+            status:       String(row[10]||''),
+            score:        parseInt(row[11]||'0')||0,
+            reason:       String(row[12]||''),
+            source:       String(row[13]||'hr'),
+          });
+        }
+      });
+      return Object.values(runs).sort((a,b) => b.id.localeCompare(a.id));
+    },
+
+    async saveSourcingRun(run) {
+      const t = await token();
+      if (!t) return false;
+      const sheet = encodeURIComponent(activeCfg.sheets.sourcing || 'Sourcing');
+      const driveId = activeCfg.driveId;
+      const fileId  = activeCfg.fileId;
+      const base    = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/worksheets/${sheet}`;
+
+      // Check if sheet is empty — if so write header row first
+      const checkRes = await fetch(`${base}/range(address='A1')?$select=values`, { headers: { Authorization: 'Bearer '+t } });
+      const checkData = await checkRes.json().catch(()=>({}));
+      const a1 = checkData?.values?.[0]?.[0];
+      if (!a1) {
+        await fetch(`${base}/range(address='A1:N1')`, {
+          method: 'PATCH',
+          headers: { Authorization: 'Bearer '+t, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [['RunID','RunDate','OppKey','OppLabel','Competencies','JD','CandidateID','CandidateName','Role','Seniority','CandStatus','Score','Reason','Source']] }),
+        });
+      }
+
+      // Find next empty row
+      const usedRes = await fetch(`${base}/usedRange?$select=rowCount`, { headers: { Authorization: 'Bearer '+t } });
+      const usedData = await usedRes.json().catch(()=>({}));
+      let nextRow = (usedData?.rowCount || 1) + 1;
+
+      // Write one row per result
+      const compsStr = (run.competencies||[]).join(',');
+      const rows = (run.results||[]).map(r => [
+        run.id, run.runDate, run.oppKey||'', run.oppLabel||'',
+        compsStr, run.jd||'',
+        r.candidateId||'', r.displayName||r.name||'', r.role||'', r.seniority||'',
+        r.status||'', r.score||0, r.reason||'', r.source||'hr',
+      ]);
+      if (!rows.length) return true;
+
+      const lastRow = nextRow + rows.length - 1;
+      const res = await fetch(`${base}/range(address='A${nextRow}:N${lastRow}')`, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer '+t, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: rows }),
+      });
+      return res.ok;
+    },
+
     // Archive a Task — col O = Archived
     async archiveTask(row) {
       return this.patchRange(CFG.microsoft.sheets.tasks, `O${row._row}`, [['Y']]);
@@ -1001,6 +1095,9 @@ const GglProvider = (() => {
     parsePoolCandidates(j)  { return MsProvider.parsePoolCandidates.call(this, j); },
     async savePoolRow(c,f)   { return false; },
     async archivePool(c)     { return false; },
+    async loadSourcingLog()  { return { values:[] }; },
+    parseSourcingLog(j)      { return MsProvider.parseSourcingLog(j); },
+    async saveSourcingRun(r) { return false; },
     async loadHRSheet()      { return { values: [] }; },
     parseHRCandidates(j)    { return MsProvider.parseHRCandidates.call(this, j); },
     async saveHRStatus(c,s) { return false; },
