@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.32.0 · 2026-06-18 12:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -144,3 +144,20 @@ const HR_COMPETENCIES = [
   'SQL / Data','AI / Automation','Crypto / DLT','Digital Wallet (EU)',
   'Fintech','Banking','Insurance','Public Sector','Transport',
 ];
+
+// ── HR Search Tracking Pool (5C_POOL_Dasboard sheet) ─────────────
+const HR_POOL_CFG = {
+  driveId: 'b!Qf__fE3UsEmhPGc-IR_mmlRRmYCEfTVIuZNk-vm3qRtip2w9wPpTS73_2bnbUkgG',
+  fileId:  '014PLZ7ZJKFCECDXMMHBC3M4YF4Y2SX2S5',
+  sheet:   '5C_POOL_Dasboard',   // intentional typo — missing h
+};
+// Pool note field labels (cols K–O)
+const POOL_NOTES = [
+  { col:'HR Poznámka',  label:'HR Note',     editable:false },
+  { col:'5C Schválení', label:'5C Approval', editable:false },
+  { col:'5C Poznámka',  label:'5C Note ★',   editable:true  },
+  { col:'Výsledek',     label:'Result',      editable:true  },
+  { col:'NOTE',         label:'General Note',editable:true  },
+];
+// Pool read-only cols — never written by App
+const POOL_READONLY = ['Code','Duplicate Flag','DateCreated','Candidate FC ID'];
