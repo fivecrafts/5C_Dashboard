@@ -13,6 +13,18 @@ if (typeof DATA_HR_COLS === 'undefined') window.DATA_HR_COLS = {};
 let _hrShowRates     = false; // rates hidden in list by default
 let _hrDrawerRates  = false; // rates hidden in drawer by default
 
+function hrRoleIcon(role) {
+  const MAP = {
+    'IT Analyst':'🔍','Business Analyst':'📊','Solution Architect':'🏗️','IT Architect':'🏛️',
+    'Project Manager':'📋','Delivery Manager':'🚀','Product Manager':'🎯','Product Owner':'👑',
+    'Card Specialist':'💳','Acquiring Specialist':'💰','Risk Specialist':'⚠️',
+    'Compliance Specialist':'⚖️','Cyber Security Specialist':'🔐','Finance Specialist':'💹',
+    'CFO':'🏦','Software Developer':'💻','Mobile Developer':'📱','QA / Test Manager':'🧪',
+    'IT Administrator':'🖥️','HR Generalist':'👥','Legal Specialist':'⚖️','Other':'❓',
+  };
+  return MAP[role] || '';
+}
+
 function hrStatusBadge(status) {
   const s = status || '—';
   let style = 'background:#f1f5f9;color:#64748b';
@@ -224,7 +236,7 @@ function renderHR(q, frole, fsen, fstat, fown) {
             </div>
           </div>
         </td>
-        <td style="font-size:.78rem">${c.role||'—'}</td>
+        <td style="font-size:.78rem">${hrRoleIcon(c.role)?`<span>${hrRoleIcon(c.role)}</span> `:''}<span>${c.role||'—'}</span></td>
         <td style="font-size:.75rem;color:var(--slate)">${c.seniority||'—'}</td>
         <td onclick="event.stopPropagation()">${buildHRStatusDrop(c)}</td>
         <td style="font-size:.75rem">${c.owner||'—'}</td>
