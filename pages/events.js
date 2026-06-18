@@ -1,4 +1,4 @@
-// 5C Dashboard v1.35.0 · 2026-06-18 17:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
@@ -195,7 +195,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
 
   const withTiming = DATA_EVENTS.map(ev => ({...ev, _timing: eventTiming(ev)}));
   const filtered   = withTiming.filter(ev =>
-    (!q       || (ev.name+ev.place+ev.country+ev.description+ev.industry+ev.owner).toLowerCase().includes(q)) &&
+    (!q       || [(ev.name||''),(ev.place||''),(ev.country||''),(ev.description||''),(ev.industry||''),(ev.owner||''),(ev.audience||''),(ev.status||'')].join(' ').toLowerCase().includes(q)) &&
     (!ftiming || ev._timing === ftiming) &&
     (!fstatus || ev.status  === fstatus) &&
     (!fdate   || (ev.dateFrom && ev.dateFrom <= fdate && (!ev.dateTo || ev.dateTo >= fdate))) &&
