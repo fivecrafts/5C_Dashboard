@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.36.4 · 2026-06-18 23:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -66,10 +66,7 @@ function renderCompanies(q, ft, fown, fprio, find) {
     <div class="stat-card s-green"><div class="sc-icon">🤝</div><div class="sc-val">${customers}</div><div class="sc-lbl">Customers</div></div>
     <div class="stat-card s-purple"><div class="sc-icon">🔗</div><div class="sc-val">${partners}</div><div class="sc-lbl">Partners</div></div>
     <div class="stat-card s-amber"><div class="sc-icon">⚡</div><div class="sc-val">${withOpps}</div><div class="sc-lbl">With Opps</div></div>
-  </div>
-    <div class="kpi k-run"><div class="lbl">Customers</div><div class="val" style="color:var(--green)">${customers}</div><div class="sub">Customer / Both</div></div>
-    <div class="kpi k-pip"><div class="lbl">Partners</div><div class="val" style="color:var(--blue)">${partners}</div><div class="sub">Partnership / Both</div></div>
-    <div class="kpi k-pro"><div class="lbl">With Opps</div><div class="val" style="color:var(--amber)">${withOpps}</div><div class="sub">Linked to pipeline</div></div>
+  </div><div class="val" style="color:var(--green)">${customers}</div><div class="sub">Customer / Both</div></div><div class="val" style="color:var(--blue)">${partners}</div><div class="sub">Partnership / Both</div></div><div class="val" style="color:var(--amber)">${withOpps}</div><div class="sub">Linked to pipeline</div></div>
   </div>
 
   <div class="filter-bar">
