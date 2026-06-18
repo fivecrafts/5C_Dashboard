@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.35.0 · 2026-06-18 17:00 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -97,30 +97,31 @@ function cnt(s) {
 }
 
 // ── Clearbit logo (free, no key) with initials fallback ──
-function companyLogo(website, name, size = 28) {
-  // Strip protocol and www. regardless of whether http:// is present
+function _fallbackBadge(icon, size) {
+  // Generic emoji icon in a styled box — used when no favicon available
+  return `<span style="display:inline-flex;width:${size}px;height:${size}px;border-radius:6px;background:#f1f5f9;border:1px solid var(--border);align-items:center;justify-content:center;flex-shrink:0;font-size:${Math.round(size*0.55)}px">${icon}</span>`;
+}
+
+function companyLogo(website, name, size = 28, fallback = '🏦') {
+  // Strip protocol / www. / path from URL to get bare domain
   const domain = (website || '')
-    .replace(/^https?:\/\//, '')   // strip https:// or http://
-    .replace(/^www\./, '')           // strip www. (with or without protocol)
-    .split('/')[0].split('?')[0];    // strip path and query
-  const ini    = (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-  const col    = (OC && OC[name]) ? OC[name] : '#64748b';
-  const avatar = `<span style="display:inline-flex;width:${size}px;height:${size}px;border-radius:6px;background:${col};color:#fff;font-size:${Math.round(size*0.38)}px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0">${ini}</span>`;
-  if (!domain) return avatar;
-  // Google Favicon API — free, no key, works for any domain, reliable
-  // Clearbit (logo.clearbit.com) was deprecated after HubSpot acquisition 2023
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .split('/')[0].split('?')[0];
+  const fbBadge = _fallbackBadge(fallback, size);
+  if (!domain) return fbBadge;
+  // Google Favicon API — free, no key, reliable
   const logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
   return `<img src="${logoUrl}" width="${size}" height="${size}"
     style="border-radius:6px;object-fit:contain;border:1px solid var(--border);background:#fff;vertical-align:middle;flex-shrink:0"
     onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"
-    loading="lazy">${avatar.replace('display:inline-flex', 'display:none')}`;
+    loading="lazy">${fbBadge.replace('display:inline-flex', 'display:none')}`;
 }
 
 // ── Company logo from name (looks up website from DATA_COMPANIES) ──
-function companyLogoFromName(name, size = 24) {
+function companyLogoFromName(name, size = 24, fallback = '🏦') {
   const co = (DATA_COMPANIES || []).find(c => c.name === name);
-  // Always render — Clearbit logo if website known, initials avatar otherwise
-  return companyLogo(co ? co.website : '', name, size);
+  return companyLogo(co ? co.website : '', name, size, fallback);
 }
 
 // ── Custom styled dropdown (status + priority inline editing) ──
