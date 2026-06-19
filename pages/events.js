@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.2 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.0 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
@@ -181,14 +181,25 @@ function addCoChip(sel) {
 // ════════════════════════════════════════════════════════════════
 // EVENTS PAGE — table view
 // ════════════════════════════════════════════════════════════════
-function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
-  if (q       === undefined) { const el=$('evq');    q       = el?el.value:''; }
-  if (ftiming === undefined) { const el=$('evtim');  ftiming = el?el.value:''; }
-  if (fstatus === undefined) { const el=$('evstat'); fstatus = el?el.value:''; }
+// Month pill calendar offset — how many months forward from (today - 3)
+let _evMonthOffset = 0;
+
+function _evSelectMonth(monthStr) {
+  // monthStr = 'YYYY-MM', toggle: clicking same month clears the filter
+  const cur = $('ev-fdate') ? $('ev-fdate').value : '';
+  const newVal = (cur === monthStr + '-01') ? '' : monthStr + '-01';
+  renderEvents(undefined, undefined, undefined, undefined, undefined, newVal);
+}
+
+function renderEvents(q, ftiming, fstatus, fmode, fown, fdate, findustry) {
+  if (q         === undefined) { const el=$('evq');     q         = el?el.value:''; }
+  if (ftiming   === undefined) { const el=$('evtim');   ftiming   = el?el.value:''; }
+  if (fstatus   === undefined) { const el=$('evstat');  fstatus   = el?el.value:''; }
   fmode = '';
-  if (fown    === undefined) { const el=$('evown');  fown    = el?el.value:''; }
-  if (fdate   === undefined) { const el=$('ev-fdate'); fdate  = el?el.value:''; }
-  q=q.toLowerCase();ftiming=ftiming||'';fstatus=fstatus||'';fown=fown||'';fdate=fdate||'';
+  if (fown      === undefined) { const el=$('evown');   fown      = el?el.value:''; }
+  if (fdate     === undefined) { const el=$('ev-fdate'); fdate    = el?el.value:''; }
+  if (findustry === undefined) { const el=$('evind');   findustry = el?el.value:''; }
+  q=q.toLowerCase();ftiming=ftiming||'';fstatus=fstatus||'';fown=fown||'';fdate=fdate||'';findustry=findustry||'';
 
   const today = new Date().toISOString().slice(0,10);
 
@@ -197,6 +208,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
     (!q       || [(ev.name||''),(ev.place||''),(ev.country||''),(ev.description||''),(ev.industry||''),(ev.owner||''),(ev.audience||''),(ev.status||'')].join(' ').toLowerCase().includes(q)) &&
     (!ftiming || ev._timing === ftiming) &&
     (!fstatus || ev.status  === fstatus) &&
+    (!findustry || ev.industry === findustry) &&
     (!fdate   || (ev.dateFrom && ev.dateFrom <= fdate && (!ev.dateTo || ev.dateTo >= fdate))) &&
     (!fown    || ev.owner   === fown)
   ).sort((a,b) => {
@@ -209,73 +221,55 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
 
   const cnt = (t) => withTiming.filter(e=>e._timing===t).length;
   const owners = [...new Set(DATA_EVENTS.map(e=>e.owner).filter(Boolean))].sort();
+  const industries = [...new Set(DATA_EVENTS.map(e=>e.industry).filter(Boolean))].sort();
 
   const _foc = _saveFocus();
   $('events-out').innerHTML = `
-  <!-- 3-month event calendar -->
+  <!-- Month pill calendar -->
+  <input type="hidden" id="ev-fdate" value="${fdate}">
   ${(()=>{
-    const _tn = new Date();
-    const todayStr = _tn.getFullYear()+'-'+String(_tn.getMonth()+1).padStart(2,'0')+'-'+String(_tn.getDate()).padStart(2,'0');
-    const todayD = new Date(_tn.getFullYear(), _tn.getMonth(), _tn.getDate());
-    const evMap = {};
-    const _parseLocal = s => { const p=s.split('-'); return p.length===3?new Date(+p[0],+p[1]-1,+p[2]):null; };
-    const _fmtDate = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    DATA_EVENTS.forEach(ev => {
-      if (!ev.dateFrom) return;
-      const from = _parseLocal(ev.dateFrom);
-      const to   = ev.dateTo ? _parseLocal(ev.dateTo) : new Date(from);
-      if (!from || !to || from > to) { // single day or invalid range
-        const k = ev.dateFrom;
-        if (!evMap[k]) evMap[k] = [];
-        evMap[k].push(ev);
-        return;
-      }
-      for (let d = new Date(from); d <= to; d.setDate(d.getDate()+1)) {
-        const k = _fmtDate(d);
-        if (!evMap[k]) evMap[k] = [];
-        evMap[k].push(ev);
-      }
-    });
-    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const DAYS   = ['Mo','Tu','We','Th','Fr','Sa','Su'];
-    let html = '<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">';
-    for (let m = 0; m < 3; m++) {
-      const base = new Date(todayD.getFullYear(), todayD.getMonth()+m, 1);
-      const yr = base.getFullYear(), mo = base.getMonth();
-      const daysInMonth = new Date(yr, mo+1, 0).getDate();
-      const firstDow = (new Date(yr, mo, 1).getDay()+6)%7;
-      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;flex:1;min-width:200px">';
-      html += '<div style="font-size:.78rem;font-weight:700;color:var(--navy2);margin-bottom:8px;text-align:center">'+MONTHS[mo]+' '+yr+'</div>';
-      html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">';
-      html += DAYS.map(d=>'<div style="font-size:.6rem;color:var(--slate2);font-weight:600;padding:2px 0">'+d+'</div>').join('');
-      html += Array(firstDow).fill('<div></div>').join('');
-      for (let i=1; i<=daysInMonth; i++) {
-        const dateStr = yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
-        const evs = evMap[dateStr] || [];
-        const isToday = dateStr === todayStr;
-        const isPast  = dateStr < todayStr;
-        const hasEv   = evs.length > 0;
-        const dotColor = hasEv ? (evs[0].status==='Active'?'var(--green)':evs[0].status==='Not Interested'?'var(--red)':'var(--blue)') : '';
-        const title = evs.map(e=>e.name).join(', ');
-        html += '<div title="'+title+'" '
-          +(hasEv?'onclick="_calDay(\''+dateStr+'\')" ':'' )
-          +'style="font-size:.68rem;padding:3px 1px;border-radius:4px;'
-          +'cursor:'+(hasEv?'pointer':'default')+';'
-          +'background:'+(isToday?'var(--navy2)':hasEv?'var(--blue-t)':'transparent')+';'
-          +'color:'+(isToday?'#fff':isPast?'var(--slate2)':'var(--navy2)')+';'
-          +'font-weight:'+(hasEv||isToday?'700':'400')+'">'+i
-          +(hasEv?'<span style="display:block;width:4px;height:4px;border-radius:50%;background:'+dotColor+';margin:1px auto 0"></span>':'<span style="display:block;height:5px"></span>')
-          +'</div>';
-      }
-      html += '</div></div>';
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date();
+    // Window: (today - 3 months + offset) to (today + 6 months + offset), 9 pills total
+    const windowSize = 9; // 3 past + current + 5 future visible
+    const startOffset = _evMonthOffset - 3;
+    let pills = '';
+    for (let i = 0; i < windowSize; i++) {
+      const totalOffset = startOffset + i;
+      const d = new Date(now.getFullYear(), now.getMonth() + totalOffset, 1);
+      const yr = d.getFullYear(), mo = d.getMonth();
+      const monthStr = yr + '-' + String(mo+1).padStart(2,'0');
+      const isCurrentMonth = totalOffset === 0;
+      // Count events that overlap this month
+      const count = DATA_EVENTS.filter(ev => {
+        const from = ev.dateFrom||''; const to = ev.dateTo||ev.dateFrom||'';
+        if (!from) return false;
+        const mStart = monthStr + '-01';
+        const mEnd   = monthStr + '-31';
+        return from <= mEnd && to >= mStart;
+      }).length;
+      const isSelected = fdate === monthStr + '-01';
+      const isPast = totalOffset < 0;
+      pills += `<div onclick="_evSelectMonth('${monthStr}')" style="cursor:pointer;padding:7px 14px;border-radius:20px;text-align:center;flex-shrink:0;
+        background:${isSelected?'var(--navy2)':isCurrentMonth?'var(--blue-t)':'var(--card)'};
+        border:1.5px solid ${isSelected?'var(--navy2)':isCurrentMonth?'var(--blue)':'var(--border)'};
+        color:${isSelected?'#fff':isPast?'var(--slate2)':'var(--navy2)'};
+        transition:all .15s">
+        <div style="font-size:.72rem;font-weight:700">${MONTH_NAMES[mo]} ${yr}</div>
+        <div style="font-size:.85rem;font-weight:800;color:${isSelected?'#fff':count>0?'var(--blue)':'var(--slate2)'}">${count||'·'}</div>
+      </div>`;
     }
-    html += '</div>';
-    return html;
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px">
+      <button onclick="_evMonthOffset--;renderEvents()" style="background:none;border:1px solid var(--border);border-radius:20px;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--slate);flex-shrink:0">‹</button>
+      <div style="display:flex;gap:6px;flex:1;overflow-x:auto;padding:2px 0">${pills}</div>
+      <button onclick="_evMonthOffset++;renderEvents()" style="background:none;border:1px solid var(--border);border-radius:20px;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--slate);flex-shrink:0">›</button>
+      ${fdate?`<button onclick="renderEvents(undefined,undefined,undefined,undefined,undefined,'')" style="background:none;border:1px solid var(--border);border-radius:20px;padding:3px 10px;cursor:pointer;font-size:.72rem;color:var(--slate);flex-shrink:0">✕ Clear</button>`:''}
+    </div>`;
   })()}
 
     <!-- Filters -->
   <div class="filter-bar">
-    <input type="text" id="evq" placeholder="🔍  Search name, place, industry…" value="${q}" oninput="renderEvents(undefined,undefined,undefined,undefined,undefined)">
+    <input type="text" id="evq" placeholder="🔍  Search name, place, industry…" value="${q}" oninput="renderEvents(this.value)">
     <select id="evtim" onchange="renderEvents()">
       <option value="">All Timing</option>
       ${['Upcoming','Ongoing','Past','Unknown'].map(t=>`<option value="${t}"${ftiming===t?' selected':''}>${t}</option>`).join('')}
@@ -284,7 +278,10 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
       <option value="">All Statuses</option>
       ${EVENT_STATUSES.map(s=>`<option value="${s}"${fstatus===s?' selected':''}>${s}</option>`).join('')}
     </select>
-
+    <select id="evind" onchange="renderEvents()">
+      <option value="">All Industries</option>
+      ${industries.map(i=>`<option value="${i}"${findustry===i?' selected':''}>${i}</option>`).join('')}
+    </select>
     <select id="evown" onchange="renderEvents()">
       <option value="">All Owners</option>
       ${owners.map(o=>`<option value="${o}"${fown===o?' selected':''}>${o}</option>`).join('')}
@@ -300,9 +297,8 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
     </div>` :
   `<div class="tbl-wrap"><table>
     <thead><tr>
-      <th>Timing</th><th>Event</th><th>Status</th>
-      <th>Date From</th><th>Date To</th><th>Place</th>
-      <th>Industry</th><th>Owner</th><th>Link</th>
+      <th>Timing</th><th>Event</th><th>Date From</th><th>Date To</th><th>Place</th>
+      <th>Status</th><th>Industry</th><th>Owner</th><th>Link</th>
     </tr></thead>
     <tbody>${filtered.map(ev => {
       const safeId = (ev.id||'').replace(/'/g,'__SQ__');
@@ -310,10 +306,10 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
       return `<tr class="edit-row" onclick="openEventDrawer('${safeId}')">
         <td>${timingBadge(ev._timing)}</td>
         <td><div style="display:flex;align-items:center;gap:6px">${eventLogo(ev.webLink,ev.name,18)}<div><b style="color:var(--navy2)">${ev.name||'—'}</b>${ev.country?`<div class="dc" style="font-size:.67rem">${ev.country}</div>`:''}</div></div></td>
-        <td onclick="event.stopPropagation()">${buildEventStatusDrop(ev)}</td>
-        <td style="font-size:.75rem;color:var(--slate)">${ev.dateFrom||'—'}</td>
-        <td style="font-size:.75rem;color:var(--slate)">${ev.dateTo||'—'}</td>
+        <td style="font-size:.75rem;color:var(--slate);white-space:nowrap">${ev.dateFrom||'—'}</td>
+        <td style="font-size:.75rem;color:var(--slate);white-space:nowrap">${ev.dateTo||'—'}</td>
         <td style="font-size:.77rem"><div style="display:flex;align-items:center;gap:4px">${ev.mode==='Online'?'<span title="Online" style="font-size:.95rem">🌐</span>':(ev.country?countryFlag(ev.country):'')}<span>${ev.place||(ev.mode==='Online'?'Online':'—')}</span></div></td>
+        <td onclick="event.stopPropagation()">${buildEventStatusDrop(ev)}</td>
         <td style="font-size:.75rem">${ev.industry||'—'}</td>
         <td style="font-size:.75rem">${ev.owner||'—'}</td>
         <td style="font-size:.72rem">${url?`<a href="${safeUrl(url)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">🔗 Website</a>`:'—'}</td>
@@ -454,8 +450,9 @@ function openEventDrawer(safeId) {
 
   const _evLogo = ev.webLink ? eventLogo(ev.webLink, ev.name, 28) : '';
   const _evFlag = ev.mode === 'Online' ? '<span title="Online" style="font-size:1.1rem">🌐</span>' : (ev.country ? countryFlag(ev.country) : '');
+  const _evDateRange = [ev.dateFrom, ev.dateTo].filter(Boolean).join(' → ');
   openDrawer(ev.name || 'Event', body, foot, 'event', id);
-  setTimeout(()=>{const dh=$('drawer-title');if(dh)dh.innerHTML=`<span style="display:flex;align-items:center;gap:8px">${_evLogo}${_evFlag}<span>${esc(ev.name||'Event')}</span></span>`;},0);
+  setTimeout(()=>{const dh=$('drawer-title');if(dh)dh.innerHTML=`<span style="display:flex;align-items:center;gap:8px">${_evLogo}${_evFlag}<div><span style="display:block">${esc(ev.name||'Event')}</span><span style="display:block;font-size:.68rem;color:var(--slate);font-weight:400">${esc(ev.id||'')}${_evDateRange?' · '+_evDateRange:''}</span></div></span>`;},0);
 }
 
 function buildDrawerEventStatusDrop(elId, currentVal) {
