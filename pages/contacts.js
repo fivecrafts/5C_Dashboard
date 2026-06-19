@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.2 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -39,7 +39,7 @@ function renderContacts(q, fc) {
   <div class="tbl-wrap"><table>
     <thead><tr><th>ID</th><th>Company</th><th>Name</th><th>Email</th><th>Phone</th><th>Linked Opportunities</th><th>Source</th></tr></thead>
     <tbody>${filtered.map(r => {
-      const name  = ((r.firstName || '') + ' ' + (r.lastName || '')).trim();
+      const name  = [r.firstName, r.lastName].filter(Boolean).join(' ') || contactDisplayName(r);
       const safeId = (r.id || name).replace(/'/g, '__SQ__');
       const linkedCount = r.linkedOpps
         ? (r.linkedOpps.split(';').filter(Boolean).length + ' opp' +
