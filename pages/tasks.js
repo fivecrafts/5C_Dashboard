@@ -1,5 +1,20 @@
-// 5C Dashboard v1.39.0 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
+
+function taskTypeIcon(type) {
+  const MAP = {
+    'Intro Call':'📞','Send Email':'📧','Organize Meeting':'🤝','Follow-up Call':'🔄',
+    'Schedule Demo':'📅','Send Pitchdeck':'💼','Send Proposal':'📋','Send NDA':'🧾',
+    'Send Contract':'📄','Prepare RfP Response':'📝','Contract Review':'⚖️',
+    'Negotiate Terms':'🏆','Close Deal':'✅','LinkedIn Connect':'🔗',
+    'Research / Due Diligence':'🔍','Event Follow-up':'📣','Intro to Team':'👤',
+    // Legacy types
+    'Organize Meet':'🤝','Organize Call':'📞','Followup Call':'🔄',
+    'Send Pitchdeck':'💼','Send Contract':'📄','Send Proposal':'📋',
+    'Other':'💬',
+  };
+  return MAP[type] || '💬';
+}
 
 // ════════════════════════════════════════════════════════════════
 // TASKS INLINE STATUS DROPDOWN  — Open=Blue, Done=Green, Cancelled=Grey
@@ -143,11 +158,11 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
  : '—';
         })()}</td>
         <td style="font-size:.82rem;font-weight:600;color:var(--navy2)">${r.taskName || '—'}</td>
-        <td style="font-size:.78rem;font-weight:500">${r.type || '—'}</td>
+        <td style="font-size:.78rem;font-weight:500">${taskTypeIcon(r.type)} ${r.type || '—'}</td>
         <td onclick="event.stopPropagation()">${buildTaskPrioDrop(r)}</td>
         <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedOpp ? `<span class="contact-link" onclick="openOppFromTask('${r.linkedOpp.replace(/'/g,'__SQ__')}')">${r.linkedOpp}</span>` : '—'}</td>
         <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedContact ? `<span class="contact-link" onclick="openContactFromTask('${r.linkedContact.replace(/'/g,'__SQ__')}')">${r.linkedContact}</span>` : '—'}</td>
-        <td style="font-size:.75rem;${dueCls}">${r.dueDate || '—'}${isOverdue ? ' ⚠' : ''}</td>
+        <td style="font-size:.75rem;${dueCls}">${r.dueDate ? fmtDate(r.dueDate) : '—'}${isOverdue ? ' ⚠' : ''}</td>
         <td onclick="event.stopPropagation()">${buildTaskStatusDrop(r)}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.responsible ? `<span class="contact-link" onclick="UI.nf('',null,'${r.responsible.replace(/'/g,'__SQ__')}')">${r.responsible}</span>` : '—'}</td>
         <td style="font-size:.72rem;color:var(--slate2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
