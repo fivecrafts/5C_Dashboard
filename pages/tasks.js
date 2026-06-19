@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.2 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -68,7 +68,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
   if (ftype === undefined) { const el=$('tft');    ftype = el?el.value:''; }
   if (fprio === undefined) { const el=$('tfprio'); fprio = el?el.value:''; }
   if (fcomp === undefined) { const el=$('tfcomp'); fcomp = el?el.value:''; }
-  q='';fs=fs||'';fr=fr||'';ftype=ftype||'';fprio=fprio||'';fcomp=fcomp||'';
+  q=q||'';fs=fs||'';fr=fr||'';ftype=ftype||'';fprio=fprio||'';fcomp=fcomp||'';
 
   const today = new Date().toISOString().slice(0, 10);
   const TPO = {'Critical':0,'High':1,'Medium':2,'Low':3};
