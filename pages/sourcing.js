@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.1 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.3 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -81,11 +81,27 @@ function _renderRunsTable(runs) {
       .join(' ');
     const more  = run.competencies?.length > 3
       ? `<span style="font-size:.68rem;color:var(--slate)"> +${run.competencies.length-3}</span>` : '';
-    const safeId = (run.id||'').replace(/'/g,"__SQ__");
+    const safeId  = (run.id||'').replace(/'/g,"__SQ__");
     const safeKey = (run.oppKey||'').replace(/'/g,"__SQ__");
+    // Company logo + link from oppKey (format: client|||project)
+    const clientName = (run.oppKey||'').split('|||')[0];
+    const co = (DATA_COMPANIES||[]).find(c=>c.name===clientName);
+    const safeCoId = clientName.replace(/'/g,"__SQ__");
+    const logoHtml = companyLogoFromName(clientName, 22, '🎯');
+    const coLink = co
+      ? `<span class="contact-link" onclick="event.stopPropagation();UI.nav('companies',null);setTimeout(()=>openCompanyDrawer('${safeCoId}'),150)" title="${esc(clientName)}">${logoHtml}</span>`
+      : `<span title="${esc(clientName)}">${logoHtml}</span>`;
     return `<tr style="cursor:pointer" onclick="openSourcingRunDetail('${safeId}')">
       <td style="font-size:.78rem;color:var(--slate);white-space:nowrap">${run.runDate||'—'}</td>
-      <td><div style="font-weight:600;color:var(--navy2)">${esc(run.oppLabel||'—')}</div></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${coLink}
+          <div>
+            <div style="font-weight:600;color:var(--navy2)">${esc(run.oppLabel||'—')}</div>
+            <div style="font-size:.7rem;color:var(--slate)">${esc(clientName)}</div>
+          </div>
+        </div>
+      </td>
       <td style="max-width:240px">${comps}${more}</td>
       <td><span class="badge b-blue">${res.length}</span></td>
       <td>${top ? `<span style="font-weight:700;color:var(--green)">${top.score}/10</span>` : '—'}</td>
@@ -102,27 +118,68 @@ function openSourcingRunDetail(runId) {
   const run = (DATA_SOURCING_RUNS||[]).find(r=>r.id===runId.replace(/__SQ__/g,"'"));
   if (!run) return;
   const res = [...(run.results||[])].sort((a,b)=>(b.score||0)-(a.score||0));
+
+  // Company + opp lookup
+  const clientName = (run.oppKey||'').split('|||')[0];
+  const projName   = (run.oppKey||'').split('|||')[1]||'';
+  const opp = DATA_PIPE.find(r=>r.c===clientName && r.p===projName);
+  const co  = (DATA_COMPANIES||[]).find(c=>c.name===clientName);
+  const safeCoId = clientName.replace(/'/g,"__SQ__");
+  const logoHtml = companyLogoFromName(clientName, 28, '🎯');
+  const coClickable = co
+    ? `<span class="contact-link" onclick="document.getElementById('src-detail-overlay').remove();UI.nav('companies',null);setTimeout(()=>openCompanyDrawer('${safeCoId}'),150)" title="Open ${esc(clientName)} in Companies">${logoHtml}</span>`
+    : logoHtml;
+
+  // Opp context box
+  const oppBox = opp ? `
+    <div class="drawer-sec" style="margin-bottom:12px">
+      <div class="drawer-sec-label">Opportunity Context</div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+        <div style="flex-shrink:0;margin-top:2px">${logoHtml}</div>
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:.85rem;color:var(--navy2)">${esc(opp.p||'')}</div>
+          <div style="font-size:.78rem;color:var(--slate);margin-bottom:6px">${esc(clientName)} · <span class="badge b-${opp.s==='Running'?'green':opp.s==='Bidding'?'purple':opp.s==='Pipeline'?'blue':opp.s==='Prospect'?'amber':opp.s==='Done'?'grey':'red'}" style="font-size:.65rem">${esc(opp.s||'')}</span></div>
+          ${opp.d ? `<div style="font-size:.78rem;color:var(--ink);line-height:1.5;white-space:pre-line">${esc(opp.d)}</div>` : ''}
+        </div>
+      </div>
+    </div>` : '';
+
+  // JD context box
+  const jdBox = run.jd ? `
+    <div class="drawer-sec" style="margin-bottom:12px">
+      <div class="drawer-sec-label">Job Description / Requirements</div>
+      <div style="padding:10px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border);font-size:.78rem;color:var(--ink);line-height:1.6;white-space:pre-line;max-height:160px;overflow-y:auto">${esc(run.jd)}</div>
+    </div>` : '';
+
   const overlay = document.createElement('div');
   overlay.id = 'src-detail-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:40px 24px;overflow-y:auto';
   overlay.innerHTML = `
-  <div style="background:var(--card);border-radius:14px;width:100%;max-width:860px;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto">
+  <div style="background:var(--card);border-radius:14px;width:100%;max-width:900px;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto">
     <div class="drawer-head">
-      <div>
-        <div style="font-weight:700;font-size:.95rem">${esc(run.oppLabel||'Sourcing Run')}</div>
-        <div style="font-size:.75rem;color:var(--slate)">${run.runDate} · ${res.length} candidates</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        ${coClickable}
+        <div>
+          <div style="font-weight:700;font-size:.95rem">${esc(run.oppLabel||'Sourcing Run')}</div>
+          <div style="font-size:.75rem;color:var(--slate)">${esc(clientName)} · ${run.runDate} · ${res.length} candidates</div>
+        </div>
       </div>
       <button onclick="document.getElementById('src-detail-overlay').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--slate)">✕</button>
     </div>
     <div style="padding:16px 20px">
-      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px">
-        ${(run.competencies||[]).map(c=>`<span style="background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:.7rem">${esc(c)}</span>`).join('')}
+      ${oppBox}
+      ${jdBox}
+      <div class="drawer-sec" style="margin-bottom:10px">
+        <div class="drawer-sec-label">Competencies Used</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
+          ${(run.competencies||[]).map(c=>`<span style="background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:12px;padding:2px 8px;font-size:.7rem">${esc(c)}</span>`).join('')}
+        </div>
       </div>
       <div class="tbl-wrap"><table class="ds-table">
         <thead><tr><th>Candidate</th><th>Role</th><th>Status</th><th>Score</th><th>Stars</th><th>Match Reason</th><th>Source</th></tr></thead>
         <tbody>
           ${res.map(r=>{
-            const safeId = (r.candidateId||'').replace(/'/g,"__SQ__");
+            const safeId  = (r.candidateId||'').replace(/'/g,"__SQ__");
             const safeSrc = (r.source||'').replace(/'/g,"__SQ__");
             return `<tr style="cursor:pointer" onclick="openCandidateFromSourcing('${safeId}','${safeSrc}')">
               <td style="font-weight:600">${esc(r.displayName||r.name||'—')}</td>
