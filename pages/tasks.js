@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.2 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.0 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -128,25 +128,25 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
     <span class="cnt">${filtered.length}/${DATA_TASKS.length}</span>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>ID</th><th>Task Name</th><th>Type</th><th>Priority</th><th>Linked Opportunity</th><th>Linked Contact</th><th>Linked Company</th><th>Due Date</th><th>Status</th><th>Responsible</th><th>Notes</th></tr></thead>
+    <thead><tr><th>ID</th><th>Company</th><th>Task Name</th><th>Type</th><th>Priority</th><th>Linked Opportunity</th><th>Linked Contact</th><th>Due Date</th><th>Status</th><th>Responsible</th><th>Notes</th></tr></thead>
     <tbody>${filtered.map(r => {
       const isOverdue = r.status === 'Open' && r.dueDate && r.dueDate < today;
       const safeId    = (r.id || '').replace(/'/g, '__SQ__');
       const dueCls    = isOverdue ? 'color:var(--red);font-weight:600' : 'color:var(--slate)';
       return `<tr class="edit-row" onclick="openTaskDrawer('${safeId}')">
         <td style="font-size:.7rem;color:var(--slate2)">${r.id || '—'}</td>
-        <td style="font-size:.82rem;font-weight:600;color:var(--navy2)">${r.taskName || '—'}</td>
-        <td style="font-size:.78rem;font-weight:500">${r.type || '—'}</td>
-        <td onclick="event.stopPropagation()">${buildTaskPrioDrop(r)}</td>
-        <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedOpp ? `<span class="contact-link" onclick="openOppFromTask('${r.linkedOpp.replace(/'/g,'__SQ__')}')">${r.linkedOpp}</span>` : '—'}</td>
-        <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedContact ? `<span class="contact-link" onclick="openContactFromTask('${r.linkedContact.replace(/'/g,'__SQ__')}')">${r.linkedContact}</span>` : '—'}</td>
-        <td style="font-size:.73rem">${(()=>{
+        <td style="font-size:.73rem" onclick="event.stopPropagation()">${(()=>{
           const co = r.linkedCompany ? (DATA_COMPANIES||[]).find(c=>c.id===r.linkedCompany||c.name===r.linkedCompany) : null;
           const nm = co ? co.name : r.linkedCompany;
           const safeNm = (nm||'').replace(/'/g,'__SQ__');
           return nm ? `<div style="display:flex;align-items:center;gap:5px">${companyLogo(co?.website||'',nm,18)}<span class="contact-link" onclick="event.stopPropagation();openCompanyFromName('${safeNm}')" style="font-size:.75rem">${nm}</span></div>`
  : '—';
         })()}</td>
+        <td style="font-size:.82rem;font-weight:600;color:var(--navy2)">${r.taskName || '—'}</td>
+        <td style="font-size:.78rem;font-weight:500">${r.type || '—'}</td>
+        <td onclick="event.stopPropagation()">${buildTaskPrioDrop(r)}</td>
+        <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedOpp ? `<span class="contact-link" onclick="openOppFromTask('${r.linkedOpp.replace(/'/g,'__SQ__')}')">${r.linkedOpp}</span>` : '—'}</td>
+        <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedContact ? `<span class="contact-link" onclick="openContactFromTask('${r.linkedContact.replace(/'/g,'__SQ__')}')">${r.linkedContact}</span>` : '—'}</td>
         <td style="font-size:.75rem;${dueCls}">${r.dueDate || '—'}${isOverdue ? ' ⚠' : ''}</td>
         <td onclick="event.stopPropagation()">${buildTaskStatusDrop(r)}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.responsible ? `<span class="contact-link" onclick="UI.nf('',null,'${r.responsible.replace(/'/g,'__SQ__')}')">${r.responsible}</span>` : '—'}</td>
@@ -194,7 +194,7 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
       </select>
     </div>
     <div class="field-group"><label>Linked Opportunity</label>
-      <select id="dt-opp"><option value="">— None —</option>${oppOptions}</select>
+      <select id="dt-opp" onchange="(()=>{const v=this.value;if(!v)return;const [cl]=v.split(' · ');const co=(DATA_COMPANIES||[]).find(c=>c.name===cl);const dc=$('dt-comp');if(dc&&co&&!dc.value){dc.value=co.name;}})()"><option value="">— None —</option>${oppOptions}</select>
     </div>
     <div class="field-group"><label>Linked Contact</label>
       <select id="dt-cont"><option value="">— None —</option>${contOptions}</select>
