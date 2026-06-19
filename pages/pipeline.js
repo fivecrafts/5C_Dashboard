@@ -1,4 +1,4 @@
-// 5C Dashboard v1.37.0 · 2026-06-18 · sourcing · Five Crafts s.r.o.
+// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -70,7 +70,19 @@ function renderPipe(q, fs, fp, fo) {
   const labels = ['Client','Project / Scope','Detail','Priority','Status','Owner','Contact'];
 
   const _foc = _saveFocus();
+  const counts = {};
+  ['Pipeline','Prospect','Bidding','Running','Done','Cancelled'].forEach(s => {
+    counts[s] = DATA_PIPE.filter(r => r.s === s).length;
+  });
   $('pipe-out').innerHTML = `
+  <div class="stats-row" id="pipe-stats">
+    <div class="stat-card s-blue  clickable" onclick="UI.nf('Pipeline',null)" title="Pipeline"><div class="sc-icon">⚡</div><div class="sc-val">${counts.Pipeline||0}</div><div class="sc-lbl">Pipeline</div></div>
+    <div class="stat-card s-amber clickable" onclick="UI.nf('Prospect',null)" title="Prospect"><div class="sc-icon">🔭</div><div class="sc-val">${counts.Prospect||0}</div><div class="sc-lbl">Prospect</div></div>
+    <div class="stat-card s-purple clickable" onclick="UI.nf('Bidding',null)" title="Bidding"><div class="sc-icon">📝</div><div class="sc-val">${counts.Bidding||0}</div><div class="sc-lbl">Bidding</div></div>
+    <div class="stat-card s-green clickable" onclick="UI.nf('Running',null)" title="Running"><div class="sc-icon">▶️</div><div class="sc-val">${counts.Running||0}</div><div class="sc-lbl">Running</div></div>
+    <div class="stat-card s-green clickable" onclick="UI.nf('Done',null)" title="Done"><div class="sc-icon">✅</div><div class="sc-val">${counts.Done||0}</div><div class="sc-lbl">Done</div></div>
+    <div class="stat-card s-red  clickable" onclick="UI.nf('Cancelled',null)" title="Cancelled"><div class="sc-icon">⊘</div><div class="sc-val">${counts.Cancelled||0}</div><div class="sc-lbl">Cancelled</div></div>
+  </div>
   <div class="legend" style="margin-bottom:14px;">
     <h3>Legend</h3>
     <div class="legend-grid">
