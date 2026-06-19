@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.2 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.2 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -66,8 +66,8 @@ function renderPipe(q, fs, fp, fo) {
     });
 
   const nch    = Object.keys(CHANGES).length;
-  const cols   = ['c','p','d','prio','s','owner','contact'];
-  const labels = ['Client','Project / Scope','Detail','Priority','Status','Owner','Contact'];
+  const cols   = ['pid','c','p','d','prio','s','owner','contact'];
+  const labels = ['ID','Client','Project / Scope','Detail','Priority','Status','Owner','Contact'];
 
   const _foc = _saveFocus();
   const counts = {};
@@ -118,6 +118,7 @@ function renderPipe(q, fs, fp, fo) {
         ? `<span class="contact-link" onclick="openContactFromPipeline('${r.contact.replace(/'/g, '__SQ__')}')" title="View contact profile">${r.contact}</span>`
         : '—';
       return `<tr class="edit-row" onclick="openPipeDrawer('${safeKey}')">
+        <td style="font-size:.68rem;color:var(--slate2);white-space:nowrap">${r.pid || '—'}</td>
         <td onclick="event.stopPropagation()"><div style="display:flex;align-items:center;gap:7px">${companyLogoFromName(r.c,20,'🎯')}<span class="contact-link" style="font-size:.82rem;font-weight:600" onclick="openCompanyFromName('${r.c.replace(/'/g,'__SQ__')}')" title="View company">${r.c}</span></div></td>
         <td style="font-size:.73rem;color:var(--slate)">${r.p || '—'}</td>
         <td><div class="dc" title="${(r.d || '').replace(/"/g, "'")}">${r.d || '—'}</div></td>
