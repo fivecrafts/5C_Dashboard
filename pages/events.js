@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.1 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
@@ -321,6 +321,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>`}`;
+  _restoreFocus(_foc);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -337,8 +338,6 @@ function openEventDrawer(safeId) {
     return cell.split(',').map(part => {
       const m = part.trim().match(/^(.*?)\s*\(([A-Z]+-\d+)\)\s*$/);
       if (!m) return `<span style="font-size:.77rem">${part.trim()}</span>`;
-
-  _restoreFocus(_foc);
       const [, display, linkId] = m;
       let onclick = '';
       if (type === 'CO') onclick = `openCompanyDrawer('${linkId.replace(/'/g,'__SQ__')}')`;
