@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.2 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -39,7 +39,7 @@ function renderCompanies(q, ft, fown, fprio, find) {
   if (fown === undefined) { const el=$('cofown');  fown = el?el.value:''; }
   if (fprio=== undefined) { const el=$('cofprio'); fprio= el?el.value:''; }
   if (find === undefined) { const el=$('cofind');  find = el?el.value:''; }
-  q='';ft=ft||'';fown=fown||'';fprio=fprio||'';find=find||'';
+  q=q||'';ft=ft||'';fown=fown||'';fprio=fprio||'';find=find||'';
 
   const CPO = {'Critical':0,'High':1,'Medium':2,'Low':3};
   const filtered = DATA_COMPANIES.filter(r =>
@@ -127,6 +127,7 @@ function renderCompanies(q, ft, fown, fprio, find) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>`}`;
+  _restoreFocus(_foc);
 }
 
 // ── Company Edit Drawer ──────────────────────────────────────
@@ -203,8 +204,7 @@ async function saveCompanyDrawer(origId) {
   };
   try {
     const today = new Date().toISOString().slice(0,10);
-    const ok = await P.patchRange(activeCfg.sheets.companies, `
-  _restoreFocus(_foc);B${co._row}:K${co._row}`,
+    const ok = await P.patchRange(activeCfg.sheets.companies, `B${co._row}:K${co._row}`,
       [[fields.name,fields.type,fields.prio||'Medium',fields.website,fields.industry,fields.country,fields.owner,fields.notes,co.createdDate||today,today]]
     );
     if (ok) { Object.assign(co,fields); renderCompanies(); toast('✓ Saved','success'); closeDrawer(); }
