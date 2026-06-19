@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.1 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
@@ -79,26 +79,6 @@ async function saveEventStatusDirect(safeId, newS) {
 
 // ════════════════════════════════════════════════════════════════
 // TIMING helper — computed from dates vs today (not stored)
-// ════════════════════════════════════════════════════════════════
-// Format YYYY-MM-DD → "14 May 2026", returns '—' for blank
-function fmtDate(s) {
-  if (!s) return '—';
-  const [y,m,d] = s.split('-');
-  if (!y||!m||!d) return s;
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${parseInt(d,10)} ${MONTHS[parseInt(m,10)-1]} ${y}`;
-}
-// Format a date range — "14–16 May 2026" if same month, "30 Apr – 2 May 2026" otherwise
-function fmtDateRange(from, to) {
-  if (!from) return '—';
-  if (!to || to === from) return fmtDate(from);
-  const [fy,fm,fd] = from.split('-');
-  const [ty,tm,td] = to.split('-');
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  if (fy===ty && fm===tm) return `${parseInt(fd,10)}–${parseInt(td,10)} ${MONTHS[parseInt(fm,10)-1]} ${fy}`;
-  return `${fmtDate(from)} – ${fmtDate(to)}`;
-}
-
 function eventTiming(ev) {
   const today = new Date().toISOString().slice(0,10);
   if (!ev.dateFrom) return 'Unknown';
@@ -200,6 +180,17 @@ function addCoChip(sel) {
 // ════════════════════════════════════════════════════════════════
 // EVENTS PAGE — table view
 // ════════════════════════════════════════════════════════════════
+function industryIcon(ind) {
+  const MAP = {
+    'Banking':'🏦','Payments':'💳','Card Issuing':'💎','Card Acquiring':'🏪',
+    'Crypto/Web3':'₿','Lending':'💰','Insurance':'🛡️','Legal/Compliance':'⚖️',
+    'Consulting/Advisory':'🧠','Software/Dev studio':'💻','Identity/KYC':'🪪',
+    'Analytics':'📊','Telco':'📡','Retail/POS':'🛒','Government':'🏛️',
+    'Education':'🎓','Other':'🔹',
+  };
+  return MAP[ind] || '🔹';
+}
+
 // Month pill calendar offset — how many months forward from (today - 3)
 let _evMonthOffset = 0;
 
@@ -258,8 +249,8 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate, findustry) {
   ${(()=>{
     const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const now = new Date();
-    // Window: (today - 3 months + offset) to (today + 6 months + offset), 9 pills total
-    const windowSize = 9; // 3 past + current + 5 future visible
+    // Window: (today - 3 months + offset) forward, 18 pills total
+    const windowSize = 18; // 3 past + current + 14 future
     const startOffset = _evMonthOffset - 3;
     let pills = '';
     for (let i = 0; i < windowSize; i++) {
@@ -308,7 +299,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate, findustry) {
     </select>
     <select id="evind" onchange="renderEvents()">
       <option value="">All Industries</option>
-      ${industries.map(i=>`<option value="${i}"${findustry===i?' selected':''}>${i}</option>`).join('')}
+      ${industries.map(i=>`<option value="${i}"${findustry===i?' selected':''}>${industryIcon(i)} ${i}</option>`).join('')}
     </select>
     <select id="evown" onchange="renderEvents()">
       <option value="">All Owners</option>
@@ -338,7 +329,7 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate, findustry) {
         <td style="font-size:.75rem;color:var(--slate);white-space:nowrap">${fmtDate(ev.dateTo)}</td>
         <td style="font-size:.77rem"><div style="display:flex;align-items:center;gap:4px">${ev.mode==='Online'?'<span title="Online" style="font-size:.95rem">🌐</span>':(ev.country?countryFlag(ev.country):'')}<span>${ev.place||(ev.mode==='Online'?'Online':'—')}</span></div></td>
         <td onclick="event.stopPropagation()">${buildEventStatusDrop(ev)}</td>
-        <td style="font-size:.75rem">${ev.industry||'—'}</td>
+        <td style="font-size:.75rem">${ev.industry ? `<span title="${esc(ev.industry)}">${industryIcon(ev.industry)} ${esc(ev.industry)}</span>` : '—'}</td>
         <td style="font-size:.75rem">${ev.owner||'—'}</td>
         <td style="font-size:.72rem">${url?`<a href="${safeUrl(url)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue)">🔗 Website</a>`:'—'}</td>
       </tr>`;
@@ -406,7 +397,12 @@ function openEventDrawer(safeId) {
     </div>
     </div>
     <div class="field-row">
-      <div class="field-group"><label>Industry</label><select id="dev-ind"><option value="">— Select —</option>${indOpts}</select></div>
+      <div class="field-group"><label>Industry</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="dev-ind-icon" style="font-size:1.1rem">${ev.industry?industryIcon(ev.industry):''}</span>
+          <select id="dev-ind" onchange="document.getElementById('dev-ind-icon').textContent=this.value?industryIcon(this.value):''" style="flex:1"><option value="">— Select —</option>${indOpts}</select>
+        </div>
+      </div>
       <div class="field-group"><label>Owner</label>
         <select id="dev-own">${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();return`<option value="${n}"${ev.owner===n?' selected':''}>${n}</option>`;}).join('')}</select>
       </div>
@@ -590,7 +586,12 @@ function openNewEventDrawer() {
     </div>
     </div>
     <div class="field-row">
-      <div class="field-group"><label>Industry</label><select id="dev-ind"><option value="">— Select —</option>${indOpts}</select></div>
+      <div class="field-group"><label>Industry</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="dev-ind-icon" style="font-size:1.1rem"></span>
+          <select id="dev-ind" onchange="document.getElementById('dev-ind-icon').textContent=this.value?industryIcon(this.value):''" style="flex:1"><option value="">— Select —</option>${indOpts}</select>
+        </div>
+      </div>
       <div class="field-group"><label>Owner</label>
         <select id="dev-own">${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();const cur=window.CURRENT_USER_NAME||'';return`<option value="${n}"${cur===n?' selected':''}>${n}</option>`;}).join('')}</select>
       </div>
