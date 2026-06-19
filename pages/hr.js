@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.3 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.4 · 2026-06-19 · Five Crafts s.r.o.
 // 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
 'use strict';
 
@@ -367,7 +367,7 @@ function openHRDrawer(safeId) {
           ${['IT Analyst','Business Analyst','Solution Architect','IT Architect','Project Manager',
              'Delivery Manager','Product Manager','Product Owner','Card Specialist','Acquiring Specialist',
              'Risk Specialist','Compliance Specialist','Cyber Security Specialist','Finance Specialist',
-             'CFO','Software Developer','Mobile Developer','QA / Test Manager','IT Administrator',
+             'CFO','Software Developer','Mobile Developer','DevOps Engineer','QA / Test Manager','IT Administrator',
              'HR Generalist','Legal Specialist','Other'].map(r=>`<option value="${r}"${c.role===r?' selected':''}>${r}</option>`).join('')}
         </select>
       </div>
@@ -515,7 +515,7 @@ function openPoolDrawer(c) {
   const roleOpts    = ['IT Analyst','Business Analyst','Solution Architect','IT Architect','Project Manager',
     'Delivery Manager','Product Manager','Product Owner','Card Specialist','Acquiring Specialist',
     'Risk Specialist','Compliance Specialist','Cyber Security Specialist','Finance Specialist',
-    'CFO','Software Developer','Mobile Developer','QA / Test Manager','IT Administrator',
+    'CFO','Software Developer','Mobile Developer','DevOps Engineer','QA / Test Manager','IT Administrator',
     'HR Generalist','Legal Specialist','Other'].map(r=>`<option value="${r}"${c.role===r?' selected':''}>${r}</option>`).join('');
 
   // Competency chips
