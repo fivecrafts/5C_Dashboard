@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.1 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.4 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -65,7 +65,11 @@ const App = {
       });
       DATA_COMPANIES = P.parseCompanies(compj);
       const cls = P.parseCodelists(clj);
-      if (cls.TaskType && cls.TaskType.length) TASK_TYPES = cls.TaskType;
+      if (cls.TaskType && cls.TaskType.length) {
+        // Merge: start from hardcoded list in state.js, add any Excel-only types at end
+        const extras = cls.TaskType.filter(t => !TASK_TYPES.includes(t));
+        if (extras.length) TASK_TYPES = [...TASK_TYPES, ...extras];
+      }
       chip('ch-g', '● ' + activeCfg.label + ' · Live');
       toast(`Loaded ${DATA_PIPE.length} opps · ${DATA_CONTACTS.length} contacts · ${DATA_TASKS.length} tasks`, 'success');
     } catch (e) {
