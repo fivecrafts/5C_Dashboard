@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.3 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.4 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -171,7 +171,7 @@ const HR_ROLE_GROUPS = [
   { icon:'🧭', label:'Management',       roles:['Project Manager','Delivery Manager','Product Manager','Product Owner'] },
   { icon:'🛡️', label:'Risk & Compliance',roles:['Risk Specialist','Compliance Specialist','Cyber Security Specialist'] },
   { icon:'💰', label:'Finance',          roles:['Finance Specialist','CFO'] },
-  { icon:'💻', label:'Technology',       roles:['Software Developer','Mobile Developer','IT Administrator','QA / Test Manager'] },
+  { icon:'💻', label:'Technology',       roles:['Software Developer','Mobile Developer','IT Administrator','QA / Test Manager','DevOps Engineer'] },
   { icon:'🤝', label:'People',           roles:['HR Generalist','Legal Specialist'] },
   { icon:'🙋', label:'Other',            roles:['Other'] },
 ];
