@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.5 · 2026-06-18 23:30 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -32,8 +32,7 @@ function renderContacts(q, fc) {
     <input type="text" id="cq" placeholder="🔍  Search name, email, company…" value="${q}" oninput="renderContacts(this.value,undefined)">
     <select id="cfc" onchange="renderContacts(undefined,this.value)">
       <option value="">All Companies</option>
-      ${companies.map(c => `
-  _restoreFocus(_foc);<option${fc === c ? ' selected' : ''}>${c}</option>`).join('')}
+      ${companies.map(c => `<option${fc === c ? ' selected' : ''}>${c}</option>`).join('')}
     </select>
     <span class="cnt">${filtered.length}/${DATA_CONTACTS.length}</span>
   </div>
@@ -57,6 +56,7 @@ function renderContacts(q, fc) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
+  _restoreFocus(_foc);
 }
 
 // ── Contact Edit Drawer ───────────────────────────────────────
