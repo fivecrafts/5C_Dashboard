@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.5 · 2026-06-18 23:30 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -111,8 +111,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
     </select>
     <select id="tft" onchange="renderTasks(undefined,undefined,undefined,this.value)">
       <option value="">All Types</option>
-      ${TASK_TYPES.map(t=>`
-  _restoreFocus(_foc);<option value="${t}"${ftype===t?' selected':''}>${t}</option>`).join('')}
+      ${TASK_TYPES.map(t=>`<option value="${t}"${ftype===t?' selected':''}>${t}</option>`).join('')}
     </select>
     <select id="tfprio" onchange="renderTasks(undefined,undefined,undefined,undefined,this.value)">
       <option value="">All Priorities</option>
@@ -145,7 +144,8 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
           const co = r.linkedCompany ? (DATA_COMPANIES||[]).find(c=>c.id===r.linkedCompany||c.name===r.linkedCompany) : null;
           const nm = co ? co.name : r.linkedCompany;
           const safeNm = (nm||'').replace(/'/g,'__SQ__');
-          return nm ? `<div style="display:flex;align-items:center;gap:5px">${companyLogo(co?.website||'',nm,18)}<span class="contact-link" onclick="event.stopPropagation();openCompanyFromName('${safeNm}')" style="font-size:.75rem">${nm}</span></div>` : '—';
+          return nm ? `<div style="display:flex;align-items:center;gap:5px">${companyLogo(co?.website||'',nm,18)}<span class="contact-link" onclick="event.stopPropagation();openCompanyFromName('${safeNm}')" style="font-size:.75rem">${nm}</span></div>`
+ : '—';
         })()}</td>
         <td style="font-size:.75rem;${dueCls}">${r.dueDate || '—'}${isOverdue ? ' ⚠' : ''}</td>
         <td onclick="event.stopPropagation()">${buildTaskStatusDrop(r)}</td>
@@ -154,6 +154,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
+  _restoreFocus(_foc);
 }
 
 // ── Task Form (shared by edit + new) ─────────────────────────
