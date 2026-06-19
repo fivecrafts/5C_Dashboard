@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.0 · 2026-06-18 18:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -323,4 +323,24 @@ function safeUrl(u) {
   if (!u || typeof u !== 'string') return '#';
   const s = u.trim();
   return /^https?:\/\//i.test(s) ? s : '#';
+}
+
+// ── Date formatting ──────────────────────────────────────────
+// Format YYYY-MM-DD → "14 May 2026", returns '—' for blank
+function fmtDate(s) {
+  if (!s) return '—';
+  const [y,m,d] = s.split('-');
+  if (!y||!m||!d) return s;
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(d,10)} ${MONTHS[parseInt(m,10)-1]} ${y}`;
+}
+// "14–16 May 2026" same month, "30 Apr – 2 May 2026" cross-month
+function fmtDateRange(from, to) {
+  if (!from) return '—';
+  if (!to || to === from) return fmtDate(from);
+  const [fy,fm,fd] = from.split('-');
+  const [ty,tm,td] = to.split('-');
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if (fy===ty && fm===tm) return `${parseInt(fd,10)}–${parseInt(td,10)} ${MONTHS[parseInt(fm,10)-1]} ${fy}`;
+  return `${fmtDate(from)} – ${fmtDate(to)}`;
 }
