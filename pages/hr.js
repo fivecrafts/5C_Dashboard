@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.4 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.1 · 2026-06-19 · Five Crafts s.r.o.
 // 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
 'use strict';
 
@@ -450,7 +450,7 @@ function openHRDrawer(safeId) {
       <input type="hidden" id="hrd-comp" value="${esc(c.competencies||'')}">
       <select id="hrd-comp-add" onchange="hrAddComp(this)" style="font-size:.78rem;width:100%">
         <option value="">+ Add competency…</option>
-        ${(HR_COMPETENCIES||[]).filter(comp => !(c.competencies||'').split(',').map(x=>x.trim()).includes(comp)).map(comp=>`<option value="${esc(comp)}">${comp}</option>`).join('')}
+        ${(HR_COMPETENCIES||[]).filter(comp => !(c.competencies||'').split(',').map(x=>x.trim()).includes(comp)).sort().map(comp=>`<option value="${esc(comp)}">${comp}</option>`).join('')}
       </select>
     </div>
 
@@ -570,7 +570,7 @@ function openPoolDrawer(c) {
       <input type="hidden" id="pd-comp" value="${esc(c.competencies||'')}">
       <select id="pd-comp-add" onchange="poolAddComp(this)" style="font-size:.78rem;width:100%">
         <option value="">+ Add competency…</option>
-        ${(HR_COMPETENCIES||[]).filter(comp=>!allTags.includes(comp)).map(comp=>`<option value="${esc(comp)}">${comp}</option>`).join('')}
+        ${(HR_COMPETENCIES||[]).filter(comp=>!allTags.includes(comp)).sort().map(comp=>`<option value="${esc(comp)}">${comp}</option>`).join('')}
       </select>
     </div>
 
