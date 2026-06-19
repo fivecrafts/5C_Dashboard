@@ -1,4 +1,4 @@
-// 5C Dashboard v1.37.0 · 2026-06-18 · sourcing · Five Crafts s.r.o.
+// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -14,7 +14,13 @@ let DATA_OWNERS    = [];
 let DATA_COMPANIES = [];
 
 // ── Codelists (populated from Codelists sheet, with fallbacks) ──
-let TASK_TYPES    = ['Organize Meet','Send Pitchdeck','Organize Call','Followup Call','Send Contract','Send Proposal','LinkedIn Connect','Other'];
+let TASK_TYPES    = [
+  'Intro Call','Send Email','Organize Meeting','Follow-up Call','Schedule Demo',
+  'Send Pitchdeck','Send Proposal','Send NDA','Send Contract',
+  'Prepare RfP Response','Contract Review','Negotiate Terms','Close Deal',
+  'LinkedIn Connect','Research / Due Diligence','Event Follow-up',
+  'Intro to Team','Other'
+];
 let TASK_STATUSES = ['Open','Done','Cancelled'];
 let PRIORITIES    = ['Critical','High','Medium','Low']; // rev 19: Critical added
 const INDUSTRIES  = ['Banking','Payments','Card Issuing','Card Acquiring','Crypto/Web3',
