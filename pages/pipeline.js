@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.2 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -120,7 +120,7 @@ function renderPipe(q, fs, fp, fo) {
       return `<tr class="edit-row" onclick="openPipeDrawer('${safeKey}')">
         <td style="font-size:.68rem;color:var(--slate2);white-space:nowrap">${r.pid || '—'}</td>
         <td onclick="event.stopPropagation()"><div style="display:flex;align-items:center;gap:7px">${companyLogoFromName(r.c,20,'🎯')}<span class="contact-link" style="font-size:.82rem;font-weight:600" onclick="openCompanyFromName('${r.c.replace(/'/g,'__SQ__')}')" title="View company">${r.c}</span></div></td>
-        <td style="font-size:.73rem;color:var(--slate)">${r.p || '—'}</td>
+        <td style="font-size:.73rem;font-weight:700;color:var(--navy2)">${r.p || '—'}</td>
         <td><div class="dc" title="${(r.d || '').replace(/"/g, "'")}">${r.d || '—'}</div></td>
         <td onclick="event.stopPropagation()">${buildPrioDrop(r, k, safeKey)}</td>
         <td onclick="event.stopPropagation()">${buildStatusDrop(r, k, safeKey)}</td>
