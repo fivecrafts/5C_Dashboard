@@ -1,4 +1,4 @@
-// 5C Dashboard v1.31.0 · 2026-06-17 22:00 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -16,6 +16,8 @@ const FC_LOGO_SVG = `<svg width="36" height="36" viewBox="0 0 100 100" fill="non
 
 function renderOwners() {
   const today = new Date().toISOString().slice(0,10);
+  const openTasks = (DATA_TASKS||[]).filter(t => t.status === 'Open').length;
+  const overdue   = (DATA_TASKS||[]).filter(t => t.status === 'Open' && t.dueDate && t.dueDate < today).length;
 
   $('owners-out').innerHTML = `
 
@@ -52,6 +54,19 @@ function renderOwners() {
           </div>`).join('')}
       </div>
     </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- PIPELINE STATS                                     -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="stats-row" style="margin-top:16px">
+    <div class="stat-card s-green clickable" onclick="UI.nf('Running',null)"><div class="sc-icon">▶️</div><div class="sc-val">${cnt('Running')}</div><div class="sc-lbl">Running</div></div>
+    <div class="stat-card s-purple clickable" onclick="UI.nf('Bidding',null)"><div class="sc-icon">📝</div><div class="sc-val">${cnt('Bidding')}</div><div class="sc-lbl">Bidding</div></div>
+    <div class="stat-card s-blue clickable" onclick="UI.nf('Pipeline',null)"><div class="sc-icon">⚡</div><div class="sc-val">${cnt('Pipeline')}</div><div class="sc-lbl">Pipeline</div></div>
+    <div class="stat-card s-amber clickable" onclick="UI.nf('Prospect',null)"><div class="sc-icon">🔭</div><div class="sc-val">${cnt('Prospect')}</div><div class="sc-lbl">Prospect</div></div>
+    <div class="stat-card s-green clickable" onclick="UI.nav('contacts',null)"><div class="sc-icon">👤</div><div class="sc-val">${DATA_CONTACTS.length}</div><div class="sc-lbl">Contacts</div></div>
+    <div class="stat-card s-blue clickable" onclick="UI.nav('companies',null)"><div class="sc-icon">🏦</div><div class="sc-val">${DATA_COMPANIES.length}</div><div class="sc-lbl">Companies</div></div>
+    <div class="stat-card s-amber clickable" onclick="UI.nav('tasks',null)"><div class="sc-icon">✅</div><div class="sc-val">${openTasks}</div><div class="sc-lbl">Open Tasks</div><div class="sc-sub">${overdue} overdue</div></div>
   </div>
 
   <!-- ══════════════════════════════════════════════════ -->
