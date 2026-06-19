@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.0 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.1 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -134,17 +134,20 @@ const HR_STATUS_GROUP = {
 
 // ── HR competency codelist (61 values) ─────────────────────────
 const HR_COMPETENCIES = [
-  'Acquiring','Issuing','Card Payments','POS Terminals','Payment Gateway','Tokenization',
-  'Apple Pay / Google Pay','ISO 8583','EMV','Clearing & Settlement','Authorization','Chargebacks',
-  'Core Banking','Temenos T24','Digital Banking','Internet Banking','Mobile Banking','Digital Channels',
-  'Open Banking','PSD2 / AISP / PISP','SEPA','SWIFT','ISO 20022','CERTIS','Payment Hub',
-  'AML','KYC','Fraud','Risk Management','Compliance','GDPR','PCI DSS','DORA','NIS2','MiFID','ESG',
-  'Licensing & Regulation','IT Security','Cyber Security','ISO 27001',
-  'Solution Architecture','Integration Architecture','Enterprise Architecture',
-  'API Design','Data Architecture','Agile / SAFe','ITIL','BPMN / Process Modeling',
-  'Business Analysis','Test Management / UAT','Project Delivery','Atlassian (Jira/Confluence)',
-  'SQL / Data','AI / Automation','Crypto / DLT','Digital Wallet (EU)',
-  'Fintech','Banking','Insurance','Public Sector','Transport',
+  'Acquiring','Agile / SAFe','AI / Automation','AML','API Design',
+  'Apple Pay / Google Pay','Authorization','Atlassian (Jira/Confluence)',
+  'Banking','BPMN / Process Modeling','Business Analysis',
+  'Card Payments','Chargebacks','Clearing & Settlement','Compliance',
+  'Core Banking','Crypto / DLT','Cyber Security','CERTIS',
+  'Data Architecture','Digital Banking','Digital Channels','Digital Wallet (EU)',
+  'DORA','EMV','Enterprise Architecture','ESG','Fintech','Fraud','GDPR',
+  'Insurance','Integration Architecture','Internet Banking','ISO 20022',
+  'ISO 27001','ISO 8583','IT Security','Issuing','ITIL',
+  'KYC','Licensing & Regulation','MiFID','Mobile Banking',
+  'NIS2','Open Banking','PCI DSS','Payment Gateway','Payment Hub',
+  'POS Terminals','PSD2 / AISP / PISP','Project Delivery','Public Sector',
+  'Risk Management','SEPA','Solution Architecture','SQL / Data','SWIFT',
+  'Temenos T24','Test Management / UAT','Tokenization','Transport',
 ];
 
 // ── HR Search Tracking Pool (5C_POOL_Dasboard sheet) ─────────────
