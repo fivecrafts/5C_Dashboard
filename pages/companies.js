@@ -1,4 +1,4 @@
-// 5C Dashboard v1.36.5 · 2026-06-18 23:30 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -79,8 +79,7 @@ function renderCompanies(q, ft, fown, fprio, find) {
     </select>
     <select id="cofown" onchange="renderCompanies(undefined,undefined,this.value)">
       <option value="">All Owners</option>
-      ${owners.map(o=>`
-  _restoreFocus(_foc);<option value="${o}"${fown===o?' selected':''}>${o}</option>`).join('')}
+      ${owners.map(o=>`<option value="${o}"${fown===o?' selected':''}>${o}</option>`).join('')}
     </select>
     <select id="cofprio" onchange="renderCompanies(undefined,undefined,undefined,this.value)">
       <option value="">All Priorities</option>
@@ -204,7 +203,8 @@ async function saveCompanyDrawer(origId) {
   };
   try {
     const today = new Date().toISOString().slice(0,10);
-    const ok = await P.patchRange(activeCfg.sheets.companies, `B${co._row}:K${co._row}`,
+    const ok = await P.patchRange(activeCfg.sheets.companies, `
+  _restoreFocus(_foc);B${co._row}:K${co._row}`,
       [[fields.name,fields.type,fields.prio||'Medium',fields.website,fields.industry,fields.country,fields.owner,fields.notes,co.createdDate||today,today]]
     );
     if (ok) { Object.assign(co,fields); renderCompanies(); toast('✓ Saved','success'); closeDrawer(); }
