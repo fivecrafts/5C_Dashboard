@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.3 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.1 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -258,7 +258,7 @@ function openSourcingModal(oppKey) {
         <div id="src-comp-chips" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px solid var(--border);border-radius:8px;min-height:44px;background:#fff"></div>
         <select id="src-comp-add" onchange="_srcAddComp(this)" style="font-size:.78rem;padding:5px 8px;margin-top:6px;border:1px solid var(--border);border-radius:7px;background:var(--card)">
           <option value="">+ Add competency…</option>
-          ${(HR_COMPETENCIES||[]).map(c=>`<option value="${esc(c)}">${c}</option>`).join('')}
+          ${(HR_COMPETENCIES||[]).sort().map(c=>`<option value="${esc(c)}">${c}</option>`).join('')}
         </select>
       </div>
       <div class="field-group">
