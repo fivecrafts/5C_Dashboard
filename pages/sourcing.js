@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.1 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -152,10 +152,10 @@ function openCandidateFromSourcing(candidateId, source) {
   const src = source.replace(/__SQ__/g,"'");
   if (src === 'pool') {
     const c = (DATA_POOL||[]).find(r=>r.id===id);
-    if (c) { UI.nav('hr',null); setTimeout(()=>openHRDrawer(c),150); }
+    if (c) { UI.nav('hr',null); setTimeout(()=>openHRDrawer(c.id.replace(/'/g,'__SQ__')),150); }
   } else {
     const c = (DATA_HR||[]).find(r=>r.id===id);
-    if (c) { UI.nav('hr',null); setTimeout(()=>openHRDrawer(c),150); }
+    if (c) { UI.nav('hr',null); setTimeout(()=>openHRDrawer(c.id.replace(/'/g,'__SQ__')),150); }
   }
 }
 
