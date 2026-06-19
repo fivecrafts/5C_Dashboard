@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.0 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.1 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
@@ -80,6 +80,25 @@ async function saveEventStatusDirect(safeId, newS) {
 // ════════════════════════════════════════════════════════════════
 // TIMING helper — computed from dates vs today (not stored)
 // ════════════════════════════════════════════════════════════════
+// Format YYYY-MM-DD → "14 May 2026", returns '—' for blank
+function fmtDate(s) {
+  if (!s) return '—';
+  const [y,m,d] = s.split('-');
+  if (!y||!m||!d) return s;
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(d,10)} ${MONTHS[parseInt(m,10)-1]} ${y}`;
+}
+// Format a date range — "14–16 May 2026" if same month, "30 Apr – 2 May 2026" otherwise
+function fmtDateRange(from, to) {
+  if (!from) return '—';
+  if (!to || to === from) return fmtDate(from);
+  const [fy,fm,fd] = from.split('-');
+  const [ty,tm,td] = to.split('-');
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if (fy===ty && fm===tm) return `${parseInt(fd,10)}–${parseInt(td,10)} ${MONTHS[parseInt(fm,10)-1]} ${fy}`;
+  return `${fmtDate(from)} – ${fmtDate(to)}`;
+}
+
 function eventTiming(ev) {
   const today = new Date().toISOString().slice(0,10);
   if (!ev.dateFrom) return 'Unknown';
@@ -209,14 +228,23 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate, findustry) {
     (!ftiming || ev._timing === ftiming) &&
     (!fstatus || ev.status  === fstatus) &&
     (!findustry || ev.industry === findustry) &&
-    (!fdate   || (ev.dateFrom && ev.dateFrom <= fdate && (!ev.dateTo || ev.dateTo >= fdate))) &&
+    (!fdate   || (()=>{
+        // fdate = 'YYYY-MM-01' — filter events overlapping that calendar month
+        if (!ev.dateFrom) return false;
+        const mStart = fdate.slice(0,7) + '-01';
+        const mEnd   = fdate.slice(0,7) + '-31'; // safe upper bound
+        const evFrom = ev.dateFrom;
+        const evTo   = ev.dateTo || ev.dateFrom;
+        return evFrom <= mEnd && evTo >= mStart;
+      })()) &&
     (!fown    || ev.owner   === fown)
   ).sort((a,b) => {
-    // Upcoming first → Ongoing → Past → Unknown; within each: dateFrom asc
-    const to = {Upcoming:0, Ongoing:1, Past:2, Unknown:3};
-    const td = (to[a._timing]??3) - (to[b._timing]??3);
-    if (td !== 0) return td;
-    return (a.dateFrom||'').localeCompare(b.dateFrom||'');
+    // 1) Ongoing first, 2) Upcoming earliest first, 3) Past latest first, 4) Unknown last
+    const to = {Ongoing:0, Upcoming:1, Past:2, Unknown:3};
+    const ta = to[a._timing]??3, tb = to[b._timing]??3;
+    if (ta !== tb) return ta - tb;
+    if (a._timing === 'Past') return (b.dateFrom||'').localeCompare(a.dateFrom||''); // desc
+    return (a.dateFrom||'').localeCompare(b.dateFrom||''); // asc
   });
 
   const cnt = (t) => withTiming.filter(e=>e._timing===t).length;
@@ -306,8 +334,8 @@ function renderEvents(q, ftiming, fstatus, fmode, fown, fdate, findustry) {
       return `<tr class="edit-row" onclick="openEventDrawer('${safeId}')">
         <td>${timingBadge(ev._timing)}</td>
         <td><div style="display:flex;align-items:center;gap:6px">${eventLogo(ev.webLink,ev.name,18)}<div><b style="color:var(--navy2)">${ev.name||'—'}</b>${ev.country?`<div class="dc" style="font-size:.67rem">${ev.country}</div>`:''}</div></div></td>
-        <td style="font-size:.75rem;color:var(--slate);white-space:nowrap">${ev.dateFrom||'—'}</td>
-        <td style="font-size:.75rem;color:var(--slate);white-space:nowrap">${ev.dateTo||'—'}</td>
+        <td style="font-size:.75rem;color:var(--slate);white-space:nowrap">${fmtDate(ev.dateFrom)}</td>
+        <td style="font-size:.75rem;color:var(--slate);white-space:nowrap">${fmtDate(ev.dateTo)}</td>
         <td style="font-size:.77rem"><div style="display:flex;align-items:center;gap:4px">${ev.mode==='Online'?'<span title="Online" style="font-size:.95rem">🌐</span>':(ev.country?countryFlag(ev.country):'')}<span>${ev.place||(ev.mode==='Online'?'Online':'—')}</span></div></td>
         <td onclick="event.stopPropagation()">${buildEventStatusDrop(ev)}</td>
         <td style="font-size:.75rem">${ev.industry||'—'}</td>
@@ -441,7 +469,7 @@ function openEventDrawer(safeId) {
       <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;max-height:120px;overflow-y:auto">${followupHtml}</div>
       <textarea id="dev-followup" rows="2" placeholder="Append new entry (will be prefixed with today's date)…"></textarea>
     </div>
-    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">${ev.id} · Created ${ev.createdDate||'—'} · Updated ${ev.updDate||'—'} · ${timingBadge(eventTiming(ev))}</div>`;
+    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">${ev.id} · ${fmtDateRange(ev.dateFrom,ev.dateTo)} · Created ${fmtDate(ev.createdDate||'')} · ${timingBadge(eventTiming(ev))}</div>`;
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveEventDrawer('${esc(id)}')" style="flex:1">✓ Save</button>
@@ -450,7 +478,7 @@ function openEventDrawer(safeId) {
 
   const _evLogo = ev.webLink ? eventLogo(ev.webLink, ev.name, 28) : '';
   const _evFlag = ev.mode === 'Online' ? '<span title="Online" style="font-size:1.1rem">🌐</span>' : (ev.country ? countryFlag(ev.country) : '');
-  const _evDateRange = [ev.dateFrom, ev.dateTo].filter(Boolean).join(' → ');
+  const _evDateRange = fmtDateRange(ev.dateFrom, ev.dateTo);
   openDrawer(ev.name || 'Event', body, foot, 'event', id);
   setTimeout(()=>{const dh=$('drawer-title');if(dh)dh.innerHTML=`<span style="display:flex;align-items:center;gap:8px">${_evLogo}${_evFlag}<div><span style="display:block">${esc(ev.name||'Event')}</span><span style="display:block;font-size:.68rem;color:var(--slate);font-weight:400">${esc(ev.id||'')}${_evDateRange?' · '+_evDateRange:''}</span></div></span>`;},0);
 }
