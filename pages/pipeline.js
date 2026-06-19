@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.38.2 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -83,20 +83,6 @@ function renderPipe(q, fs, fp, fo) {
     <div class="stat-card s-green clickable" onclick="UI.nf('Done',null)" title="Done"><div class="sc-icon">✅</div><div class="sc-val">${counts.Done||0}</div><div class="sc-lbl">Done</div></div>
     <div class="stat-card s-red  clickable" onclick="UI.nf('Cancelled',null)" title="Cancelled"><div class="sc-icon">⊘</div><div class="sc-val">${counts.Cancelled||0}</div><div class="sc-lbl">Cancelled</div></div>
   </div>
-  <div class="legend" style="margin-bottom:14px;">
-    <h3>Legend</h3>
-    <div class="legend-grid">
-      <div class="legend-section"><h4>Status</h4><div class="legend-items">
-        ${ALL_S.map(s => `<span class="legend-item"><span class="legend-dot" style="background:var(--${
-          s==='Running'?'green':s==='Bidding'?'purple':s==='Pipeline'?'blue':s==='Prospect'?'amber':s==='Done'?'slate2':'red'
-        })"></span>${s}</span>`).join('')}
-      </div></div>
-      <div class="legend-section"><h4>Actions</h4>
-        <div style="font-size:.68rem;color:var(--slate);margin-top:4px">Click row to edit all fields · Click Client name for Company · Click Contact name for profile</div>
-      </div>
-    </div>
-  </div>
-
   <div class="filter-bar">
     <input type="text" id="f-q" placeholder="🔍  Search…" value="${q}" oninput="renderPipe(this.value,undefined,undefined,undefined)">
     <select id="f-s" onchange="renderPipe(undefined,this.value,undefined,undefined)">
