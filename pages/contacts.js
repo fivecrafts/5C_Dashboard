@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.0 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.2 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -37,7 +37,7 @@ function renderContacts(q, fc) {
     <span class="cnt">${filtered.length}/${DATA_CONTACTS.length}</span>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>ID</th><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>Linked Opportunities</th><th>Source</th></tr></thead>
+    <thead><tr><th>ID</th><th>Company</th><th>Name</th><th>Email</th><th>Phone</th><th>Linked Opportunities</th><th>Source</th></tr></thead>
     <tbody>${filtered.map(r => {
       const name  = ((r.firstName || '') + ' ' + (r.lastName || '')).trim();
       const safeId = (r.id || name).replace(/'/g, '__SQ__');
@@ -47,8 +47,8 @@ function renderContacts(q, fc) {
         : '—';
       return `<tr class="edit-row" onclick="openContactDrawer('${safeId}')">
         <td style="font-size:.7rem;color:var(--slate2)">${r.id || '—'}</td>
-        <td><b style="color:var(--navy2)">${name || '—'}</b></td>
         <td onclick="event.stopPropagation()"><div style="display:flex;align-items:center;gap:6px">${r.company ? companyLogoFromName(r.company, 20) : ''}<span style="font-size:.77rem">${(()=>{const nm=r.company||(r.coId&&(DATA_COMPANIES||[]).find(c=>c.id===r.coId)?.name)||'';return nm?`<span class="contact-link" onclick="openCompanyFromName('${nm.replace(/'/g,'__SQ__')}')">${nm}</span>`:'—';})()}</span></div></td>
+        <td><b style="color:var(--navy2)">${name || '—'}</b></td>
         <td style="font-size:.75rem"><a href="mailto:${r.email}" onclick="event.stopPropagation()" style="color:var(--blue)">${r.email || '—'}</a></td>
         <td style="font-size:.75rem">${r.phone || '—'}</td>
         <td style="font-size:.75rem;color:var(--blue);cursor:pointer">${linkedCount}</td>
