@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.5 · 2026-06-19 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -338,6 +338,11 @@ async function createTaskDrawer() {
     notes: $('dt-notes').value.trim(),
   };
   try {
+    // Create Outlook To-Do task if checkbox ticked and due date set
+    if ($('dt-cal') && $('dt-cal').checked && fields.dueDate) {
+      const evId = await P.createCalendarEvent(fields);
+      if (evId) { fields.outlookEventId = evId; toast('📅 Added to Outlook Tasks / To-Do', 'info'); }
+    }
     await P.createTask(fields);
     const j = await P.loadSheet(activeCfg.sheets.tasks);
     DATA_TASKS = P.parseTasks(j);
