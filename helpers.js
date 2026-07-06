@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.15 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.16 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -439,12 +439,11 @@ function refreshOpenMsgPanels() {
   });
 }
 
-// Emits a placeholder div; fills itself on next tick via _fillMsgPanel
+// Emits a placeholder div; openDrawer triggers _fillAllMsgPanels after innerHTML
 function renderMsgPanel(recordId) {
   if (!recordId) return '';
   const safeId = recordId.replace(/[^a-zA-Z0-9_-]/g, '_');
   return `<div class="drawer-sec" data-msg-panel="${esc(recordId)}" id="mp-${safeId}" style="margin-top:16px">
     <div style="font-size:.72rem;color:var(--slate2);padding:4px 0">💬 Loading messages…</div>
-  </div>
-  <script>setTimeout(()=>_fillMsgPanel(document.getElementById('mp-${safeId}'),'${recordId.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}'),0);<\/script>`;
+  </div>`;
 }
