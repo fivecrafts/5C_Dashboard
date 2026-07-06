@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.1 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.7 · 2026-07-06 · Five Crafts s.r.o.
 // 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
 'use strict';
 
@@ -464,7 +464,8 @@ function openHRDrawer(safeId) {
     <!-- System info -->
     <div style="font-size:.68rem;color:var(--slate2);margin-top:4px">
       ${c.id} · Created ${(c.createdAt||'').slice(0,10)||'—'} · Updated ${(c.updatedAt||'').slice(0,10)||'—'}
-    </div>`;
+    </div>
+    ${renderMsgPanel(c.id)}`;
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveHRDrawer('${esc(id)}')" style="flex:1">✓ Save</button>
@@ -592,7 +593,8 @@ function openPoolDrawer(c) {
     <!-- System -->
     <div style="font-size:.68rem;color:var(--slate2)">
       ${c.id} · Duplicates: ${c.duplicateFlag||'—'} · Created ${(c.createdAt||'').slice(0,10)||'—'} · Updated ${(c.updatedAt||'').slice(0,10)||'—'}
-    </div>`;
+    </div>
+    ${renderMsgPanel(c.id)}`;
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="savePoolDrawer('${esc(c.id)}')" style="flex:1">✓ Save</button>
