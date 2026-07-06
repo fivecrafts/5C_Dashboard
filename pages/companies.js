@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -185,8 +185,8 @@ function openCompanyDrawer(safeId) {
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   const logoHtml = companyLogo(co.website,co.name,32);
-  openDrawer(co.name||'Company',body,foot,'company',id);
-  setTimeout(()=>{const dh=$('drawer-title');if(dh)dh.innerHTML=`<span style="display:flex;align-items:center;gap:10px">${logoHtml}<span>${esc(co.name||'Company')}</span></span>`;},0);
+  openDrawer(co.name||'Company', body, foot, 'company', id, co.id || '');
+  setTimeout(()=>{const dh=$('drawer-title');if(dh)dh.innerHTML=`<span style="display:flex;align-items:center;gap:10px">${logoHtml}<div><span style="display:block">${esc(co.name||'Company')}</span><span style="display:block;font-size:.68rem;color:rgba(255,255,255,.55);font-weight:400">${esc(co.id||'')}</span></div></span>`;},0);
 }
 
 async function saveCompanyDrawer(origId) {
