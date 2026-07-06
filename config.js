@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.8 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.9 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
