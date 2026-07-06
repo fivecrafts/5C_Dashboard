@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.4 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -46,6 +46,11 @@ const App = {
             if (typeof loadSourcingRuns === 'function') {
               loadSourcingRuns().catch(e => console.warn('Sourcing log load failed:', e.message));
             }
+            // Load MessageLinks (Teams message bridge) — large sheet, load last
+            P.loadMessageLinks().then(mlj => {
+              DATA_MSG_LINKS = P.parseMessageLinks(mlj);
+              console.log(`MessageLinks loaded: ${DATA_MSG_LINKS.length} entries`);
+            }).catch(e => console.warn('MessageLinks load failed:', e.message));
           }, 1500);
         }).catch(e => console.warn('Pool load failed:', e.message));
       }, 1500);
