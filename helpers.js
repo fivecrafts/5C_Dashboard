@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.9 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.10 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -349,24 +349,20 @@ function fmtDateRange(from, to) {
 // Renders a "Conversation" section at the bottom of any record drawer.
 // DATA_MSG_LINKS is loaded at login; this is a pure render helper.
 // ── Conversation panel ────────────────────────────────────────
-// Renders a placeholder div immediately; fills it asynchronously
-// so it works even when DATA_MSG_LINKS is still loading (3s delay).
-function _buildMsgItems(recordId) {
-  const msgs = (DATA_MSG_LINKS || [])
-    .filter(m => m.recordId === recordId)
-    .sort((a, b) => b.ts.localeCompare(a.ts));
+// On-demand loader: fetches MessageLinks live if not yet in memory.
+// Renders a placeholder, then fills async — works even if opened
+// before the background load completes.
 
+function _buildMsgHtml(msgs) {
   const CHANNEL_ICON = { 'BD General':'💬','BD Partnerships':'🤝','BD Events':'📅' };
   const CONF_COLOR   = { 'High':'var(--green)','Medium':'var(--amber)','Inherited':'var(--slate2)' };
 
-  if (msgs.length === 0) return { count: 0, html: '' };
-
   const items = msgs.map((m, i) => {
-    const icon     = CHANNEL_ICON[m.channel] || '💬';
-    const dStr     = m.ts ? fmtDate(m.ts.slice(0, 10)) : '—';
-    const confDot  = `<span title="${m.confidence}" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${CONF_COLOR[m.confidence]||'var(--slate2)'};flex-shrink:0;margin-top:4px"></span>`;
-    const link     = m.webUrl ? `<a href="${safeUrl(m.webUrl)}" target="_blank" onclick="event.stopPropagation()" title="Open in Teams" style="color:var(--blue);font-size:.82rem;margin-left:auto;flex-shrink:0">↗</a>` : '';
-    const isLast   = i === msgs.length - 1;
+    const icon    = CHANNEL_ICON[m.channel] || '💬';
+    const dStr    = m.ts ? fmtDate(m.ts.slice(0, 10)) : '—';
+    const confDot = `<span title="${m.confidence}" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${CONF_COLOR[m.confidence]||'var(--slate2)'};flex-shrink:0;margin-top:4px"></span>`;
+    const link    = m.webUrl ? `<a href="${safeUrl(m.webUrl)}" target="_blank" onclick="event.stopPropagation()" title="Open in Teams" style="color:var(--blue);font-size:.82rem;margin-left:auto;flex-shrink:0">↗</a>` : '';
+    const isLast  = i === msgs.length - 1;
     return `<div style="padding:7px 0;${isLast?'':'border-bottom:1px solid var(--border)'}">
       <div style="display:flex;align-items:flex-start;gap:6px">
         ${confDot}
@@ -384,44 +380,61 @@ function _buildMsgItems(recordId) {
   }).join('');
 
   const showMore = msgs.length > 3;
-  const html = `
-    <div class="drawer-sec-label" style="display:flex;align-items:center;justify-content:space-between;margin-top:16px">
-      <span>💬 Conversation <span style="font-size:.68rem;font-weight:400;color:var(--slate2)" class="msg-count">(${msgs.length})</span></span>
-      ${showMore ? `<button onclick="const l=this.closest('.msg-section').querySelector('.msg-list');const exp=l.style.maxHeight==='none';l.style.maxHeight=exp?'200px':'none';this.textContent=exp?'Show all (${msgs.length})':'Show less';" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--blue)">Show all (${msgs.length})</button>` : ''}
+  return `
+    <div class="drawer-sec-label" style="display:flex;align-items:center;justify-content:space-between">
+      <span>💬 Conversation <span style="font-size:.68rem;font-weight:400;color:var(--slate2)">(${msgs.length})</span></span>
+      ${showMore ? `<button onclick="const l=this.closest('[data-msg-panel]').querySelector('.msg-list');const exp=l.style.maxHeight==='none';l.style.maxHeight=exp?'200px':'none';this.textContent=exp?'Show all (${msgs.length})':'Show less';" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--blue)">Show all (${msgs.length})</button>` : ''}
     </div>
     <div class="msg-list" style="max-height:${showMore?'200px':'none'};overflow-y:auto">${items}</div>`;
-
-  return { count: msgs.length, html };
 }
 
-// Called after DATA_MSG_LINKS loads to refresh any open panel
+// Fill a panel element with messages for recordId, fetching live if needed
+async function _fillMsgPanel(el, recordId) {
+  if (!el) return;
+  // If DATA_MSG_LINKS already loaded, render immediately from memory
+  if (DATA_MSG_LINKS && DATA_MSG_LINKS.length > 0) {
+    const msgs = DATA_MSG_LINKS.filter(m => m.recordId === recordId)
+      .sort((a, b) => b.ts.localeCompare(a.ts));
+    if (msgs.length === 0) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.innerHTML = _buildMsgHtml(msgs);
+    return;
+  }
+  // DATA_MSG_LINKS not ready — fetch live now for this record
+  el.innerHTML = `<div style="font-size:.72rem;color:var(--slate2);padding:4px 0">💬 Loading…</div>`;
+  try {
+    const mlj = await P.loadMessageLinks();
+    DATA_MSG_LINKS = P.parseMessageLinks(mlj);
+    const msgs = DATA_MSG_LINKS.filter(m => m.recordId === recordId)
+      .sort((a, b) => b.ts.localeCompare(a.ts));
+    if (msgs.length === 0) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.innerHTML = _buildMsgHtml(msgs);
+    // Also refresh any other open panels
+    refreshOpenMsgPanels();
+  } catch (e) {
+    el.innerHTML = `<div style="font-size:.72rem;color:var(--slate2);padding:4px 0">💬 Messages unavailable</div>`;
+  }
+}
+
+// Called after DATA_MSG_LINKS background load to refresh any open panels
 function refreshOpenMsgPanels() {
   document.querySelectorAll('[data-msg-panel]').forEach(el => {
     const recordId = el.dataset.msgPanel;
-    const { count, html } = _buildMsgItems(recordId);
-    el.style.display = count === 0 ? 'none' : '';
-    el.innerHTML = html;
+    const msgs = (DATA_MSG_LINKS || []).filter(m => m.recordId === recordId)
+      .sort((a, b) => b.ts.localeCompare(a.ts));
+    if (msgs.length === 0) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.innerHTML = _buildMsgHtml(msgs);
   });
 }
 
-// Emits a placeholder div that fills itself lazily
+// Emits a placeholder div; fills itself on next tick via _fillMsgPanel
 function renderMsgPanel(recordId) {
   if (!recordId) return '';
-  // Attempt immediate render; if DATA_MSG_LINKS not yet loaded, schedule retry
   const safeId = recordId.replace(/[^a-zA-Z0-9_-]/g, '_');
-  return `<div class="msg-section drawer-sec" data-msg-panel="${esc(recordId)}" id="mp-${safeId}" style="margin-top:16px">
-    <div style="font-size:.68rem;color:var(--slate2);padding:4px 0">💬 Loading messages…</div>
+  return `<div class="drawer-sec" data-msg-panel="${esc(recordId)}" id="mp-${safeId}" style="margin-top:16px">
+    <div style="font-size:.72rem;color:var(--slate2);padding:4px 0">💬 Loading messages…</div>
   </div>
-  <script>(function(){
-    function fill(){
-      const el=document.getElementById('mp-${safeId}');
-      if(!el)return;
-      const r=_buildMsgItems('${recordId.replace(/'/g,"\\'")}');
-      if(r.count===0){el.style.display='none';return;}
-      el.style.display='';el.innerHTML=r.html;
-    }
-    // Try immediately, then retry after DATA_MSG_LINKS background load (max 8s)
-    fill();
-    [500,1500,3500,6000,8000].forEach(d=>setTimeout(fill,d));
-  }());<\/script>`;
+  <script>setTimeout(()=>_fillMsgPanel(document.getElementById('mp-${safeId}'),'${recordId.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}'),0);<\/script>`;
 }
