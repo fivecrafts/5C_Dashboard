@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.11 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -802,6 +802,19 @@ const MsProvider = (() => {
       } catch { return { values: [] }; }
     },
 
+    // HR_Candidates.xlsx also has its own MessageLinks sheet
+    async loadHRMessageLinks() {
+      try {
+        const sheet = encodeURIComponent('MessageLinks');
+        const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${sheet}/usedRange?$select=values`;
+        const t = await token();
+        if (!t) return { values: [] };
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + t } });
+        if (!res.ok) return { values: [] };
+        return res.json();
+      } catch { return { values: [] }; }
+    },
+
     parseMessageLinks(json) {
       const rows = json?.values || [];
       if (rows.length < 2) return [];
@@ -1136,6 +1149,7 @@ const GglProvider = (() => {
     async saveSourcingRun(r) { return false; },
     async loadMessageLinks() { return { values:[] }; },
     parseMessageLinks(j)     { return MsProvider.parseMessageLinks(j); },
+    async loadHRMessageLinks() { return { values:[] }; },
     async loadHRSheet()      { return { values: [] }; },
     parseHRCandidates(j)    { return MsProvider.parseHRCandidates.call(this, j); },
     async saveHRStatus(c,s) { return false; },
