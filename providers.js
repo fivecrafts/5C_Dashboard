@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.12 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.13 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -816,22 +816,38 @@ const MsProvider = (() => {
     },
 
     parseMessageLinks(json) {
-      const rows = json?.values || [];
-      if (rows.length < 2) return [];
-      // Skip header row, filter Archived=Y
-      return rows.slice(1).map(r => ({
-        id:         String(r[0]  || '').trim(),
-        msgId:      String(r[1]  || '').trim(),
-        parentId:   String(r[2]  || '').trim(),
-        channel:    String(r[3]  || '').trim(),
-        author:     String(r[4]  || '').trim(),
-        ts:         String(r[5]  || '').trim(),
-        recordType: String(r[6]  || '').trim(),
-        recordId:   String(r[7]  || '').trim(),
-        confidence: String(r[8]  || '').trim(),
-        snippet:    String(r[9]  || '').trim(),
-        webUrl:     String(r[10] || '').trim(),
-        archived:   String(r[11] || '').trim(),
+      const { headers, dataRows } = parseSheetByLetter(json);
+      if (!headers.length) return [];
+      // Header-based: works for any column order in both Pipeline and HR files
+      // Schema cols: Link ID, Message ID, Parent Message ID, Channel, Author,
+      //              Timestamp, Record Type, Record ID, Confidence, Body Snippet, Web URL, Archived
+      const h = (name) => headers.findIndex(v => v.toLowerCase() === name.toLowerCase());
+      const iId       = h('Link ID');
+      const iMsgId    = h('Message ID');
+      const iParent   = h('Parent Message ID');
+      const iChannel  = h('Channel');
+      const iAuthor   = h('Author');
+      const iTs       = h('Timestamp');
+      const iRecType  = h('Record Type');
+      const iRecId    = h('Record ID');
+      const iConf     = h('Confidence');
+      const iSnippet  = h('Body Snippet');
+      const iUrl      = h('Web URL');
+      const iArch     = h('Archived');
+      const g = (row, idx) => idx >= 0 ? String(row[idx] ?? '').trim() : '';
+      return dataRows.map(r => ({
+        id:         g(r, iId),
+        msgId:      g(r, iMsgId),
+        parentId:   g(r, iParent),
+        channel:    g(r, iChannel),
+        author:     g(r, iAuthor),
+        ts:         g(r, iTs),
+        recordType: g(r, iRecType),
+        recordId:   g(r, iRecId),
+        confidence: g(r, iConf),
+        snippet:    g(r, iSnippet),
+        webUrl:     g(r, iUrl),
+        archived:   g(r, iArch),
       })).filter(r => r.recordId && r.archived !== 'Y');
     },
 
