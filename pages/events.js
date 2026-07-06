@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
@@ -465,7 +465,8 @@ function openEventDrawer(safeId) {
       <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;max-height:120px;overflow-y:auto">${followupHtml}</div>
       <textarea id="dev-followup" rows="2" placeholder="Append new entry (will be prefixed with today's date)…"></textarea>
     </div>
-    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">${ev.id} · ${fmtDateRange(ev.dateFrom,ev.dateTo)} · Created ${fmtDate(ev.createdDate||'')} · ${timingBadge(eventTiming(ev))}</div>`;
+    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">${ev.id} · ${fmtDateRange(ev.dateFrom,ev.dateTo)} · Created ${fmtDate(ev.createdDate||'')} · ${timingBadge(eventTiming(ev))}</div>
+    ${renderMsgPanel(ev.id)}`;
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveEventDrawer('${esc(id)}')" style="flex:1">✓ Save</button>
