@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -107,7 +107,7 @@ function openContactDrawer(safeId) {
     <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archiveContact('${esc(row.id)}')">⊘ Archive</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
-  openDrawer(name || 'Contact', body, foot, 'contact', id);
+  openDrawer(name || 'Contact', body, foot, 'contact', id, row.id || '');
 }
 
 async function saveContactDrawer() {
