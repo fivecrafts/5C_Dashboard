@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -346,7 +346,8 @@ function openPipeDrawer(safeKey) {
     </div>
 
     <div class="field-group"><label>Source</label><input id="d-src" value="${esc(row.src || '')}"></div>
-    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">Row ${row._row} · Created ${row.createdDate || '—'} · Updated ${row.updDate || '—'}</div>`;
+    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">Row ${row._row} · Created ${row.createdDate || '—'} · Updated ${row.updDate || '—'}</div>
+    ${renderMsgPanel(row.pid)}`;
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="savePipeDrawer()" style="flex:1">✓ Save Changes</button>
