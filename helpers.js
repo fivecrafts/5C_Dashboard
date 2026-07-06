@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.8 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -354,6 +354,9 @@ function renderMsgPanel(recordId) {
     .filter(m => m.recordId === recordId)
     .sort((a, b) => b.ts.localeCompare(a.ts)); // newest first
 
+  // Hide entirely when no messages — avoids empty box noise
+  if (msgs.length === 0) return '';
+
   const CHANNEL_ICON = {
     'BD General':      '💬',
     'BD Partnerships': '🤝',
@@ -365,23 +368,23 @@ function renderMsgPanel(recordId) {
     'Inherited': 'var(--slate2)',
   };
 
-  const items = msgs.map(m => {
+  const items = msgs.map((m, i) => {
     const icon  = CHANNEL_ICON[m.channel] || '💬';
     const dStr  = m.ts ? fmtDate(m.ts.slice(0,10)) : '—';
     const conf  = m.confidence;
-    const confDot = `<span title="${conf}" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${CONF_COLOR[conf]||'var(--slate2)'};margin-right:4px;flex-shrink:0;margin-top:3px"></span>`;
+    const confDot = `<span title="${conf}" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${CONF_COLOR[conf]||'var(--slate2)'};flex-shrink:0;margin-top:4px"></span>`;
     const link  = m.webUrl
-      ? `<a href="${safeUrl(m.webUrl)}" target="_blank" onclick="event.stopPropagation()" title="Open in Teams" style="color:var(--blue);font-size:.85rem;margin-left:auto;flex-shrink:0">↗</a>`
+      ? `<a href="${safeUrl(m.webUrl)}" target="_blank" onclick="event.stopPropagation()" title="Open in Teams" style="color:var(--blue);font-size:.82rem;margin-left:auto;flex-shrink:0">↗</a>`
       : '';
-    return `<div style="padding:8px 10px;border-bottom:1px solid var(--border);last-child:border-bottom:none">
-      <div style="display:flex;align-items:flex-start;gap:4px">
+    const isLast = i === msgs.length - 1;
+    return `<div style="padding:7px 0;${isLast?'':'border-bottom:1px solid var(--border)'}">
+      <div style="display:flex;align-items:flex-start;gap:6px">
         ${confDot}
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
             <span style="font-size:.68rem">${icon}</span>
             <span style="font-size:.68rem;font-weight:600;color:var(--slate)">${esc(m.channel)}</span>
-            <span style="font-size:.67rem;color:var(--slate2)">${dStr}</span>
-            <span style="font-size:.67rem;color:var(--slate2)">· ${esc(m.author)}</span>
+            <span style="font-size:.67rem;color:var(--slate2)">${dStr} · ${esc(m.author)}</span>
             ${link}
           </div>
           <div style="font-size:.75rem;color:var(--ink);line-height:1.45">${esc(m.snippet)}</div>
@@ -390,15 +393,13 @@ function renderMsgPanel(recordId) {
     </div>`;
   }).join('');
 
+  const showMore = msgs.length > 3;
   return `
     <div class="drawer-sec" style="margin-top:16px">
       <div class="drawer-sec-label" style="display:flex;align-items:center;justify-content:space-between">
         <span>💬 Conversation <span style="font-size:.68rem;font-weight:400;color:var(--slate2)">(${msgs.length})</span></span>
-        ${msgs.length > 3 ? `<button onclick="this.closest('.drawer-sec').querySelector('.msg-list').classList.toggle('msg-expanded');this.textContent=this.textContent.includes('Show')?' Show less':' Show all (${msgs.length})';" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--blue)">Show all (${msgs.length})</button>` : ''}
+        ${showMore ? `<button onclick="const l=this.closest('.drawer-sec').querySelector('.msg-list');const exp=l.style.maxHeight==='none';l.style.maxHeight=exp?'200px':'none';this.textContent=exp?'Show all (${msgs.length})':'Show less';" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--blue)">Show all (${msgs.length})</button>` : ''}
       </div>
-      ${msgs.length === 0
-        ? `<div style="padding:10px;font-size:.75rem;color:var(--slate2);text-align:center">No messages linked yet</div>`
-        : `<div class="msg-list" style="background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:${msgs.length > 3 ? '220px' : 'none'};overflow-y:auto">${items}</div>`
-      }
+      <div class="msg-list" style="max-height:${showMore?'200px':'none'};overflow-y:auto">${items}</div>
     </div>`;
 }
