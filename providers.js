@@ -1,4 +1,4 @@
-// 5C Dashboard v1.37.2 · 2026-06-19 · sourcing-persist · Five Crafts s.r.o.
+// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -786,6 +786,42 @@ const MsProvider = (() => {
       return this.patchRange(CFG.microsoft.sheets.tasks, `O${row._row}`, [['Y']]);
     },
 
+    // ── MessageLinks sheet — Teams messages bridge ─────────────────
+    // Schema rev 31/32: 12 cols A–L, read-only from BD dashboard
+    // Col map: A=id, B=msgId, C=parentId, D=channel, E=author, F=ts,
+    //          G=recordType, H=recordId, I=confidence, J=snippet, K=webUrl, L=archived
+    async loadMessageLinks() {
+      try {
+        const sheet = encodeURIComponent(activeCfg.sheets.messageLinks || 'MessageLinks');
+        const url = `https://graph.microsoft.com/v1.0/drives/${activeCfg.driveId}/items/${activeCfg.fileId}/workbook/worksheets/${sheet}/usedRange?$select=values`;
+        const t = await token();
+        if (!t) return { values: [] };
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + t } });
+        if (!res.ok) return { values: [] }; // empty sheet returns 400
+        return res.json();
+      } catch { return { values: [] }; }
+    },
+
+    parseMessageLinks(json) {
+      const rows = json?.values || [];
+      if (rows.length < 2) return [];
+      // Skip header row, filter Archived=Y
+      return rows.slice(1).map(r => ({
+        id:         String(r[0]  || '').trim(),
+        msgId:      String(r[1]  || '').trim(),
+        parentId:   String(r[2]  || '').trim(),
+        channel:    String(r[3]  || '').trim(),
+        author:     String(r[4]  || '').trim(),
+        ts:         String(r[5]  || '').trim(),
+        recordType: String(r[6]  || '').trim(),
+        recordId:   String(r[7]  || '').trim(),
+        confidence: String(r[8]  || '').trim(),
+        snippet:    String(r[9]  || '').trim(),
+        webUrl:     String(r[10] || '').trim(),
+        archived:   String(r[11] || '').trim(),
+      })).filter(r => r.recordId && r.archived !== 'Y');
+    },
+
     // ── Outlook Task (To-Do) integration ────────────────────────
     // Requires Tasks.ReadWrite delegated permission (NOT Calendars)
     // Creates a task in Outlook/To-Do with due date + reminder — no time slot blocked
@@ -1098,6 +1134,8 @@ const GglProvider = (() => {
     async loadSourcingLog()  { return { values:[] }; },
     parseSourcingLog(j)      { return MsProvider.parseSourcingLog(j); },
     async saveSourcingRun(r) { return false; },
+    async loadMessageLinks() { return { values:[] }; },
+    parseMessageLinks(j)     { return MsProvider.parseMessageLinks(j); },
     async loadHRSheet()      { return { values: [] }; },
     parseHRCandidates(j)    { return MsProvider.parseHRCandidates.call(this, j); },
     async saveHRStatus(c,s) { return false; },
