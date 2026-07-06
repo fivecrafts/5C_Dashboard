@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.9 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
 // 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
 'use strict';
 
@@ -84,9 +84,11 @@ function hrCompTags(competencies, max) {
 
 function hrNotesTimeline(notes) {
   if (!notes) return '<span style="color:var(--slate2);font-size:.77rem">No notes yet</span>';
-  return notes.split(' | ').filter(Boolean).map(entry => {
+  const entries = notes.split(' | ').filter(Boolean).map(entry => {
     const m = entry.match(/^(.*?)\((\d{4}-\d{2}-\d{2})\):\s*(.*)/s);
     if (m) {
+      // Skip entries sourced from channel posts — those appear in Conversation panel
+      if (m[1].toLowerCase().includes('channel post')) return '';
       return `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
           <span style="font-size:.65rem;font-weight:700;color:var(--blue)">${m[2]}</span>
@@ -96,7 +98,8 @@ function hrNotesTimeline(notes) {
       </div>`;
     }
     return `<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--navy2)">${esc(entry.trim())}</div>`;
-  }).join('');
+  }).filter(Boolean).join('');
+  return entries || '<span style="color:var(--slate2);font-size:.77rem">No notes yet</span>';
 }
 
 function hrAge(dob) {
@@ -471,17 +474,8 @@ function openHRDrawer(safeId) {
     <button class="sbtn sbtn-p" onclick="saveHRDrawer('${esc(id)}')" style="flex:1">✓ Save</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
-  openDrawer((c.displayName||c.name||'Candidate'), body, foot, 'hr', id);
-  setTimeout(()=>{
-    const dh = $('drawer-title');
-    if (dh) dh.innerHTML = `<span style="display:flex;align-items:center;gap:10px">
-      ${hrAvatar(c,32)}
-      <div>
-        <span style="display:block">${esc(c.displayName||c.name||'Candidate')}</span>
-        <span style="display:block;font-size:.68rem;color:rgba(255,255,255,.6);font-weight:400">${esc(c.id||'')} · ${esc(c.role||'')}${c.seniority?' · '+c.seniority:''}</span>
-      </div>
-    </span>`;
-  }, 0);
+  openDrawer((c.displayName||c.name||'Candidate'), body, foot, 'hr', id,
+    `${c.id||''} · ${c.role||''}${c.seniority?' · '+c.seniority:''}`);
 }
 
 async function saveHRDrawer(origId) {
@@ -611,17 +605,8 @@ function openPoolDrawer(c) {
     <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archivePoolCheck('${esc(c.id)}')">⊘ Archive</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
-  openDrawer((c.displayName||c.name||'Candidate'), body, foot, 'pool', c.id);
-  setTimeout(()=>{
-    const dh = $('drawer-title');
-    if (dh) dh.innerHTML = `<span style="display:flex;align-items:center;gap:10px">
-      ${hrAvatar(c,32)}
-      <div>
-        <span style="display:block">${esc(c.displayName||c.name||'Candidate')}</span>
-        <span style="display:block;font-size:.68rem;color:rgba(255,255,255,.6);font-weight:400">${esc(c.id||'')} · ${esc(c.role||'')}${c.seniority?' · '+c.seniority:''}</span>
-      </div>
-    </span>`;
-  }, 0);
+  openDrawer((c.displayName||c.name||'Candidate'), body, foot, 'pool', c.id,
+    `${c.id||''} · ${c.role||''}${c.seniority?' · '+c.seniority:''}`);
 }
 
 // ── Pool competency chips ─────────────────────────────────────────
