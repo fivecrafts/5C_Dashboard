@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.3 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -98,7 +98,8 @@ function openContactDrawer(safeId) {
     <div class="field-group"><label>Linked Opportunities</label>
       <div class="linked-opps">${linkedList}</div>
     </div>
-    <div style="font-size:.7rem;color:var(--slate);margin-top:8px">${row.id || ''} · Created ${row.createdDate || '—'} · Updated ${row.updDate || '—'}</div>`;
+    <div style="font-size:.7rem;color:var(--slate);margin-top:8px">${row.id || ''} · Created ${row.createdDate || '—'} · Updated ${row.updDate || '—'}</div>
+    ${renderMsgPanel(row.id)}`;
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveContactDrawer()" style="flex:1">✓ Save</button>
