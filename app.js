@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.9 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.10 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -27,7 +27,15 @@ const App = {
       DATA_TASKS     = P.parseTasks(tj);
       DATA_EVENTS    = P.parseEvents(ej);
       DATA_OWNERS    = P.parseOwners(oj);
-      // Load HR Candidates + Search Pool in background
+
+      // Load MessageLinks immediately in background — needed for drawer panels
+      P.loadMessageLinks().then(mlj => {
+        DATA_MSG_LINKS = P.parseMessageLinks(mlj);
+        console.log(`MessageLinks loaded: ${DATA_MSG_LINKS.length} entries`);
+        if (typeof refreshOpenMsgPanels === 'function') refreshOpenMsgPanels();
+      }).catch(e => console.warn('MessageLinks load failed:', e.message));
+
+      // Load HR Candidates + Search Pool in background (delayed to avoid burst)
       setTimeout(() => {
         P.loadHRSheet().then(hrj => {
           DATA_HR = P.parseHRCandidates(hrj);
@@ -46,12 +54,6 @@ const App = {
             if (typeof loadSourcingRuns === 'function') {
               loadSourcingRuns().catch(e => console.warn('Sourcing log load failed:', e.message));
             }
-            // Load MessageLinks (Teams message bridge) — large sheet, load last
-            P.loadMessageLinks().then(mlj => {
-              DATA_MSG_LINKS = P.parseMessageLinks(mlj);
-              console.log(`MessageLinks loaded: ${DATA_MSG_LINKS.length} entries`);
-              if (typeof refreshOpenMsgPanels === 'function') refreshOpenMsgPanels();
-            }).catch(e => console.warn('MessageLinks load failed:', e.message));
           }, 1500);
         }).catch(e => console.warn('Pool load failed:', e.message));
       }, 1500);
