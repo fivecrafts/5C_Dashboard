@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.14 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.15 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -854,6 +854,9 @@ const MsProvider = (() => {
         webUrl:     g(r, iUrl),
         archived:   g(r, iArch),
       })).filter(r => r.recordId && r.archived !== 'Y');
+      const sample = result.slice(0,5).map(r=>`${r.recordId}(${r.recordType})`).join(', ');
+      console.log(`ML-parse result: ${result.length} active rows. Sample IDs: ${sample}`);
+      return result;
     },
 
     // ── Outlook Task (To-Do) integration ────────────────────────
