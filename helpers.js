@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.11 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.12 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -400,21 +400,27 @@ async function _fillMsgPanel(el, recordId) {
     el.innerHTML = _buildMsgHtml(msgs);
     return;
   }
-  // DATA_MSG_LINKS not ready — fetch live now (both Pipeline + HR files)
+  // DATA_MSG_LINKS not ready — fetch Pipeline MessageLinks live, show immediately
   el.innerHTML = `<div style="font-size:.72rem;color:var(--slate2);padding:4px 0">💬 Loading…</div>`;
   try {
-    const [mlj, hrmlj] = await Promise.all([
-      P.loadMessageLinks(),
-      P.loadHRMessageLinks(),
-    ]);
-    DATA_MSG_LINKS = [...P.parseMessageLinks(mlj), ...P.parseMessageLinks(hrmlj)];
+    const mlj = await P.loadMessageLinks();
+    DATA_MSG_LINKS = P.parseMessageLinks(mlj);
     const msgs = DATA_MSG_LINKS.filter(m => m.recordId === recordId)
       .sort((a, b) => b.ts.localeCompare(a.ts));
-    if (msgs.length === 0) { el.style.display = 'none'; return; }
-    el.style.display = '';
-    el.innerHTML = _buildMsgHtml(msgs);
-    // Also refresh any other open panels
-    refreshOpenMsgPanels();
+    if (msgs.length > 0) {
+      el.style.display = '';
+      el.innerHTML = _buildMsgHtml(msgs);
+    }
+    // Then load HR MessageLinks and merge (non-blocking)
+    P.loadHRMessageLinks().then(hrmlj => {
+      const hrLinks = P.parseMessageLinks(hrmlj);
+      if (hrLinks.length > 0) {
+        DATA_MSG_LINKS = [...DATA_MSG_LINKS, ...hrLinks];
+        refreshOpenMsgPanels();
+      } else if (msgs.length === 0) {
+        el.style.display = 'none';
+      }
+    }).catch(() => { if (msgs.length === 0) el.style.display = 'none'; });
   } catch (e) {
     el.innerHTML = `<div style="font-size:.72rem;color:var(--slate2);padding:4px 0">💬 Messages unavailable</div>`;
   }
