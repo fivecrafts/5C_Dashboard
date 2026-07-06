@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.11 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.12 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -28,16 +28,22 @@ const App = {
       DATA_EVENTS    = P.parseEvents(ej);
       DATA_OWNERS    = P.parseOwners(oj);
 
-      // Load MessageLinks from both Pipeline file and HR_Candidates file in parallel
-      Promise.all([
-        P.loadMessageLinks(),
-        P.loadHRMessageLinks(),
-      ]).then(([mlj, hrmlj]) => {
-        const pipeLinks = P.parseMessageLinks(mlj);
-        const hrLinks   = P.parseMessageLinks(hrmlj);
-        DATA_MSG_LINKS  = [...pipeLinks, ...hrLinks];
-        console.log(`MessageLinks loaded: ${pipeLinks.length} pipeline + ${hrLinks.length} HR = ${DATA_MSG_LINKS.length} total`);
+      // Load MessageLinks — Pipeline file first (fast), HR file after (slower)
+      // Show results as soon as Pipeline data arrives; merge HR when it lands
+      P.loadMessageLinks().then(mlj => {
+        DATA_MSG_LINKS = P.parseMessageLinks(mlj);
+        console.log(`MessageLinks (Pipeline): ${DATA_MSG_LINKS.length} entries`);
         if (typeof refreshOpenMsgPanels === 'function') refreshOpenMsgPanels();
+        // Now load HR MessageLinks and merge
+        return P.loadHRMessageLinks();
+      }).then(hrmlj => {
+        if (!hrmlj) return;
+        const hrLinks = P.parseMessageLinks(hrmlj);
+        if (hrLinks.length > 0) {
+          DATA_MSG_LINKS = [...DATA_MSG_LINKS, ...hrLinks];
+          console.log(`MessageLinks (HR): +${hrLinks.length} = ${DATA_MSG_LINKS.length} total`);
+          if (typeof refreshOpenMsgPanels === 'function') refreshOpenMsgPanels();
+        }
       }).catch(e => console.warn('MessageLinks load failed:', e.message));
 
       // Load HR Candidates + Search Pool in background (delayed to avoid burst)
