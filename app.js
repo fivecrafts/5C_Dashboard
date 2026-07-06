@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.10 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.11 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -28,10 +28,15 @@ const App = {
       DATA_EVENTS    = P.parseEvents(ej);
       DATA_OWNERS    = P.parseOwners(oj);
 
-      // Load MessageLinks immediately in background — needed for drawer panels
-      P.loadMessageLinks().then(mlj => {
-        DATA_MSG_LINKS = P.parseMessageLinks(mlj);
-        console.log(`MessageLinks loaded: ${DATA_MSG_LINKS.length} entries`);
+      // Load MessageLinks from both Pipeline file and HR_Candidates file in parallel
+      Promise.all([
+        P.loadMessageLinks(),
+        P.loadHRMessageLinks(),
+      ]).then(([mlj, hrmlj]) => {
+        const pipeLinks = P.parseMessageLinks(mlj);
+        const hrLinks   = P.parseMessageLinks(hrmlj);
+        DATA_MSG_LINKS  = [...pipeLinks, ...hrLinks];
+        console.log(`MessageLinks loaded: ${pipeLinks.length} pipeline + ${hrLinks.length} HR = ${DATA_MSG_LINKS.length} total`);
         if (typeof refreshOpenMsgPanels === 'function') refreshOpenMsgPanels();
       }).catch(e => console.warn('MessageLinks load failed:', e.message));
 
