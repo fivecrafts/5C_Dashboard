@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.5 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -238,7 +238,8 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
         </label>`}
     </div>
 
-    ${row ? `<div style="font-size:.7rem;color:var(--slate);margin-top:4px">${row.id} · Created ${row.createdDate || '—'}</div>` : ''}`;
+    ${row ? `<div style="font-size:.7rem;color:var(--slate);margin-top:4px">${row.id} · Created ${row.createdDate || '—'}</div>
+    ${renderMsgPanel(row.id)}` : ''}`;
 }
 
 // ── Edit existing task ────────────────────────────────────────
