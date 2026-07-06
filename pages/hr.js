@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.7 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.9 · 2026-07-06 · Five Crafts s.r.o.
 // 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
 'use strict';
 
@@ -472,6 +472,16 @@ function openHRDrawer(safeId) {
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   openDrawer((c.displayName||c.name||'Candidate'), body, foot, 'hr', id);
+  setTimeout(()=>{
+    const dh = $('drawer-title');
+    if (dh) dh.innerHTML = `<span style="display:flex;align-items:center;gap:10px">
+      ${hrAvatar(c,32)}
+      <div>
+        <span style="display:block">${esc(c.displayName||c.name||'Candidate')}</span>
+        <span style="display:block;font-size:.68rem;color:rgba(255,255,255,.6);font-weight:400">${esc(c.id||'')} · ${esc(c.role||'')}${c.seniority?' · '+c.seniority:''}</span>
+      </div>
+    </span>`;
+  }, 0);
 }
 
 async function saveHRDrawer(origId) {
@@ -602,6 +612,16 @@ function openPoolDrawer(c) {
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   openDrawer((c.displayName||c.name||'Candidate'), body, foot, 'pool', c.id);
+  setTimeout(()=>{
+    const dh = $('drawer-title');
+    if (dh) dh.innerHTML = `<span style="display:flex;align-items:center;gap:10px">
+      ${hrAvatar(c,32)}
+      <div>
+        <span style="display:block">${esc(c.displayName||c.name||'Candidate')}</span>
+        <span style="display:block;font-size:.68rem;color:rgba(255,255,255,.6);font-weight:400">${esc(c.id||'')} · ${esc(c.role||'')}${c.seniority?' · '+c.seniority:''}</span>
+      </div>
+    </span>`;
+  }, 0);
 }
 
 // ── Pool competency chips ─────────────────────────────────────────
