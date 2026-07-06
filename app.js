@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.16 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -273,10 +273,14 @@ const UI = {
 let drawerKey  = null;
 let drawerType = null;
 
-function openDrawer(title, bodyHTML, footHTML, type, dKey) {
+function openDrawer(title, bodyHTML, footHTML, type, dKey, subtitle) {
   drawerType = type;
   drawerKey  = dKey;
-  $('drawer-title').textContent   = title;
+  if (subtitle) {
+    $('drawer-title').innerHTML = `<span style="display:block">${title}</span><span style="display:block;font-size:.68rem;color:rgba(255,255,255,.55);font-weight:400;margin-top:1px">${subtitle}</span>`;
+  } else {
+    $('drawer-title').textContent = title;
+  }
   $('drawer-body').innerHTML      = bodyHTML;
   $('drawer-foot').innerHTML      = footHTML;
   $('drawer-task-btn').style.display = 'none';
