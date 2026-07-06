@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.12 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.16 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -279,9 +279,15 @@ function openDrawer(title, bodyHTML, footHTML, type, dKey) {
   $('drawer-title').textContent   = title;
   $('drawer-body').innerHTML      = bodyHTML;
   $('drawer-foot').innerHTML      = footHTML;
-  $('drawer-task-btn').style.display = 'none'; // Task button kept in drawer footer only
+  $('drawer-task-btn').style.display = 'none';
   $('drawer-overlay').classList.add('open');
   $('drawer').classList.add('open');
+  // Fill all msg panels — scripts in innerHTML don't execute, so trigger explicitly
+  setTimeout(() => {
+    document.querySelectorAll('#drawer-body [data-msg-panel]').forEach(el => {
+      _fillMsgPanel(el, el.dataset.msgPanel);
+    });
+  }, 0);
 }
 
 function closeDrawer() {
