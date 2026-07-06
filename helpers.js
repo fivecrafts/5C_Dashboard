@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.12 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.15 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -395,6 +395,7 @@ async function _fillMsgPanel(el, recordId) {
   if (DATA_MSG_LINKS && DATA_MSG_LINKS.length > 0) {
     const msgs = DATA_MSG_LINKS.filter(m => m.recordId === recordId)
       .sort((a, b) => b.ts.localeCompare(a.ts));
+    console.log(`MSG-panel "${recordId}": ${msgs.length} of ${DATA_MSG_LINKS.length} matched`);
     if (msgs.length === 0) { el.style.display = 'none'; return; }
     el.style.display = '';
     el.innerHTML = _buildMsgHtml(msgs);
