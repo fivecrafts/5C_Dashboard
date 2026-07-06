@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.13 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.14 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -795,11 +795,14 @@ const MsProvider = (() => {
         const sheet = encodeURIComponent(activeCfg.sheets.messageLinks || 'MessageLinks');
         const url = `https://graph.microsoft.com/v1.0/drives/${activeCfg.driveId}/items/${activeCfg.fileId}/workbook/worksheets/${sheet}/usedRange?$select=values`;
         const t = await token();
-        if (!t) return { values: [] };
+        if (!t) { console.warn('ML-Pipeline: no token'); return { values: [] }; }
         const res = await fetch(url, { headers: { Authorization: 'Bearer ' + t } });
-        if (!res.ok) return { values: [] }; // empty sheet returns 400
-        return res.json();
-      } catch { return { values: [] }; }
+        console.log(`ML-Pipeline: HTTP ${res.status}`);
+        if (!res.ok) { const txt = await res.text().catch(()=>''); console.warn('ML-Pipeline err:', txt.slice(0,200)); return { values: [] }; }
+        const j = await res.json();
+        console.log(`ML-Pipeline: ${(j.values||[]).length} rows`);
+        return j;
+      } catch(e) { console.warn('ML-Pipeline error:', e.message); return { values: [] }; }
     },
 
     // HR_Candidates.xlsx also has its own MessageLinks sheet
@@ -808,19 +811,21 @@ const MsProvider = (() => {
         const sheet = encodeURIComponent('MessageLinks');
         const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${sheet}/usedRange?$select=values`;
         const t = await token();
-        if (!t) return { values: [] };
+        if (!t) { console.warn('ML-HR: no token'); return { values: [] }; }
         const res = await fetch(url, { headers: { Authorization: 'Bearer ' + t } });
-        if (!res.ok) return { values: [] };
-        return res.json();
-      } catch { return { values: [] }; }
+        console.log(`ML-HR: HTTP ${res.status}`);
+        if (!res.ok) { const txt = await res.text().catch(()=>''); console.warn('ML-HR err:', txt.slice(0,200)); return { values: [] }; }
+        const j = await res.json();
+        console.log(`ML-HR: ${(j.values||[]).length} rows`);
+        return j;
+      } catch(e) { console.warn('ML-HR error:', e.message); return { values: [] }; }
     },
 
     parseMessageLinks(json) {
       const { headers, dataRows } = parseSheetByLetter(json);
       if (!headers.length) return [];
-      // Header-based: works for any column order in both Pipeline and HR files
-      // Schema cols: Link ID, Message ID, Parent Message ID, Channel, Author,
-      //              Timestamp, Record Type, Record ID, Confidence, Body Snippet, Web URL, Archived
+      console.log('ML-parse headers:', headers.join(' | '));
+      console.log(`ML-parse: ${dataRows.length} data rows`);
       const h = (name) => headers.findIndex(v => v.toLowerCase() === name.toLowerCase());
       const iId       = h('Link ID');
       const iMsgId    = h('Message ID');
