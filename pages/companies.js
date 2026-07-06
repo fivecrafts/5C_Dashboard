@@ -1,4 +1,4 @@
-// 5C Dashboard v1.38.2 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -174,7 +174,8 @@ function openCompanyDrawer(safeId) {
     <div class="field-group"><label>Notes</label><textarea id="dco-notes">${esc(co.notes||'')}</textarea></div>
     <div class="field-group"><label>Opportunities (${opps.length})</label><div class="linked-opps">${oppList}</div></div>
     <div class="field-group"><label>Contacts (${contacts.length})</label><div class="linked-opps">${contList}</div></div>
-    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">${co.id||''} · Created ${co.createdDate||'—'}</div>`;
+    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">${co.id||''} · Created ${co.createdDate||'—'}</div>
+    ${renderMsgPanel(co.id)}`;
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveCompanyDrawer('${esc(co.id||co.name)}')" style="flex:1">✓ Save</button>
