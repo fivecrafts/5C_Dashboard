@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 let _calOffset = 0; // months offset from current month for calendar navigation
 
@@ -476,7 +476,7 @@ function openEventDrawer(safeId) {
   const _evLogo = ev.webLink ? eventLogo(ev.webLink, ev.name, 28) : '';
   const _evFlag = ev.mode === 'Online' ? '<span title="Online" style="font-size:1.1rem">🌐</span>' : (ev.country ? countryFlag(ev.country) : '');
   const _evDateRange = fmtDateRange(ev.dateFrom, ev.dateTo);
-  openDrawer(ev.name || 'Event', body, foot, 'event', id);
+  openDrawer(ev.name || 'Event', body, foot, 'event', id, ev.id || '');
   setTimeout(()=>{const dh=$('drawer-title');if(dh)dh.innerHTML=`<span style="display:flex;align-items:center;gap:8px">${_evLogo}${_evFlag}<div><span style="display:block">${esc(ev.name||'Event')}</span><span style="display:block;font-size:.68rem;color:var(--slate);font-weight:400">${esc(ev.id||'')}${_evDateRange?' · '+_evDateRange:''}</span></div></span>`;},0);
 }
 
