@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.9 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -50,6 +50,7 @@ const App = {
             P.loadMessageLinks().then(mlj => {
               DATA_MSG_LINKS = P.parseMessageLinks(mlj);
               console.log(`MessageLinks loaded: ${DATA_MSG_LINKS.length} entries`);
+              if (typeof refreshOpenMsgPanels === 'function') refreshOpenMsgPanels();
             }).catch(e => console.warn('MessageLinks load failed:', e.message));
           }, 1500);
         }).catch(e => console.warn('Pool load failed:', e.message));
