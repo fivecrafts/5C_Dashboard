@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.8 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.9 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -348,35 +348,25 @@ function fmtDateRange(from, to) {
 // ── MessageLinks conversation panel ─────────────────────────
 // Renders a "Conversation" section at the bottom of any record drawer.
 // DATA_MSG_LINKS is loaded at login; this is a pure render helper.
-function renderMsgPanel(recordId) {
-  if (!recordId) return '';
+// ── Conversation panel ────────────────────────────────────────
+// Renders a placeholder div immediately; fills it asynchronously
+// so it works even when DATA_MSG_LINKS is still loading (3s delay).
+function _buildMsgItems(recordId) {
   const msgs = (DATA_MSG_LINKS || [])
     .filter(m => m.recordId === recordId)
-    .sort((a, b) => b.ts.localeCompare(a.ts)); // newest first
+    .sort((a, b) => b.ts.localeCompare(a.ts));
 
-  // Hide entirely when no messages — avoids empty box noise
-  if (msgs.length === 0) return '';
+  const CHANNEL_ICON = { 'BD General':'💬','BD Partnerships':'🤝','BD Events':'📅' };
+  const CONF_COLOR   = { 'High':'var(--green)','Medium':'var(--amber)','Inherited':'var(--slate2)' };
 
-  const CHANNEL_ICON = {
-    'BD General':      '💬',
-    'BD Partnerships': '🤝',
-    'BD Events':       '📅',
-  };
-  const CONF_COLOR = {
-    'High':      'var(--green)',
-    'Medium':    'var(--amber)',
-    'Inherited': 'var(--slate2)',
-  };
+  if (msgs.length === 0) return { count: 0, html: '' };
 
   const items = msgs.map((m, i) => {
-    const icon  = CHANNEL_ICON[m.channel] || '💬';
-    const dStr  = m.ts ? fmtDate(m.ts.slice(0,10)) : '—';
-    const conf  = m.confidence;
-    const confDot = `<span title="${conf}" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${CONF_COLOR[conf]||'var(--slate2)'};flex-shrink:0;margin-top:4px"></span>`;
-    const link  = m.webUrl
-      ? `<a href="${safeUrl(m.webUrl)}" target="_blank" onclick="event.stopPropagation()" title="Open in Teams" style="color:var(--blue);font-size:.82rem;margin-left:auto;flex-shrink:0">↗</a>`
-      : '';
-    const isLast = i === msgs.length - 1;
+    const icon     = CHANNEL_ICON[m.channel] || '💬';
+    const dStr     = m.ts ? fmtDate(m.ts.slice(0, 10)) : '—';
+    const confDot  = `<span title="${m.confidence}" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${CONF_COLOR[m.confidence]||'var(--slate2)'};flex-shrink:0;margin-top:4px"></span>`;
+    const link     = m.webUrl ? `<a href="${safeUrl(m.webUrl)}" target="_blank" onclick="event.stopPropagation()" title="Open in Teams" style="color:var(--blue);font-size:.82rem;margin-left:auto;flex-shrink:0">↗</a>` : '';
+    const isLast   = i === msgs.length - 1;
     return `<div style="padding:7px 0;${isLast?'':'border-bottom:1px solid var(--border)'}">
       <div style="display:flex;align-items:flex-start;gap:6px">
         ${confDot}
@@ -394,12 +384,44 @@ function renderMsgPanel(recordId) {
   }).join('');
 
   const showMore = msgs.length > 3;
-  return `
-    <div class="drawer-sec" style="margin-top:16px">
-      <div class="drawer-sec-label" style="display:flex;align-items:center;justify-content:space-between">
-        <span>💬 Conversation <span style="font-size:.68rem;font-weight:400;color:var(--slate2)">(${msgs.length})</span></span>
-        ${showMore ? `<button onclick="const l=this.closest('.drawer-sec').querySelector('.msg-list');const exp=l.style.maxHeight==='none';l.style.maxHeight=exp?'200px':'none';this.textContent=exp?'Show all (${msgs.length})':'Show less';" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--blue)">Show all (${msgs.length})</button>` : ''}
-      </div>
-      <div class="msg-list" style="max-height:${showMore?'200px':'none'};overflow-y:auto">${items}</div>
-    </div>`;
+  const html = `
+    <div class="drawer-sec-label" style="display:flex;align-items:center;justify-content:space-between;margin-top:16px">
+      <span>💬 Conversation <span style="font-size:.68rem;font-weight:400;color:var(--slate2)" class="msg-count">(${msgs.length})</span></span>
+      ${showMore ? `<button onclick="const l=this.closest('.msg-section').querySelector('.msg-list');const exp=l.style.maxHeight==='none';l.style.maxHeight=exp?'200px':'none';this.textContent=exp?'Show all (${msgs.length})':'Show less';" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--blue)">Show all (${msgs.length})</button>` : ''}
+    </div>
+    <div class="msg-list" style="max-height:${showMore?'200px':'none'};overflow-y:auto">${items}</div>`;
+
+  return { count: msgs.length, html };
+}
+
+// Called after DATA_MSG_LINKS loads to refresh any open panel
+function refreshOpenMsgPanels() {
+  document.querySelectorAll('[data-msg-panel]').forEach(el => {
+    const recordId = el.dataset.msgPanel;
+    const { count, html } = _buildMsgItems(recordId);
+    el.style.display = count === 0 ? 'none' : '';
+    el.innerHTML = html;
+  });
+}
+
+// Emits a placeholder div that fills itself lazily
+function renderMsgPanel(recordId) {
+  if (!recordId) return '';
+  // Attempt immediate render; if DATA_MSG_LINKS not yet loaded, schedule retry
+  const safeId = recordId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `<div class="msg-section drawer-sec" data-msg-panel="${esc(recordId)}" id="mp-${safeId}" style="margin-top:16px">
+    <div style="font-size:.68rem;color:var(--slate2);padding:4px 0">💬 Loading messages…</div>
+  </div>
+  <script>(function(){
+    function fill(){
+      const el=document.getElementById('mp-${safeId}');
+      if(!el)return;
+      const r=_buildMsgItems('${recordId.replace(/'/g,"\\'")}');
+      if(r.count===0){el.style.display='none';return;}
+      el.style.display='';el.innerHTML=r.html;
+    }
+    // Try immediately, then retry after DATA_MSG_LINKS background load (max 8s)
+    fill();
+    [500,1500,3500,6000,8000].forEach(d=>setTimeout(fill,d));
+  }());<\/script>`;
 }
