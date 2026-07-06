@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.5 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -26,8 +26,8 @@ const CFG = {
       owners:    'Owners',
       codelists: 'Codelists',
       companies: 'Companies',
-      sourcing:  'Sourcing',
-      sourcing:  'Sourcing',
+      sourcing:      'Sourcing',
+      messageLinks:  'MessageLinks',
     }
   },
 
@@ -47,6 +47,7 @@ const CFG = {
       owners:    'Owners',
       codelists: 'Codelists',
       companies: 'Companies',
+      messageLinks: 'MessageLinks',
     }
   },
 };
