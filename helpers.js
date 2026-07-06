@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.10 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.11 · 2026-07-06 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -400,11 +400,14 @@ async function _fillMsgPanel(el, recordId) {
     el.innerHTML = _buildMsgHtml(msgs);
     return;
   }
-  // DATA_MSG_LINKS not ready — fetch live now for this record
+  // DATA_MSG_LINKS not ready — fetch live now (both Pipeline + HR files)
   el.innerHTML = `<div style="font-size:.72rem;color:var(--slate2);padding:4px 0">💬 Loading…</div>`;
   try {
-    const mlj = await P.loadMessageLinks();
-    DATA_MSG_LINKS = P.parseMessageLinks(mlj);
+    const [mlj, hrmlj] = await Promise.all([
+      P.loadMessageLinks(),
+      P.loadHRMessageLinks(),
+    ]);
+    DATA_MSG_LINKS = [...P.parseMessageLinks(mlj), ...P.parseMessageLinks(hrmlj)];
     const msgs = DATA_MSG_LINKS.filter(m => m.recordId === recordId)
       .sort((a, b) => b.ts.localeCompare(a.ts));
     if (msgs.length === 0) { el.style.display = 'none'; return; }
