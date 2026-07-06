@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -356,7 +356,7 @@ function openPipeDrawer(safeKey) {
     <button class="sbtn" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe" onclick="openSourcingFromOpp('${safeKey}')">🔍 Source</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
-  openDrawer((row.c + (row.p ? ' · ' + row.p : '')) || 'Edit Opportunity', body, foot, 'pipeline', k);
+  openDrawer((row.c + (row.p ? ' · ' + row.p : '')) || 'Edit Opportunity', body, foot, 'pipeline', k, row.pid || '');
 }
 
 async function savePipeDrawer(forceOverwrite = false) {
