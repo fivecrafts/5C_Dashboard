@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.6 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -252,7 +252,7 @@ function openTaskDrawer(safeId) {
     <button class="sbtn sbtn-p" onclick="saveTaskDrawer()" style="flex:1">✓ Save Task</button>
     <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archiveTaskCheck('${esc(row.id)}')">⊘ Archive</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
-  openDrawer(row.id + ' · ' + row.type, buildTaskForm(row), foot, 'task', id);
+  openDrawer(row.taskName || row.type || row.id, buildTaskForm(row), foot, 'task', id, row.id + (row.type ? ' · ' + row.type : ''));
 }
 
 async function saveTaskDrawer() {
