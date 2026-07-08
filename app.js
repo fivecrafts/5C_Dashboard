@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.3 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -27,6 +27,9 @@ const App = {
       DATA_TASKS     = P.parseTasks(tj);
       DATA_EVENTS    = P.parseEvents(ej);
       DATA_OWNERS    = P.parseOwners(oj);
+
+      // Sync Outlook task status/dueDate for tasks owned by current user — background, non-blocking
+      setTimeout(() => syncOutlookTasksBackground(), 500);
 
       // Load MessageLinks — Pipeline file first (fast), HR file after (slower)
       // Show results as soon as Pipeline data arrives; merge HR when it lands
