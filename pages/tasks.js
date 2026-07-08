@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.7 · 2026-07-08 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.8 · 2026-07-08 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -174,7 +174,7 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
         <td onclick="event.stopPropagation()">${buildTaskPrioDrop(r)}</td>
         <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedOpp ? `<span class="contact-link" onclick="openOppFromTask('${r.linkedOpp.replace(/'/g,'__SQ__')}')">${r.linkedOpp}</span>` : '—'}</td>
         <td style="font-size:.73rem" onclick="event.stopPropagation()">${r.linkedContact ? `<span class="contact-link" onclick="openContactFromTask('${r.linkedContact.replace(/'/g,'__SQ__')}')">${r.linkedContact}</span>` : '—'}</td>
-        <td style="font-size:.75rem;${dueCls}">${r.dueDate ? fmtDate(r.dueDate) : '—'}${isOverdue ? ' ⚠' : ''}</td>
+        <td style="font-size:.75rem;${dueCls}">${r.dueDate ? fmtDate(r.dueDate) : '—'}${isOverdue ? ' ⚠' : ''}${(()=>{ if(!r.outlookEventId) return ''; const [,tid]=(r.outlookEventId||'').split('||'); return tid ? ` <a href="https://to-do.office.com/tasks/id/${encodeURIComponent(tid)}/details" target="_blank" onclick="event.stopPropagation()" title="Open in Outlook To-Do" style="color:var(--blue);font-size:.7rem;text-decoration:none">↗</a>` : ''; })()}</td>
         <td onclick="event.stopPropagation()">${buildTaskStatusDrop(r)}</td>
         <td onclick="event.stopPropagation()" style="font-size:.75rem">${r.responsible ? `<span class="contact-link" onclick="UI.nf('',null,'${r.responsible.replace(/'/g,'__SQ__')}')">${r.responsible}</span>` : '—'}</td>
         <td style="font-size:.72rem;color:var(--slate2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
@@ -281,6 +281,7 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
           <span style="font-size:.78rem;color:var(--blue)">📅 Synced with Outlook To-Do</span>
           <div style="display:flex;gap:6px;align-items:center">
+            ${(()=>{ const [,tid]=(row.outlookEventId||'').split('||'); return tid ? `<a href="https://to-do.office.com/tasks/id/${encodeURIComponent(tid)}/details" target="_blank" style="padding:4px 10px;border-radius:6px;border:1px solid var(--blue-l);background:#fff;color:var(--blue);cursor:pointer;font-size:.75rem;font-weight:600;text-decoration:none">↗ Open in To-Do</a>` : ''; })()}
             <span style="font-size:.7rem;color:var(--slate2)">Auto-synced on open</span>
             <button onclick="unlinkOutlookTask('${(row.id||'').replace(/'/g,'__SQ__')}')" title="Remove Outlook link — makes Status, Due Date and Responsible editable again" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--slate);cursor:pointer;font-size:.72rem">✕ Unlink</button>
           </div>
