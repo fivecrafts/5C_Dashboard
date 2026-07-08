@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.3 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.4 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -181,6 +181,26 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
 }
 
 // ── Task Form (shared by edit + new) ─────────────────────────
+// Called when Responsible changes — updates the Outlook checkbox label live
+function _updateOutlookCalLabel(resp) {
+  const me    = window.CURRENT_USER_NAME || '';
+  const isMe  = !resp || resp === me;
+  const cb    = document.getElementById('dt-cal');
+  const label = cb ? cb.closest('label') : null;
+  if (!label) return;
+  const span = label.querySelector('span');
+  if (!span) return;
+  if (isMe) {
+    cb.disabled = false; cb.style.opacity = '1';
+    span.style.color = 'var(--blue)';
+    span.innerHTML = `📅 Add to <strong>${me.split(' ')[0]}'s</strong> Outlook Tasks`;
+  } else {
+    cb.disabled = true; cb.checked = false; cb.style.opacity = '.4';
+    span.style.color = 'var(--slate2)';
+    span.innerHTML = `📅 Outlook Tasks — only <strong>${resp.split(' ')[0]}</strong> can add this (they must log in)`;
+  }
+}
+
 function buildTaskForm(row, preOpp, preCont, preCo) {
   const oppOptions = [...DATA_PIPE].sort((a,b)=>(a.c||'').localeCompare(b.c||'')||(a.p||'').localeCompare(b.p||'')).map(r => {
     const label = r.c + (r.p ? ' · ' + r.p : '');
@@ -233,7 +253,7 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
             <span>${esc(row.responsible||'—')}</span>
             <span style="font-size:.65rem;color:var(--blue)">⇄ Outlook</span>
            </div>`
-        : `<select id="dt-resp">
+        : `<select id="dt-resp" onchange="_updateOutlookCalLabel(this.value)">
             ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();const cur=row?.responsible||window.CURRENT_USER_NAME||'';return `<option value="${n}"${cur===n?' selected':''}>${n}</option>`;}).join('')}
            </select>`}
     </div>
@@ -261,9 +281,20 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
             <button onclick="unlinkOutlookTask('${(row.id||'').replace(/'/g,'__SQ__')}')" title="Remove Outlook link — makes Status, Due Date and Responsible editable again" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--slate);cursor:pointer;font-size:.72rem">✕ Unlink</button>
           </div>
         </div>` : `
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">` + (() => {
+          const resp = $('dt-resp') ? $('dt-resp').value : (row?.responsible || window.CURRENT_USER_NAME || '');
+          const me   = window.CURRENT_USER_NAME || '';
+          const isMe = !resp || resp === me;
+          if (isMe) {
+            return `
           <input type="checkbox" id="dt-cal" style="width:15px;height:15px;accent-color:var(--blue)" ${!row ? 'checked' : ''}>
-          <span style="font-size:.78rem;color:var(--blue)">📅 ${row ? 'Add to Outlook Tasks' : 'Add to Outlook Tasks (no time blocked)'}</span>
+          <span style="font-size:.78rem;color:var(--blue)">📅 Add to <strong>${me.split(' ')[0]}'s</strong> Outlook Tasks</span>`;
+          } else {
+            return `
+          <input type="checkbox" id="dt-cal" disabled style="width:15px;height:15px;opacity:.4">
+          <span style="font-size:.78rem;color:var(--slate2)">📅 Outlook Tasks — only <strong>${resp.split(' ')[0]}</strong> can add this (they must log in)</span>`;
+          }
+        })() + `
         </label>`}
     </div>
 
