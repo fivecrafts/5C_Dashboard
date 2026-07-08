@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.0 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.1 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -228,9 +228,14 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
       })()}
     </div>
     <div class="field-group"><label>Responsible</label>
-      <select id="dt-resp">
-        ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();const cur=row?.responsible||window.CURRENT_USER_NAME||'';return `<option value="${n}"${cur===n?' selected':''}>${n}</option>`;}).join('')}
-      </select>
+      ${row?.outlookEventId
+        ? `<div style="padding:7px 10px;background:var(--blue-t);border:1px solid var(--blue-l);border-radius:7px;font-size:.82rem;display:flex;align-items:center;justify-content:space-between">
+            <span>${esc(row.responsible||'—')}</span>
+            <span style="font-size:.65rem;color:var(--blue)">⇄ Outlook</span>
+           </div>`
+        : `<select id="dt-resp">
+            ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();const cur=row?.responsible||window.CURRENT_USER_NAME||'';return `<option value="${n}"${cur===n?' selected':''}>${n}</option>`;}).join('')}
+           </select>`}
     </div>
     <div class="field-group"><label>Linked Opportunity</label>
       <select id="dt-opp" onchange="(()=>{const v=this.value;if(!v)return;const [cl]=v.split(' · ');const co=(DATA_COMPANIES||[]).find(c=>c.name===cl);const dc=$('dt-comp');if(dc&&co&&!dc.value){dc.value=co.name;}})()"><option value="">— None —</option>${oppOptions}</select>
@@ -324,7 +329,7 @@ async function saveTaskDrawer() {
     priority:      $('dt-prio').value,
     status:        isOutlookLinked ? row.status : ($('dt-status')?.value || row.status),
     dueDate:       newDueDate,
-    responsible:   $('dt-resp').value.trim(),
+    responsible:   isOutlookLinked ? (row.responsible||'') : ($('dt-resp')?.value?.trim()||''),
     linkedOpp:     $('dt-opp').value,
     linkedContact: $('dt-cont').value,
     linkedCompany: $('dt-comp') ? $('dt-comp').value : '',
