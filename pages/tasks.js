@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.1 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.2 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -256,10 +256,13 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
       ${row?.outlookEventId ? `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
           <span style="font-size:.78rem;color:var(--blue)">📅 Synced with Outlook To-Do</span>
-          ${(!row.responsible || row.responsible === (window.CURRENT_USER_NAME||''))
-            ? `<button onclick="syncTaskFromOutlook('${(row.id||'').replace(/'/g,'__SQ__')}')" style="padding:4px 12px;border-radius:6px;border:1px solid var(--blue-l);background:#fff;color:var(--blue);cursor:pointer;font-size:.75rem;font-weight:600">↻ Sync from Outlook</button>`
-            : `<span style="font-size:.72rem;color:var(--slate2)" title="Only the task owner can sync">↻ Sync (owner only)</span>`
-          }
+          <div style="display:flex;gap:6px;align-items:center">
+            ${(!row.responsible || row.responsible === (window.CURRENT_USER_NAME||''))
+              ? `<button onclick="syncTaskFromOutlook('${(row.id||'').replace(/'/g,'__SQ__')}')" style="padding:4px 12px;border-radius:6px;border:1px solid var(--blue-l);background:#fff;color:var(--blue);cursor:pointer;font-size:.75rem;font-weight:600">↻ Sync from Outlook</button>`
+              : `<span style="font-size:.72rem;color:var(--slate2)" title="Only the task owner can sync">↻ Sync (owner only)</span>`
+            }
+            <button onclick="unlinkOutlookTask('${(row.id||'').replace(/'/g,'__SQ__')}')" title="Remove Outlook link — makes Status, Due Date and Responsible editable again" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--slate);cursor:pointer;font-size:.72rem">✕ Unlink</button>
+          </div>
         </div>` : `
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
           <input type="checkbox" id="dt-cal" style="width:15px;height:15px;accent-color:var(--blue)" ${!row ? 'checked' : ''}>
@@ -269,6 +272,22 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
 
     ${row ? `<div style="font-size:.7rem;color:var(--slate);margin-top:4px">${row.id} · Created ${row.createdDate || '—'}</div>
     ${renderMsgPanel(row.id)}` : ''}`;
+}
+
+// ── Unlink Outlook task — clears outlookEventId, makes fields editable ──
+async function unlinkOutlookTask(safeId) {
+  const id  = safeId.replace(/__SQ__/g,"'");
+  const row = DATA_TASKS.find(r => r.id === id);
+  if (!row) return;
+  if (!confirm('Remove the Outlook link?\n\nStatus, Due Date and Responsible will become editable again in the dashboard.\nThe Outlook To-Do task will NOT be deleted.')) return;
+  try {
+    // Clear col N (outlookEventId) in Excel
+    await P.patchRange(activeCfg.sheets.tasks, `N${row._row}`, [[''  ]]);
+    row.outlookEventId = '';
+    toast('✓ Outlook link removed — fields are now editable', 'success');
+    renderTasks();
+    openTaskDrawer(id.replace(/'/g,'__SQ__'));
+  } catch(e) { toast('Error: '+e.message,'error'); }
 }
 
 // ── Sync task status + due date from Outlook To-Do ───────────────
