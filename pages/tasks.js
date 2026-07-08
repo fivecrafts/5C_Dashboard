@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.5 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.6 · 2026-07-08 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -282,20 +282,16 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
             <button onclick="unlinkOutlookTask('${(row.id||'').replace(/'/g,'__SQ__')}')" title="Remove Outlook link — makes Status, Due Date and Responsible editable again" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--slate);cursor:pointer;font-size:.72rem">✕ Unlink</button>
           </div>
         </div>` : `
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">` + (() => {
-          const resp = $('dt-resp') ? $('dt-resp').value : (row?.responsible || window.CURRENT_USER_NAME || '');
-          const me   = window.CURRENT_USER_NAME || '';
-          const isMe = !resp || resp === me;
-          if (isMe) {
-            return `
-          <input type="checkbox" id="dt-cal" style="width:15px;height:15px;accent-color:var(--blue)" ${!row ? 'checked' : ''}>
-          <span style="font-size:.78rem;color:var(--blue)">📅 Add to <strong>${me.split(' ')[0]}'s</strong> Outlook Tasks</span>`;
-          } else {
-            return `
-          <input type="checkbox" id="dt-cal" disabled style="width:15px;height:15px;opacity:.4">
-          <span style="font-size:.78rem;color:var(--slate2)">📅 Outlook Tasks — only <strong>${resp.split(' ')[0]}</strong> can add this (they must log in)</span>`;
-          }
-        })() + `
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          ${(()=>{
+            const resp = row?.responsible || '';
+            const me   = window.CURRENT_USER_NAME || '';
+            const isMe = !resp || resp === me;
+            if (isMe) return '<input type="checkbox" id="dt-cal" style="width:15px;height:15px;accent-color:var(--blue)" ' + (!row?'checked':'') + '>'
+              + '<span style="font-size:.78rem;color:var(--blue)">📅 Add to <strong>' + (me||'your').split(' ')[0] + '\u2019s</strong> Outlook Tasks</span>';
+            return '<input type="checkbox" id="dt-cal" disabled style="width:15px;height:15px;opacity:.4">'
+              + '<span style="font-size:.72rem;color:var(--slate2)">📅 Outlook Tasks — only <strong>' + resp.split(' ')[0] + '</strong> can add (they must log in)</span>';
+          })()}
         </label>`}
     </div>
 
