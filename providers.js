@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.16 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.0 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -936,6 +936,27 @@ const MsProvider = (() => {
       } catch { return false; }
     },
 
+    // Read a single Outlook To-Do task — returns {status, dueDate} or null
+    // status mapping: notStarted→Open, inProgress→Open, completed→Done, else→Cancelled
+    async getOutlookTask(compositeId) {
+      if (!compositeId) return null;
+      try {
+        const [listId, taskId] = compositeId.split('||');
+        if (!listId || !taskId) return null;
+        const t   = await token();
+        const res = await fetch(
+          `https://graph.microsoft.com/v1.0/me/todo/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`,
+          { headers: { Authorization: 'Bearer ' + t } }
+        );
+        if (!res.ok) return null;
+        const d = await res.json();
+        const STATUS_MAP = { notStarted:'Open', inProgress:'Open', completed:'Done', waitingOnOthers:'Open', deferred:'Open' };
+        const status  = STATUS_MAP[d.status] || 'Open';
+        const dueDate = d.dueDateTime?.dateTime?.slice(0,10) || '';
+        return { status, dueDate, outlookStatus: d.status, title: d.title };
+      } catch { return null; }
+    },
+
     async savePriorityOnly(row, newP) {
       // Rev 22: Priority=F, Updated Date=H
       const s     = CFG.microsoft.sheets.pipeline;
@@ -1180,6 +1201,7 @@ const GglProvider = (() => {
     async saveHRNotes(c,n)  { return false; },
     async saveHRRow(c,f)    { return false; },
     async updateCalendarEvent(id, d){ return false; },
+    async getOutlookTask(id)         { return null; },
     async saveContactRow(row, f)   { return MsProvider.saveContactRow.call(this, row, f); },
     async createContact(f)         { return MsProvider.createContact.call(this, f); },
     async saveTaskRow(row, f)      { return MsProvider.saveTaskRow.call(this, row, f); },
