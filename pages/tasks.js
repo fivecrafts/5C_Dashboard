@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.8 · 2026-07-08 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.9 · 2026-07-08 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -326,8 +326,7 @@ async function syncOutlookTasksBackground() {
       const today = new Date().toISOString().slice(0,10);
       const patches = [];
       if (statusChanged)  patches.push(P.patchRange(activeCfg.sheets.tasks, `G${row._row}`, [[outlook.status]]));
-      if (dueDateChanged) patches.push(P.patchRange(activeCfg.sheets.tasks, `H${row._row}`, [[outlook.dueDate]]));
-      patches.push(P.patchRange(activeCfg.sheets.tasks, `I${row._row}`, [[today]]));
+      if (dueDateChanged) patches.push(P.patchRange(activeCfg.sheets.tasks, `I${row._row}`, [[outlook.dueDate]]));
       await Promise.all(patches);
       // Update in-memory
       if (statusChanged)  row.status  = outlook.status;
@@ -361,8 +360,8 @@ async function syncOneOutlookTask(row) {
     const today = new Date().toISOString().slice(0,10);
     const patches = [];
     if (outlook.status  && outlook.status  !== row.status)  { patches.push(P.patchRange(activeCfg.sheets.tasks, `G${row._row}`, [[outlook.status]]));  row.status  = outlook.status; }
-    if (outlook.dueDate && outlook.dueDate !== row.dueDate) { patches.push(P.patchRange(activeCfg.sheets.tasks, `H${row._row}`, [[outlook.dueDate]])); row.dueDate = outlook.dueDate; }
-    if (patches.length) { patches.push(P.patchRange(activeCfg.sheets.tasks, `I${row._row}`, [[today]])); row.updDate = today; await Promise.all(patches); }
+    if (outlook.dueDate && outlook.dueDate !== row.dueDate) { patches.push(P.patchRange(activeCfg.sheets.tasks, `I${row._row}`, [[outlook.dueDate]])); row.dueDate = outlook.dueDate; }
+    if (patches.length) { await Promise.all(patches); }
   } catch(e) { console.warn('Drawer sync failed:', e.message); }
 }
 
