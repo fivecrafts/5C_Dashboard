@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.4 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.5 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -156,7 +156,8 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
       const isOverdue = r.status === 'Open' && r.dueDate && r.dueDate < today;
       const safeId    = (r.id || '').replace(/'/g, '__SQ__');
       const dueCls    = isOverdue ? 'color:var(--red);font-weight:600' : 'color:var(--slate)';
-      return `<tr class="edit-row" onclick="openTaskDrawer('${safeId}')">
+      const isDone    = r.status === 'Done';
+      return `<tr class="edit-row" onclick="openTaskDrawer('${safeId}')" style="${isDone?'opacity:.45;text-decoration:line-through;':''}">
         <td style="font-size:.7rem;color:var(--slate2)">${r.id || '—'}</td>
         <td style="font-size:.73rem" onclick="event.stopPropagation()">${(()=>{
           const co = r.linkedCompany ? (DATA_COMPANIES||[]).find(c=>c.id===r.linkedCompany||c.name===r.linkedCompany) : null;
