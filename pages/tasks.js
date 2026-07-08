@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.6 · 2026-07-08 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.7 · 2026-07-08 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -105,6 +105,9 @@ function renderTasks(q, fs, fr, ftype, fprio, fcomp) {
            (!fprio || (r.priority||'Medium') === fprio) &&
            (!fcomp || r.linkedCompany === fcomp);
   }).sort((a,b) => {
+    const aDone = a.status === 'Done' ? 1 : 0;
+    const bDone = b.status === 'Done' ? 1 : 0;
+    if (aDone !== bDone) return aDone - bDone;
     const pd = (TPO[a.priority||'Medium']??2) - (TPO[b.priority||'Medium']??2);
     if (pd !== 0) return pd;
     return (a.taskName||a.type||'').localeCompare(b.taskName||b.type||'');
