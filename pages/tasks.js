@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.2 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.3 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -257,10 +257,7 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
           <span style="font-size:.78rem;color:var(--blue)">📅 Synced with Outlook To-Do</span>
           <div style="display:flex;gap:6px;align-items:center">
-            ${(!row.responsible || row.responsible === (window.CURRENT_USER_NAME||''))
-              ? `<button onclick="syncTaskFromOutlook('${(row.id||'').replace(/'/g,'__SQ__')}')" style="padding:4px 12px;border-radius:6px;border:1px solid var(--blue-l);background:#fff;color:var(--blue);cursor:pointer;font-size:.75rem;font-weight:600">↻ Sync from Outlook</button>`
-              : `<span style="font-size:.72rem;color:var(--slate2)" title="Only the task owner can sync">↻ Sync (owner only)</span>`
-            }
+            <span style="font-size:.7rem;color:var(--slate2)">Auto-synced on open</span>
             <button onclick="unlinkOutlookTask('${(row.id||'').replace(/'/g,'__SQ__')}')" title="Remove Outlook link — makes Status, Due Date and Responsible editable again" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--slate);cursor:pointer;font-size:.72rem">✕ Unlink</button>
           </div>
         </div>` : `
@@ -272,6 +269,69 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
 
     ${row ? `<div style="font-size:.7rem;color:var(--slate);margin-top:4px">${row.id} · Created ${row.createdDate || '—'}</div>
     ${renderMsgPanel(row.id)}` : ''}`;
+}
+
+// ── Auto-sync Outlook tasks on load ──────────────────────────────
+// Fires after DATA_TASKS loads. Sequentially syncs all Outlook-linked
+// tasks owned by the current user. Updates memory + Excel for changed rows.
+async function syncOutlookTasksBackground() {
+  const me = window.CURRENT_USER_NAME || '';
+  const linked = DATA_TASKS.filter(r =>
+    r.outlookEventId &&
+    (!r.responsible || r.responsible === me)
+  );
+  if (!linked.length) return;
+  console.log(`Outlook sync: ${linked.length} tasks to check`);
+  let changed = 0;
+  for (const row of linked) {
+    try {
+      const outlook = await P.getOutlookTask(row.outlookEventId);
+      if (!outlook) continue;
+      const statusChanged  = outlook.status  && outlook.status  !== row.status;
+      const dueDateChanged = outlook.dueDate  && outlook.dueDate !== row.dueDate;
+      if (!statusChanged && !dueDateChanged) continue;
+      // Write changed fields to Excel
+      const today = new Date().toISOString().slice(0,10);
+      const patches = [];
+      if (statusChanged)  patches.push(P.patchRange(activeCfg.sheets.tasks, `G${row._row}`, [[outlook.status]]));
+      if (dueDateChanged) patches.push(P.patchRange(activeCfg.sheets.tasks, `H${row._row}`, [[outlook.dueDate]]));
+      patches.push(P.patchRange(activeCfg.sheets.tasks, `I${row._row}`, [[today]]));
+      await Promise.all(patches);
+      // Update in-memory
+      if (statusChanged)  row.status  = outlook.status;
+      if (dueDateChanged) row.dueDate = outlook.dueDate;
+      row.updDate = today;
+      changed++;
+      console.log(`Outlook sync: ${row.id} → ${outlook.status}${outlook.dueDate?' · '+outlook.dueDate:''}`);
+    } catch(e) {
+      console.warn(`Outlook sync failed for ${row.id}:`, e.message);
+    }
+  }
+  if (changed > 0) {
+    console.log(`Outlook sync complete: ${changed} tasks updated`);
+    // Refresh task list if visible, and any open task drawer
+    if (typeof renderTasks === 'function' && document.getElementById('tasks-out')) renderTasks();
+    if (drawerType === 'task' && drawerKey) {
+      const row = DATA_TASKS.find(r => r.id === drawerKey);
+      if (row) openTaskDrawer(drawerKey.replace(/'/g,'__SQ__'));
+    }
+  }
+}
+
+// Sync a single task from Outlook before opening its drawer
+async function syncOneOutlookTask(row) {
+  if (!row?.outlookEventId) return;
+  const me = window.CURRENT_USER_NAME || '';
+  if (row.responsible && row.responsible !== me) return; // can't read other user's tasks
+  try {
+    const outlook = await P.getOutlookTask(row.outlookEventId);
+    if (!outlook) return;
+    const today = new Date().toISOString().slice(0,10);
+    const patches = [];
+    if (outlook.status  && outlook.status  !== row.status)  { patches.push(P.patchRange(activeCfg.sheets.tasks, `G${row._row}`, [[outlook.status]]));  row.status  = outlook.status; }
+    if (outlook.dueDate && outlook.dueDate !== row.dueDate) { patches.push(P.patchRange(activeCfg.sheets.tasks, `H${row._row}`, [[outlook.dueDate]])); row.dueDate = outlook.dueDate; }
+    if (patches.length) { patches.push(P.patchRange(activeCfg.sheets.tasks, `I${row._row}`, [[today]])); row.updDate = today; await Promise.all(patches); }
+  } catch(e) { console.warn('Drawer sync failed:', e.message); }
 }
 
 // ── Unlink Outlook task — clears outlookEventId, makes fields editable ──
@@ -290,42 +350,13 @@ async function unlinkOutlookTask(safeId) {
   } catch(e) { toast('Error: '+e.message,'error'); }
 }
 
-// ── Sync task status + due date from Outlook To-Do ───────────────
-async function syncTaskFromOutlook(safeId) {
-  const id  = safeId.replace(/__SQ__/g,"'");
-  const row = DATA_TASKS.find(r => r.id === id);
-  if (!row || !row.outlookEventId) return;
-  toast('↻ Syncing from Outlook…', 'info');
-  try {
-    const outlook = await P.getOutlookTask(row.outlookEventId);
-    if (!outlook) { toast('⚠ Could not reach Outlook task', 'error'); return; }
-    const changed = outlook.status !== row.status || (outlook.dueDate && outlook.dueDate !== row.dueDate);
-    if (!changed) { toast('✓ Already up to date', 'success'); return; }
-    // Write back to Excel
-    const today = new Date().toISOString().slice(0,10);
-    const patches = [];
-    if (outlook.status !== row.status)
-      patches.push(P.patchRange(activeCfg.sheets.tasks, `G${row._row}`, [[outlook.status]]));
-    if (outlook.dueDate && outlook.dueDate !== row.dueDate)
-      patches.push(P.patchRange(activeCfg.sheets.tasks, `H${row._row}`, [[outlook.dueDate]]));
-    patches.push(P.patchRange(activeCfg.sheets.tasks, `I${row._row}`, [[today]])); // updDate
-    await Promise.all(patches);
-    // Update in-memory
-    if (outlook.status)  row.status  = outlook.status;
-    if (outlook.dueDate) row.dueDate = outlook.dueDate;
-    row.updDate = today;
-    toast(`✓ Synced: ${outlook.status}${outlook.dueDate?' · '+fmtDate(outlook.dueDate):''}`, 'success');
-    // Refresh drawer and list
-    renderTasks();
-    openTaskDrawer(id.replace(/'/g,'__SQ__'));
-  } catch(e) { toast('Sync error: '+e.message, 'error'); }
-}
-
 // ── Edit existing task ────────────────────────────────────────
-function openTaskDrawer(safeId) {
+async function openTaskDrawer(safeId) {
   const id  = safeId.replace(/__SQ__/g, "'");
   const row = DATA_TASKS.find(r => r.id === id);
   if (!row) return;
+  // Sync from Outlook silently before rendering — shows latest status/dueDate
+  await syncOneOutlookTask(row);
   drawerKey = id;
   const foot = `
     <button class="sbtn sbtn-p" onclick="saveTaskDrawer()" style="flex:1">✓ Save Task</button>
