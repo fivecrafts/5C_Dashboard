@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.0 · 2026-07-07 · Five Crafts s.r.o.
 'use strict';
 
 function taskTypeIcon(type) {
@@ -20,6 +20,14 @@ function taskTypeIcon(type) {
 // TASKS INLINE STATUS DROPDOWN  — Open=Blue, Done=Green, Cancelled=Grey
 // ════════════════════════════════════════════════════════════════
 function buildTaskStatusDrop(r) {
+  // Outlook-linked tasks: status is read-only (synced from Outlook)
+  if (r.outlookEventId) {
+    const cur = r.status || 'Open';
+    const isOwner = !r.responsible || r.responsible === (window.CURRENT_USER_NAME||'');
+    const dot  = taskStatusDot(cur);
+    const hint = isOwner ? 'Synced from Outlook — open drawer to sync' : 'Managed in owner\'s Outlook';
+    return `<div title="${hint}" style="display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;background:var(--blue-t);border:1px solid var(--blue-l);font-size:.75rem;white-space:nowrap">${dot}<span>${cur}</span><span style="font-size:.65rem;opacity:.6">⇄</span></div>`;
+  }
   const menuId = 'tsd-' + (r.id||'').replace(/[^a-z0-9]/gi,'_');
   const cur    = r.status || 'Open';
   const TSTAT  = ['Open','Done','Cancelled'];
@@ -200,8 +208,24 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
       <div class="field-group"><label>Priority</label>${buildDrawerPrioDrop('dt-prio', row?.priority||'Medium')}</div>
     </div>
     <div class="field-row">
+      ${(()=>{
+        if (row?.outlookEventId) {
+          return `
+      <div class="field-group"><label>Status <span style="font-size:.65rem;color:var(--blue)">⇄ Outlook</span></label>
+        <div style="display:flex;align-items:center;gap:7px;padding:7px 10px;background:var(--blue-t);border:1px solid var(--blue-l);border-radius:7px;font-size:.82rem">
+          ${taskStatusDot(row.status||'Open')}<span>${row.status||'Open'}</span>
+        </div>
+      </div>
+      <div class="field-group"><label>Due Date <span style="font-size:.65rem;color:var(--blue)">⇄ Outlook</span></label>
+        <div style="padding:7px 10px;background:var(--blue-t);border:1px solid var(--blue-l);border-radius:7px;font-size:.82rem">
+          ${row.dueDate ? fmtDate(row.dueDate) : '— not set —'}
+        </div>
+      </div>`;
+        }
+        return `
       <div class="field-group"><label>Status</label>${buildDrawerTaskStatusDrop('dt-status', row?.status||'Open')}</div>
-      <div class="field-group"><label>Due Date</label><input id="dt-due" type="date" value="${row?.dueDate || ''}"></div>
+      <div class="field-group"><label>Due Date</label><input id="dt-due" type="date" value="${row?.dueDate || ''}"></div>`;
+      })()}
     </div>
     <div class="field-group"><label>Responsible</label>
       <select id="dt-resp">
@@ -225,12 +249,12 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
     <!-- Outlook Task integration -->
     <div style="margin:8px 0;padding:10px 12px;background:var(--blue-t);border:1px solid var(--blue-l);border-radius:8px">
       ${row?.outlookEventId ? `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <span style="font-size:.78rem;color:var(--blue)">📅 Outlook Task linked</span>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.75rem;color:var(--slate)">
-            <input type="checkbox" id="dt-cal" style="accent-color:var(--blue)">
-            Remove on save
-          </label>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <span style="font-size:.78rem;color:var(--blue)">📅 Synced with Outlook To-Do</span>
+          ${(!row.responsible || row.responsible === (window.CURRENT_USER_NAME||''))
+            ? `<button onclick="syncTaskFromOutlook('${(row.id||'').replace(/'/g,'__SQ__')}')" style="padding:4px 12px;border-radius:6px;border:1px solid var(--blue-l);background:#fff;color:var(--blue);cursor:pointer;font-size:.75rem;font-weight:600">↻ Sync from Outlook</button>`
+            : `<span style="font-size:.72rem;color:var(--slate2)" title="Only the task owner can sync">↻ Sync (owner only)</span>`
+          }
         </div>` : `
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
           <input type="checkbox" id="dt-cal" style="width:15px;height:15px;accent-color:var(--blue)" ${!row ? 'checked' : ''}>
@@ -240,6 +264,37 @@ function buildTaskForm(row, preOpp, preCont, preCo) {
 
     ${row ? `<div style="font-size:.7rem;color:var(--slate);margin-top:4px">${row.id} · Created ${row.createdDate || '—'}</div>
     ${renderMsgPanel(row.id)}` : ''}`;
+}
+
+// ── Sync task status + due date from Outlook To-Do ───────────────
+async function syncTaskFromOutlook(safeId) {
+  const id  = safeId.replace(/__SQ__/g,"'");
+  const row = DATA_TASKS.find(r => r.id === id);
+  if (!row || !row.outlookEventId) return;
+  toast('↻ Syncing from Outlook…', 'info');
+  try {
+    const outlook = await P.getOutlookTask(row.outlookEventId);
+    if (!outlook) { toast('⚠ Could not reach Outlook task', 'error'); return; }
+    const changed = outlook.status !== row.status || (outlook.dueDate && outlook.dueDate !== row.dueDate);
+    if (!changed) { toast('✓ Already up to date', 'success'); return; }
+    // Write back to Excel
+    const today = new Date().toISOString().slice(0,10);
+    const patches = [];
+    if (outlook.status !== row.status)
+      patches.push(P.patchRange(activeCfg.sheets.tasks, `G${row._row}`, [[outlook.status]]));
+    if (outlook.dueDate && outlook.dueDate !== row.dueDate)
+      patches.push(P.patchRange(activeCfg.sheets.tasks, `H${row._row}`, [[outlook.dueDate]]));
+    patches.push(P.patchRange(activeCfg.sheets.tasks, `I${row._row}`, [[today]])); // updDate
+    await Promise.all(patches);
+    // Update in-memory
+    if (outlook.status)  row.status  = outlook.status;
+    if (outlook.dueDate) row.dueDate = outlook.dueDate;
+    row.updDate = today;
+    toast(`✓ Synced: ${outlook.status}${outlook.dueDate?' · '+fmtDate(outlook.dueDate):''}`, 'success');
+    // Refresh drawer and list
+    renderTasks();
+    openTaskDrawer(id.replace(/'/g,'__SQ__'));
+  } catch(e) { toast('Sync error: '+e.message, 'error'); }
 }
 
 // ── Edit existing task ────────────────────────────────────────
@@ -260,13 +315,14 @@ async function saveTaskDrawer() {
   const row = DATA_TASKS.find(r => r.id === id);
   if (!row) return;
   toast('Saving…', 'info');
-  const newDueDate = $('dt-due').value;
-  const dateChanged = newDueDate && newDueDate !== row.dueDate;
+  // Outlook-linked tasks: status + dueDate are read-only (synced via Sync button)
+  const isOutlookLinked = !!row.outlookEventId;
+  const newDueDate = isOutlookLinked ? (row.dueDate || '') : ($('dt-due')?.value || '');
   const fields = {
     taskName:      $('dt-taskname') ? $('dt-taskname').value.trim() : '',
     type:          $('dt-type').value,
     priority:      $('dt-prio').value,
-    status:        $('dt-status').value,
+    status:        isOutlookLinked ? row.status : ($('dt-status')?.value || row.status),
     dueDate:       newDueDate,
     responsible:   $('dt-resp').value.trim(),
     linkedOpp:     $('dt-opp').value,
@@ -275,16 +331,8 @@ async function saveTaskDrawer() {
     notes:         $('dt-notes').value.trim(),
     outlookEventId: row.outlookEventId || '',
   };
-  // Handle Outlook event
-  if (row.outlookEventId && dateChanged) {
-    // Existing event + date changed → offer update
-    const update = confirm(`Due date changed to ${newDueDate}.\nUpdate the linked Outlook Task reminder?`);
-    if (update) {
-      const ok = await P.updateCalendarEvent(row.outlookEventId, newDueDate, fields);
-      toast(ok ? '📅 Outlook Task reminder updated' : '⚠ Update failed — check Tasks.ReadWrite permission', ok ? 'success' : 'error');
-    }
-  } else if (!row.outlookEventId && newDueDate && $('dt-cal') && $('dt-cal').checked) {
-    // No event yet but checkbox ticked → create one
+  // Outlook: only create new if not linked and checkbox ticked
+  if (!isOutlookLinked && newDueDate && $('dt-cal') && $('dt-cal').checked) {
     const evId = await P.createCalendarEvent(fields);
     if (evId) { fields.outlookEventId = evId; toast('📅 Added to Outlook Tasks / To-Do', 'info'); }
   }
