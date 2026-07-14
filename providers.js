@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.10 · 2026-07-14 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.11 · 2026-07-14 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -952,17 +952,19 @@ const MsProvider = (() => {
         const d = await res.json();
         const STATUS_MAP = { notStarted:'Open', inProgress:'Open', completed:'Done', waitingOnOthers:'Open', deferred:'Open' };
         const status  = STATUS_MAP[d.status] || 'Open';
-        // dueDateTime.dateTime may be in list timezone (e.g. Europe/Prague UTC+2)
-        // Use the timeZone field to parse correctly; fall back to date-only slice
+        // dueDateTime.dateTime is returned by Graph without trailing Z but represents
+        // a wall-clock time. The .timeZone field is unreliable — always format in the
+        // user's local timezone to get the correct calendar date.
         let dueDate = '';
         if (d.dueDateTime?.dateTime) {
-          const tz = d.dueDateTime.timeZone || 'UTC';
           try {
-            // Format in the task's timezone to get the correct calendar date
-            const dt = new Date(d.dueDateTime.dateTime.endsWith('Z')
-              ? d.dueDateTime.dateTime
-              : d.dueDateTime.dateTime + 'Z');
-            dueDate = new Intl.DateTimeFormat('sv-SE', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(dt);
+            const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Prague';
+            const raw = d.dueDateTime.dateTime;
+            // Append Z only if no timezone indicator present — makes it UTC for Date()
+            const dt = new Date(raw.match(/[Z+\-]\d*$/) ? raw : raw + 'Z');
+            dueDate = new Intl.DateTimeFormat('sv-SE', {
+              timeZone: userTz, year: 'numeric', month: '2-digit', day: '2-digit'
+            }).format(dt);
           } catch {
             dueDate = d.dueDateTime.dateTime.slice(0, 10);
           }
