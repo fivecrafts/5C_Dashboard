@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.0 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.10 · 2026-07-14 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -901,8 +901,8 @@ const MsProvider = (() => {
             body: JSON.stringify({
               title,
               body:          { content: bodyText, contentType: 'text' },
-              dueDateTime:   task.dueDate ? { dateTime: task.dueDate + 'T09:00:00.000Z', timeZone: 'UTC' } : undefined,
-              reminderDateTime: task.dueDate ? { dateTime: task.dueDate + 'T09:00:00.000Z', timeZone: 'UTC' } : undefined,
+              dueDateTime:      task.dueDate ? { dateTime: task.dueDate + 'T00:00:00.0000000', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Prague' } : undefined,
+              reminderDateTime: task.dueDate ? { dateTime: task.dueDate + 'T09:00:00.0000000', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Prague' } : undefined,
               isReminderOn:  true,
               importance:    task.priority === 'Critical' || task.priority === 'High' ? 'high' : 'normal',
             }),
@@ -927,8 +927,8 @@ const MsProvider = (() => {
             method: 'PATCH',
             headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              dueDateTime:      { dateTime: newDate + 'T09:00:00.000Z', timeZone: 'UTC' },
-              reminderDateTime: { dateTime: newDate + 'T09:00:00.000Z', timeZone: 'UTC' },
+              dueDateTime:      { dateTime: newDate + 'T00:00:00.0000000', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Prague' },
+              reminderDateTime: { dateTime: newDate + 'T09:00:00.0000000', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Prague' },
             }),
           }
         );
@@ -952,7 +952,21 @@ const MsProvider = (() => {
         const d = await res.json();
         const STATUS_MAP = { notStarted:'Open', inProgress:'Open', completed:'Done', waitingOnOthers:'Open', deferred:'Open' };
         const status  = STATUS_MAP[d.status] || 'Open';
-        const dueDate = d.dueDateTime?.dateTime?.slice(0,10) || '';
+        // dueDateTime.dateTime may be in list timezone (e.g. Europe/Prague UTC+2)
+        // Use the timeZone field to parse correctly; fall back to date-only slice
+        let dueDate = '';
+        if (d.dueDateTime?.dateTime) {
+          const tz = d.dueDateTime.timeZone || 'UTC';
+          try {
+            // Format in the task's timezone to get the correct calendar date
+            const dt = new Date(d.dueDateTime.dateTime.endsWith('Z')
+              ? d.dueDateTime.dateTime
+              : d.dueDateTime.dateTime + 'Z');
+            dueDate = new Intl.DateTimeFormat('sv-SE', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(dt);
+          } catch {
+            dueDate = d.dueDateTime.dateTime.slice(0, 10);
+          }
+        }
         return { status, dueDate, outlookStatus: d.status, title: d.title };
       } catch { return null; }
     },
