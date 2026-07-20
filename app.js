@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.3 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.12 · 2026-07-14 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -412,6 +412,14 @@ function openCompanyFromName(safeName) {
     setTimeout(() => { const el = $('coq'); if (el) { el.value = name; renderCompanies(name, ''); }}, 100);
   }
 }
+
+// ── Global keyboard shortcuts ──────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    if (typeof openGSearch === 'function') openGSearch();
+  }
+});
 
 // ════════════════════════════════════════════════════════════════
 // BOOT
