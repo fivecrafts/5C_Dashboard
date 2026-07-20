@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.12 · 2026-07-14 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.13 · 2026-07-20 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -486,7 +486,7 @@ function gsearchKey(e) {
   if (e.key === 'Escape') { closeGSearch(); return; }
   if (e.key === 'ArrowDown') { _gsIdx = Math.min(_gsIdx+1, _gsResults.length-1); gsearchHighlight(); e.preventDefault(); return; }
   if (e.key === 'ArrowUp')   { _gsIdx = Math.max(_gsIdx-1, 0); gsearchHighlight(); e.preventDefault(); return; }
-  if (e.key === 'Enter') { if (_gsIdx >= 0 && _gsResults[_gsIdx]) { gsearchOpen(_gsResults[_gsIdx]); } return; }
+  if (e.key === 'Enter') { if (_gsIdx >= 0 && _gsResults[_gsIdx]) { gsearchOpenIdx(_gsIdx); } return; }
 }
 
 function gsearchHighlight() {
@@ -495,14 +495,18 @@ function gsearchHighlight() {
   if (active) active.scrollIntoView({ block:'nearest' });
 }
 
+function gsearchOpenIdx(i) {
+  if (_gsResults[i]) gsearchOpen(_gsResults[i]);
+}
+
 function gsearchOpen(hit) {
   closeGSearch();
   switch (hit.type) {
-    case 'pipe':    UI.nav('pipeline',null); setTimeout(()=>openPipeDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
-    case 'contact': UI.nav('contacts',null); setTimeout(()=>openContactDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
-    case 'company': UI.nav('companies',null); setTimeout(()=>openCompanyDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
-    case 'event':   UI.nav('events',null); setTimeout(()=>openEventDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
-    case 'task':    UI.nav('tasks',null); setTimeout(()=>openTaskDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
+    case 'pipe':    UI.nav('pipeline',null); setTimeout(()=>openPipeDrawer(hit.key.replace(/'/g,'__SQ__')),200); break;
+    case 'contact': UI.nav('contacts',null); setTimeout(()=>openContactDrawer(hit.key.replace(/'/g,'__SQ__')),200); break;
+    case 'company': UI.nav('companies',null); setTimeout(()=>openCompanyDrawer(hit.key.replace(/'/g,'__SQ__')),200); break;
+    case 'event':   UI.nav('events',null); setTimeout(()=>openEventDrawer(hit.key.replace(/'/g,'__SQ__')),200); break;
+    case 'task':    UI.nav('tasks',null); setTimeout(()=>openTaskDrawer(hit.key.replace(/'/g,'__SQ__')),200); break;
   }
 }
 
@@ -560,7 +564,7 @@ function gsearchRender() {
     html += `<div class="gsearch-grp">${grp}</div>`;
     items.forEach(h => {
       const badge = h.badge ? `<span class="badge ${h.badgeCls||''}" style="font-size:.65rem">${h.badge}</span>` : '';
-      html += `<div class="gsearch-row${rowIdx===0?' gs-active':''}" onclick="gsearchOpen(${JSON.stringify({type:h.type,key:h.key})})">
+      html += `<div class="gsearch-row${rowIdx===0?' gs-active':''}" onclick="gsearchOpenIdx(${h._i})">
         <span class="gsearch-icon">${h.icon}</span>
         <div class="gsearch-main">
           <div class="gsearch-title">${esc(h.title)}</div>
