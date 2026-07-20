@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.12 · 2026-07-14 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -303,57 +303,148 @@ function openPipeDrawer(safeKey) {
   drawerKey = k;
   const allowed = FLOW[row.s] || ALL_S;
 
-  const body = `
-    <div class="field-group"><label>Client</label>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div id="d-c-logo" style="flex-shrink:0">${companyLogoFromName(row.c, 28)}</div>
-          <select id="d-c" style="flex:1" onchange="(()=>{const co=(DATA_COMPANIES||[]).find(c=>c.name===this.value);$('d-c-logo').innerHTML=co?companyLogo(co.website,co.name,28):companyLogoFromName(this.value,28);})()">
-            <option value="">— Select company —</option>
-            ${[...(DATA_COMPANIES||[])].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(c=>`<option value="${esc(c.name)}"${row.c===c.name?' selected':''}>${c.name}</option>`).join('')}
-          </select>
-        </div></div>
-    <div class="field-group"><label>Project / Scope</label><input id="d-p" value="${esc(row.p)}"></div>
-    <div class="field-group"><label>Detail / Roles &amp; Requirements</label><textarea id="d-d">${esc(row.d)}</textarea></div>
-    <div class="field-row">
-      <div class="field-group"><label>Status</label>
-        ${buildDrawerStatusDrop('d-s', row.s, allowed, ALL_S)}
-      </div>
-      <div class="field-group"><label>Priority</label>
-        ${buildDrawerPrioDrop('d-prio', row.prio||'Medium')}
-      </div>
-    </div>
-    <div class="field-group"><label>Project Start</label><input id="d-projStart" type="date" value="${row.projStart || ''}"></div>
-    <div class="field-row">
-      <div class="field-group"><label>Owner</label>
-        <select id="d-r">
-          ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();return `<option value="${n}"${(row.owner||'')=== n?' selected':''}>${n}</option>`;}).join('')}
-        </select>
-      </div>
-      <div class="field-group"><label>Contact</label>
-        <div style="display:flex;gap:6px;align-items:center">
-          <select id="d-rsp" style="flex:1">
-            <option value="">— None —</option>
-            ${[...(DATA_CONTACTS||[])].sort((a,b)=>(a.lastName||'').localeCompare(b.lastName||'') || (a.firstName||'').localeCompare(b.firstName||'')).map(c=>{
-              const n=contactDisplayName(c);
-              const stored=((c.firstName||'')+' '+(c.lastName||'')).trim();
-              return `<option value="${esc(stored)}"${(row.contact||'')=== stored?' selected':''}>${n}${c.company?' · '+c.company:''}</option>`;
-            }).join('')}
-          </select>
-          <button type="button" onclick="openNewContactFromOpp('${row._row}','${esc(row.c)}')"
-            style="padding:5px 10px;border:1px solid var(--teal-l);border-radius:6px;background:var(--teal-t);color:var(--teal);font-size:.72rem;font-family:var(--font);cursor:pointer;white-space:nowrap;flex-shrink:0">+ New</button>
+  // Sourcing runs for this opp
+  const runs = (DATA_SOURCING_RUNS||[]).filter(r => {
+    const [rc, rp] = (r.oppKey||'').split('|||');
+    return rc === row.c && rp === row.p;
+  }).sort((a,b) => b.id.localeCompare(a.id));
+  const runCount  = runs.length;
+  const totalCands = runs.reduce((n,r) => n + (r.results||[]).length, 0);
+
+  // Build sourcing tab HTML
+  const srcTab = (()=>{
+    if (runCount === 0) return `
+      <div style="text-align:center;padding:28px 16px;color:var(--slate2)">
+        <div style="font-size:1.8rem;margin-bottom:8px">🔍</div>
+        <div style="font-size:.82rem;font-weight:600;margin-bottom:4px">No sourcing runs yet</div>
+        <div style="font-size:.75rem">Run a sourcing search to find matching candidates for this opportunity.</div>
+        <button onclick="openSourcingFromOpp('${safeKey}')" style="margin-top:14px;padding:7px 18px;border-radius:8px;border:1px solid #ddd6fe;background:#f5f3ff;color:#7c3aed;cursor:pointer;font-size:.8rem;font-weight:600">🔍 Start Sourcing</button>
+      </div>`;
+    const runCards = runs.map((run,ri) => {
+      const res = [...(run.results||[])].sort((a,b) => (b.score||0)-(a.score||0));
+      const top = res[0];
+      const comps = (run.competencies||[]).slice(0,3).map(c =>
+        `<span style="padding:1px 6px;border-radius:10px;font-size:.63rem;font-weight:700;background:var(--blue-t);color:var(--blue);border:1px solid var(--blue-l)">${esc(c)}</span>`
+      ).join(' ') + (run.competencies?.length > 3 ? `<span style="font-size:.63rem;color:var(--slate2)">+${run.competencies.length-3}</span>` : '');
+      const runSafeId = (run.id||'').replace(/'/g,'__SQ__');
+      const badgeCls = res.length > 0 ? 'background:var(--green-t);color:var(--green)' : 'background:#f1f5f9;color:var(--slate2)';
+
+      const candRows = res.slice(0,5).map((r,ci) => {
+        const safeId  = (r.candidateId||'').replace(/'/g,'__SQ__');
+        const safeSrc = (r.source||'hr').replace(/'/g,'__SQ__');
+        const sc = r.score||0;
+        const scoreColor = sc>=8?'var(--green)':sc>=6?'var(--blue)':sc>=4?'var(--amber)':'var(--slate2)';
+        const initials = (r.displayName||r.name||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+        const avatarBg = ['#2563eb','#7c3aed','#059669','#d97706','#dc2626'][ci%5];
+        const stBadge = r.status==='IN'
+          ? `<span style="padding:1px 6px;border-radius:10px;font-size:.62rem;font-weight:700;background:var(--green-t);color:var(--green)">IN</span>`
+          : r.status==='OUT'
+          ? `<span style="padding:1px 6px;border-radius:10px;font-size:.62rem;font-weight:700;background:var(--red-t);color:var(--red)">OUT</span>`
+          : `<span style="padding:1px 6px;border-radius:10px;font-size:.62rem;font-weight:700;background:var(--blue-t);color:var(--blue)">POOL</span>`;
+        return `<div class="src-cand-row" onclick="openCandidateFromSourcing('${safeId}','${safeSrc}')">
+          <div style="width:28px;height:28px;border-radius:50%;background:${avatarBg};color:#fff;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800;flex-shrink:0">${initials}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.78rem;font-weight:700;color:var(--navy2)">${esc(r.displayName||r.name||'—')}</div>
+            <div style="font-size:.68rem;color:var(--slate)">${esc(r.role||'—')}${r.seniority?' · '+r.seniority:''}</div>
+          </div>
+          ${stBadge}
+          <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;margin-left:6px">
+            <div class="score-bar-outer"><div class="score-bar-inner" style="width:${sc*10}%;background:${scoreColor}"></div></div>
+            <span style="font-size:.72rem;font-weight:800;color:${scoreColor};min-width:28px;text-align:right">${sc}/10</span>
+          </div>
+        </div>`;
+      }).join('');
+      const moreRow = res.length > 5 ? `<div onclick="openSourcingRunDetail('${runSafeId}')" style="padding:6px 12px;border-top:1px solid var(--border);font-size:.7rem;color:var(--blue);cursor:pointer;text-align:center">+ ${res.length-5} more · View full run →</div>` : '';
+
+      return `<div class="src-run-card">
+        <div class="src-run-hdr" onclick="(()=>{const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.src-caret').textContent=b.style.display==='none'?'▾':'▴'})()">
+          <div style="flex-shrink:0">
+            <div style="font-size:.7rem;font-weight:700;color:var(--navy2)">${esc(run.id)}</div>
+            <div style="font-size:.67rem;color:var(--slate2)">${run.runDate||'—'}</div>
+          </div>
+          <div style="flex:1;display:flex;gap:4px;flex-wrap:wrap;margin:0 8px">${comps}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <span style="padding:2px 8px;border-radius:12px;font-size:.65rem;font-weight:700;${badgeCls}">${res.length} matched</span>
+            <span class="src-caret" style="font-size:.7rem;color:var(--slate2)">▾</span>
+          </div>
         </div>
+        <div style="display:${ri===0?'block':'none'}">
+          ${candRows}${moreRow}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-size:.8rem;font-weight:700;color:var(--navy2)">${runCount} run${runCount!==1?'s':''} · ${totalCands} candidate${totalCands!==1?'s':''} evaluated</div>
+        </div>
+        <button onclick="openSourcingFromOpp('${safeKey}')" style="padding:5px 12px;border-radius:7px;border:1px solid #ddd6fe;background:#f5f3ff;color:#7c3aed;cursor:pointer;font-size:.75rem;font-weight:600">🔍 New Run</button>
       </div>
+      ${runCards}`;
+  })();
+
+  // Count messages for badge
+  const msgCount = (DATA_MSG_LINKS||[]).filter(m => m.recordId === row.pid).length;
+
+  const body = `
+    <div class="dtabs">
+      <div class="dtab active" onclick="_dtab(this,'dpane-details')">📋 Details</div>
+      <div class="dtab" onclick="_dtab(this,'dpane-sourcing')">🔍 Sourcing${runCount?`<span class="dtab-badge" style="background:var(--purple-t);color:var(--purple)">${runCount}</span>`:''}</div>
+      <div class="dtab" onclick="_dtab(this,'dpane-conv')">💬 Conversation${msgCount?`<span class="dtab-badge" style="background:var(--blue-t);color:var(--blue)">${msgCount}</span>`:''}</div>
     </div>
 
-    <div class="field-group"><label>Source</label><input id="d-src" value="${esc(row.src || '')}"></div>
-    <div style="font-size:.7rem;color:var(--slate);margin-top:4px">Row ${row._row} · Created ${row.createdDate || '—'} · Updated ${row.updDate || '—'}</div>
-    ${renderMsgPanel(row.pid)}`;
+    <div class="dtab-pane active" id="dpane-details">
+      <div class="field-group"><label>Client</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div id="d-c-logo" style="flex-shrink:0">${companyLogoFromName(row.c, 28)}</div>
+            <select id="d-c" style="flex:1" onchange="(()=>{const co=(DATA_COMPANIES||[]).find(c=>c.name===this.value);$('d-c-logo').innerHTML=co?companyLogo(co.website,co.name,28):companyLogoFromName(this.value,28);})()">
+              <option value="">— Select company —</option>
+              ${[...(DATA_COMPANIES||[])].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(c=>`<option value="${esc(c.name)}"${row.c===c.name?' selected':''}>${c.name}</option>`).join('')}
+            </select>
+          </div></div>
+      <div class="field-group"><label>Project / Scope</label><input id="d-p" value="${esc(row.p)}"></div>
+      <div class="field-group"><label>Detail / Roles &amp; Requirements</label><textarea id="d-d">${esc(row.d)}</textarea></div>
+      <div class="field-row">
+        <div class="field-group"><label>Status</label>${buildDrawerStatusDrop('d-s', row.s, allowed, ALL_S)}</div>
+        <div class="field-group"><label>Priority</label>${buildDrawerPrioDrop('d-prio', row.prio||'Medium')}</div>
+      </div>
+      <div class="field-group"><label>Project Start</label><input id="d-projStart" type="date" value="${row.projStart || ''}"></div>
+      <div class="field-row">
+        <div class="field-group"><label>Owner</label>
+          <select id="d-r">
+            ${(DATA_OWNERS||[]).map(o=>{const n=o.displayName||((o.firstName||'')+' '+(o.lastName||'')).trim();return `<option value="${n}"${(row.owner||'')=== n?' selected':''}>${n}</option>`;}).join('')}
+          </select>
+        </div>
+        <div class="field-group"><label>Contact</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select id="d-rsp" style="flex:1">
+              <option value="">— None —</option>
+              ${[...(DATA_CONTACTS||[])].sort((a,b)=>(a.lastName||'').localeCompare(b.lastName||'') || (a.firstName||'').localeCompare(b.firstName||'')).map(c=>{
+                const n=contactDisplayName(c);
+                const stored=((c.firstName||'')+' '+(c.lastName||'')).trim();
+                return `<option value="${esc(stored)}"${(row.contact||'')=== stored?' selected':''}>${n}${c.company?' · '+c.company:''}</option>`;
+              }).join('')}
+            </select>
+            <button type="button" onclick="openNewContactFromOpp('${row._row}','${esc(row.c)}')"
+              style="padding:5px 10px;border:1px solid var(--teal-l);border-radius:6px;background:var(--teal-t);color:var(--teal);font-size:.72rem;font-family:var(--font);cursor:pointer;white-space:nowrap;flex-shrink:0">+ New</button>
+          </div>
+        </div>
+      </div>
+      <div class="field-group"><label>Source</label><input id="d-src" value="${esc(row.src || '')}"></div>
+      <div style="font-size:.7rem;color:var(--slate);margin-top:4px">Row ${row._row} · Created ${row.createdDate || '—'} · Updated ${row.updDate || '—'}</div>
+    </div>
+
+    <div class="dtab-pane" id="dpane-sourcing">${srcTab}</div>
+
+    <div class="dtab-pane" id="dpane-conv" data-msg-panel="${esc(row.pid||'')}">
+      <div style="font-size:.72rem;color:var(--slate2);padding:4px 0">💬 Loading messages…</div>
+    </div>`;
 
   const foot = `
     <button class="sbtn sbtn-p" onclick="savePipeDrawer()" style="flex:1">✓ Save Changes</button>
     <button class="sbtn" style="background:var(--teal-t);color:var(--teal);border:1px solid var(--teal-l)" onclick="openNewTask('opp','${esc(row.c + (row.p ? ' · ' + row.p : ''))}','')">+ Task</button>
     <button class="sbtn" style="background:#fff5f5;color:var(--red);border:1px solid var(--red-l)" onclick="archiveOpp('${esc(k)}')">⊘ Archive</button>
-    <button class="sbtn" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe" onclick="openSourcingFromOpp('${safeKey}')">🔍 Source</button>
     <button class="sbtn sbtn-d" onclick="closeDrawer()">Cancel</button>`;
 
   openDrawer((row.c + (row.p ? ' · ' + row.p : '')) || 'Edit Opportunity', body, foot, 'pipeline', k, row.pid || '');
