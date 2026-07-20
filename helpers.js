@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.16 · 2026-07-06 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.12 · 2026-07-14 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -446,4 +446,130 @@ function renderMsgPanel(recordId) {
   return `<div class="drawer-sec" data-msg-panel="${esc(recordId)}" id="mp-${safeId}" style="margin-top:16px">
     <div style="font-size:.72rem;color:var(--slate2);padding:4px 0">💬 Loading messages…</div>
   </div>`;
+}
+
+// ── Drawer tab switcher ──────────────────────────────────────
+function _dtab(el, paneId) {
+  const drawer = el.closest('.drawer-body') || document.getElementById('drawer-body');
+  drawer.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+  drawer.querySelectorAll('.dtab-pane').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const pane = document.getElementById(paneId);
+  if (pane) {
+    pane.classList.add('active');
+    // Trigger msg fill if this is the conversation pane
+    if (pane.dataset.msgPanel) _fillMsgPanel(pane, pane.dataset.msgPanel);
+  }
+}
+
+// ── Global Search ────────────────────────────────────────────
+let _gsIdx = -1;
+let _gsResults = [];
+
+function openGSearch() {
+  const ov = document.getElementById('gsearch-overlay');
+  const inp = document.getElementById('gsearch-input');
+  if (!ov || !inp) return;
+  ov.classList.add('open');
+  inp.value = '';
+  _gsIdx = -1;
+  _gsResults = [];
+  document.getElementById('gsearch-results').innerHTML = '<div class="gsearch-empty">Type to search across all records</div>';
+  setTimeout(() => inp.focus(), 50);
+}
+
+function closeGSearch() {
+  document.getElementById('gsearch-overlay')?.classList.remove('open');
+}
+
+function gsearchKey(e) {
+  if (e.key === 'Escape') { closeGSearch(); return; }
+  if (e.key === 'ArrowDown') { _gsIdx = Math.min(_gsIdx+1, _gsResults.length-1); gsearchHighlight(); e.preventDefault(); return; }
+  if (e.key === 'ArrowUp')   { _gsIdx = Math.max(_gsIdx-1, 0); gsearchHighlight(); e.preventDefault(); return; }
+  if (e.key === 'Enter') { if (_gsIdx >= 0 && _gsResults[_gsIdx]) { gsearchOpen(_gsResults[_gsIdx]); } return; }
+}
+
+function gsearchHighlight() {
+  document.querySelectorAll('.gsearch-row').forEach((r,i) => r.classList.toggle('gs-active', i === _gsIdx));
+  const active = document.querySelector('.gsearch-row.gs-active');
+  if (active) active.scrollIntoView({ block:'nearest' });
+}
+
+function gsearchOpen(hit) {
+  closeGSearch();
+  switch (hit.type) {
+    case 'pipe':    UI.nav('pipeline',null); setTimeout(()=>openPipeDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
+    case 'contact': UI.nav('contacts',null); setTimeout(()=>openContactDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
+    case 'company': UI.nav('companies',null); setTimeout(()=>openCompanyDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
+    case 'event':   UI.nav('events',null); setTimeout(()=>openEventDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
+    case 'task':    UI.nav('tasks',null); setTimeout(()=>openTaskDrawer(hit.key.replace(/'/g,'__SQ__')),150); break;
+  }
+}
+
+function gsearchRender() {
+  const q = (document.getElementById('gsearch-input')?.value||'').toLowerCase().trim();
+  const out = document.getElementById('gsearch-results');
+  if (!out) return;
+  if (!q) { out.innerHTML = '<div class="gsearch-empty">Type to search across all records</div>'; _gsResults=[]; return; }
+
+  const hits = [];
+
+  // Pipeline
+  (DATA_PIPE||[]).forEach(r => {
+    if (!(r.c+r.p+r.d+r.owner).toLowerCase().includes(q)) return;
+    hits.push({ type:'pipe', key:r.c+'|||'+r.p, icon:'🎯', title:r.c+(r.p?' · '+r.p:''), sub:r.s+(r.owner?' · '+r.owner:''), badge:r.s, badgeCls:r.s==='Running'?'b-green':r.s==='Bidding'?'b-purple':r.s==='Pipeline'?'b-blue':r.s==='Prospect'?'b-amber':'b-grey', group:'Opportunities' });
+  });
+
+  // Contacts
+  (DATA_CONTACTS||[]).forEach(r => {
+    const name = (r.firstName+' '+r.lastName).trim();
+    if (!(name+r.email+r.company).toLowerCase().includes(q)) return;
+    hits.push({ type:'contact', key:r.id, icon:'👤', title:name||r.id, sub:[r.company,r.role].filter(Boolean).join(' · '), group:'Contacts' });
+  });
+
+  // Companies
+  (DATA_COMPANIES||[]).forEach(r => {
+    if (!(r.name+r.industry+r.notes).toLowerCase().includes(q)) return;
+    hits.push({ type:'company', key:r.id||r.name, icon:'🏢', title:r.name, sub:[r.industry,r.country].filter(Boolean).join(' · '), group:'Companies' });
+  });
+
+  // Events
+  (DATA_EVENTS||[]).forEach(r => {
+    if (!(r.name+r.place+r.industry+r.owner).toLowerCase().includes(q)) return;
+    hits.push({ type:'event', key:r.id, icon:'📅', title:r.name, sub:[fmtDate(r.dateFrom),r.place].filter(Boolean).join(' · '), group:'Events' });
+  });
+
+  // Tasks
+  (DATA_TASKS||[]).forEach(r => {
+    if (!(r.taskName+r.type+r.linkedOpp+r.notes+r.responsible).toLowerCase().includes(q)) return;
+    hits.push({ type:'task', key:r.id, icon:taskTypeIcon(r.type||'Other'), title:r.taskName||r.type||r.id, sub:[r.linkedOpp,r.responsible].filter(Boolean).join(' · '), group:'Tasks' });
+  });
+
+  _gsResults = hits.slice(0,40);
+  _gsIdx = _gsResults.length > 0 ? 0 : -1;
+
+  if (!_gsResults.length) { out.innerHTML = `<div class="gsearch-empty">No results for "${esc(q)}"</div>`; return; }
+
+  // Group
+  const groups = {};
+  _gsResults.forEach((h,i) => { if (!groups[h.group]) groups[h.group]=[]; groups[h.group].push({...h,_i:i}); });
+
+  let html = '';
+  let rowIdx = 0;
+  for (const [grp, items] of Object.entries(groups)) {
+    html += `<div class="gsearch-grp">${grp}</div>`;
+    items.forEach(h => {
+      const badge = h.badge ? `<span class="badge ${h.badgeCls||''}" style="font-size:.65rem">${h.badge}</span>` : '';
+      html += `<div class="gsearch-row${rowIdx===0?' gs-active':''}" onclick="gsearchOpen(${JSON.stringify({type:h.type,key:h.key})})">
+        <span class="gsearch-icon">${h.icon}</span>
+        <div class="gsearch-main">
+          <div class="gsearch-title">${esc(h.title)}</div>
+          ${h.sub?`<div class="gsearch-sub">${esc(h.sub)}</div>`:''}
+        </div>
+        <div class="gsearch-result-badge">${badge}</div>
+      </div>`;
+      rowIdx++;
+    });
+  }
+  out.innerHTML = html;
 }
