@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.11 · 2026-07-14 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.24 · 2026-10-09 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -504,6 +504,7 @@ const MsProvider = (() => {
           createdAt:       g(row,'CreateDate'),
           notes:           g(row,'Poznámka'),
           oldStatus:       g(row,'Old Status'),
+          nextCall:        g(row,'Term of next call') || 'Not planned',
         };
             }).filter(r => r && (r.id || r.name));
     },
@@ -550,6 +551,7 @@ const MsProvider = (() => {
       if (fields.competencies !== undefined) set('Competencies',     fields.competencies);
       set('Poznámka',        fields.notes);
       set('UpdateDate',      today);
+      if (fields.nextCall !== undefined) set('Term of next call', fields.nextCall === 'Not planned' ? '' : fields.nextCall);
       const lastCol = _colLetter(raw.length);
       const url = `https://graph.microsoft.com/v1.0/drives/${HR_CFG.driveId}/items/${HR_CFG.fileId}/workbook/worksheets/${encodeURIComponent(HR_CFG.sheet)}/range(address='A${candidate._row}:${lastCol}${candidate._row}')`;
       const t = await token();
