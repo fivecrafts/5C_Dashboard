@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.17 · 2026-07-07 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.24 · 2026-10-09 · Five Crafts s.r.o.
 // 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
 'use strict';
 
@@ -272,7 +272,7 @@ function renderHR(q, frole, fsen, fstat, fown) {
   `<div class="tbl-wrap"><table>
     <thead><tr>
       <th>Candidate</th><th>Role</th><th>Seniority</th><th>Status</th>
-      <th>Owner</th><th>Skills</th>${_hrShowRates?'<th>Rate</th>':''}<th></th>
+      <th>Owner</th><th>Next Call</th><th>Skills</th>${_hrShowRates?'<th>Rate</th>':''}<th></th>
     </tr></thead>
     <tbody>${filtered.map(c => {
       const safeId = (c.id||'').replace(/'/g,'__SQ__');
@@ -292,6 +292,7 @@ function renderHR(q, frole, fsen, fstat, fown) {
         <td style="white-space:nowrap">${hrSeniorityStars(c.seniority)}</td>
         <td onclick="event.stopPropagation()">${buildHRStatusDrop(c)}</td>
         <td style="font-size:.75rem">${c.owner||'—'}</td>
+        <td style="font-size:.72rem;white-space:nowrap;color:${(!c.nextCall||c.nextCall==='Not planned')?'var(--slate2)':'var(--navy2)'}">${c.nextCall&&c.nextCall!=='Not planned'?`📞 ${c.nextCall}`:'—'}</td>
         <td style="max-width:200px">${hrCompTags(c.competencies,3)}</td>
         ${_hrShowRates?`<td style="font-size:.75rem;color:var(--slate)">${c.rateRequested||'—'}</td>`:''}
         <td style="font-size:.72rem;color:var(--slate2)">${(c.updatedAt||'').slice(0,10)||'—'}</td>
@@ -359,6 +360,7 @@ function openHRDrawer(safeId) {
         <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           ${hrStatusBadge(c.status)}
           ${ageLbl?`<span style="font-size:.72rem;color:var(--slate)">${ageLbl}</span>`:''}
+          <span style="font-size:.72rem;color:var(--slate2)">📞 ${esc(c.nextCall||'Not planned')}</span>
         </div>
       </div>
     </div>
@@ -464,6 +466,20 @@ function openHRDrawer(safeId) {
       <textarea id="hrd-note" rows="2" placeholder="Append new note (prefixed with today's date)…"></textarea>
     </div>
 
+    <!-- Term of next call -->
+    <div class="field-group">
+      <label>📞 Term of next call</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="hrd-nextcall" value="${esc(c.nextCall||'Not planned')}"
+          placeholder="MM/YYYY or Not planned"
+          style="flex:1"
+          oninput="(()=>{const v=this.value.trim();const ok=v==='Not planned'||/^(0[1-9]|1[0-2])\/20[2-9][0-9]$/.test(v);this.style.borderColor=ok?'':' var(--red)';})()">  
+        <button type="button" onclick="$('hrd-nextcall').value='Not planned';$('hrd-nextcall').style.borderColor=''"
+          style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--slate);cursor:pointer;font-size:.72rem;white-space:nowrap">Not planned</button>
+      </div>
+      <div style="font-size:.65rem;color:var(--slate2);margin-top:3px">Format: MM/YYYY (e.g. 09/2026) or "Not planned"</div>
+    </div>
+
     <!-- System info -->
     <div style="font-size:.68rem;color:var(--slate2);margin-top:4px">
       ${c.id} · Created ${(c.createdAt||'').slice(0,10)||'—'} · Updated ${(c.updatedAt||'').slice(0,10)||'—'}
@@ -497,12 +513,14 @@ async function saveHRDrawer(origId) {
     email:           $('hrd-email') ? $('hrd-email').value.trim() : c.email,
     competencies:    $('hrd-comp')  ? $('hrd-comp').value.trim()  : c.competencies,
     notes:           updNotes,
+    nextCall:        (()=>{ const v=($('hrd-nextcall')||{}).value?.trim(); return v||'Not planned'; })(),
   };
   try {
     const ok = await P.saveHRRow(c, fields);
     if (ok) {
       Object.assign(c, fields, { notes: updNotes, updatedAt: today,
-        phone: fields.phone, email: fields.email, competencies: fields.competencies });
+        phone: fields.phone, email: fields.email, competencies: fields.competencies,
+        nextCall: fields.nextCall || 'Not planned' });
       renderHR();
       toast('✓ Saved','success');
       closeDrawer();
