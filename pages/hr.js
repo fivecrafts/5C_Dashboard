@@ -292,7 +292,14 @@ function renderHR(q, frole, fsen, fstat, fown) {
         <td style="white-space:nowrap">${hrSeniorityStars(c.seniority)}</td>
         <td onclick="event.stopPropagation()">${buildHRStatusDrop(c)}</td>
         <td style="font-size:.75rem">${c.owner||'—'}</td>
-        <td style="font-size:.72rem;white-space:nowrap;color:${(!c.nextCall||c.nextCall==='Not planned')?'var(--slate2)':'var(--navy2)'}">${c.nextCall&&c.nextCall!=='Not planned'?`📞 ${c.nextCall}`:'—'}</td>
+        <td style="font-size:.72rem;white-space:nowrap">${(()=>{
+          const nc=c.nextCall||'';
+          if(!nc||nc==='Not planned') return '<span style="color:var(--slate2)">—</span>';
+          const [m,y]=nc.split('/');
+          const now=new Date();
+          const past=parseInt(y)*12+(parseInt(m)-1)<now.getFullYear()*12+now.getMonth();
+          return `<span style="color:${past?'var(--red)':'var(--navy2)'}">📞 ${nc}</span>`;
+        })()}</td>
         <td style="max-width:200px">${hrCompTags(c.competencies,3)}</td>
         ${_hrShowRates?`<td style="font-size:.75rem;color:var(--slate)">${c.rateRequested||'—'}</td>`:''}
         <td style="font-size:.72rem;color:var(--slate2)">${(c.updatedAt||'').slice(0,10)||'—'}</td>
@@ -360,13 +367,20 @@ function openHRDrawer(safeId) {
         <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           ${hrStatusBadge(c.status)}
           ${ageLbl?`<span style="font-size:.72rem;color:var(--slate)">${ageLbl}</span>`:''}
-          <!-- Term of next call: badge + popup picker -->
+          <!-- Term of next call: clickable badge -->
           ${(()=>{
             const nc = c.nextCall||'';
             const isSet = nc && nc !== 'Not planned';
+            const [ncM, ncY] = isSet ? nc.split('/') : ['',''];
+            const isPast = isSet && (()=>{
+              const now=new Date();
+              return parseInt(ncY)*12+(parseInt(ncM)-1) < now.getFullYear()*12+now.getMonth();
+            })();
+            const badgeColor = isPast ? '#fca5a5' : 'rgba(255,255,255,.8)';
+            const badgeBg    = isPast ? 'rgba(220,38,38,.25)' : 'rgba(255,255,255,.12)';
             return `<span onclick="_hrNextCallPopup(this)" title="Click to set Term of next call"
-              style="font-size:.72rem;background:rgba(255,255,255,.15);border-radius:8px;padding:3px 10px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;position:relative">
-              📞 <span id="hrd-nc-label">${isSet?nc:'Not planned'}</span>
+              style="font-size:.72rem;background:${badgeBg};border-radius:8px;padding:3px 10px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
+              📞 <span id="hrd-nc-label" style="color:${badgeColor}">${isSet?nc:'Not planned'}</span>
               <input type="hidden" id="hrd-nextcall" value="${isSet?nc:''}">
             </span>`;
           })()}
@@ -697,30 +711,18 @@ async function archivePoolCheck(origId) {
 
 // ── HR Next Call helpers ─────────────────────────────────────
 function _hrNextCallPopup(badge) {
-  // Remove any existing popup
   document.querySelectorAll('.nc-popup').forEach(p => p.remove());
-
-  const now = new Date();
-  const curM = now.getMonth() + 1;
-  const curY = now.getFullYear();
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  // Build year options: current year to current+3
-  let yOpts = '<option value="">Year</option>';
-  for (let y = curY; y <= curY + 3; y++) yOpts += `<option value="${y}">${y}</option>`;
-
-  // Build month options: all 12 with MM – Name format
+  const now = new Date();
+  const curY = now.getFullYear();
   let mOpts = '<option value="">Month</option>';
-  for (let m = 1; m <= 12; m++) {
-    const mm = String(m).padStart(2,'0');
-    mOpts += `<option value="${mm}">${mm} – ${MONTHS[m-1]}</option>`;
-  }
-
+  for (let m=1; m<=12; m++) { const mm=String(m).padStart(2,'0'); mOpts+=`<option value="${mm}">${mm} – ${MONTHS[m-1]}</option>`; }
+  let yOpts = '<option value="">Year</option>';
+  for (let y=curY; y<=curY+3; y++) yOpts+=`<option value="${y}">${y}</option>`;
   const popup = document.createElement('div');
   popup.className = 'nc-popup';
-  popup.style.cssText = 'position:fixed;z-index:9000;background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.25);padding:14px;min-width:210px';
-  popup.innerHTML = `
-    <div style="font-size:.72rem;font-weight:700;color:var(--navy2);margin-bottom:10px">📞 Term of next call</div>
+  popup.style.cssText = 'position:fixed;z-index:9000;background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.25);padding:14px;min-width:220px';
+  popup.innerHTML = `<div style="font-size:.72rem;font-weight:700;color:var(--navy2);margin-bottom:10px">📞 Term of next call</div>
     <div style="display:flex;gap:6px;margin-bottom:10px">
       <select id="nc-pop-m" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:.78rem">${mOpts}</select>
       <select id="nc-pop-y" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:.78rem">${yOpts}</select>
@@ -729,48 +731,28 @@ function _hrNextCallPopup(badge) {
       <button onclick="_hrNextCallSet()" style="flex:1;padding:7px;border:none;border-radius:6px;background:var(--blue);color:#fff;cursor:pointer;font-size:.75rem;font-weight:600">✓ Set</button>
       <button onclick="_hrNextCallClear()" style="flex:1;padding:7px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--slate);cursor:pointer;font-size:.75rem">Not planned</button>
     </div>`;
-
-  // Pre-fill from current value
-  const cur = (document.getElementById('hrd-nextcall')||{}).value || '';
-  if (cur) {
-    const [m, y] = cur.split('/');
-    setTimeout(() => {
-      const sm = document.getElementById('nc-pop-m');
-      const sy = document.getElementById('nc-pop-y');
-      if (sm && m) sm.value = m;
-      if (sy && y) sy.value = y;
-    }, 0);
-  }
-
-  // Position below badge
+  const cur = (document.getElementById('hrd-nextcall')||{}).value||'';
+  if (cur) { const [m,y]=cur.split('/'); setTimeout(()=>{ const sm=document.getElementById('nc-pop-m'); const sy=document.getElementById('nc-pop-y'); if(sm&&m) sm.value=m; if(sy&&y) sy.value=y; },0); }
   const rect = badge.getBoundingClientRect();
-  popup.style.top  = (rect.bottom + 6) + 'px';
-  popup.style.left = Math.min(rect.left, window.innerWidth - 230) + 'px';
+  popup.style.top  = (rect.bottom+6)+'px';
+  popup.style.left = Math.min(rect.left, window.innerWidth-240)+'px';
   document.body.appendChild(popup);
-
-  // Close on outside click
-  setTimeout(() => document.addEventListener('click', function _close(e) {
-    if (!popup.contains(e.target) && e.target !== badge) {
-      popup.remove(); document.removeEventListener('click', _close);
-    }
-  }), 10);
+  setTimeout(()=>document.addEventListener('click', function _c(e){ if(!popup.contains(e.target)&&e.target!==badge){popup.remove();document.removeEventListener('click',_c);} }),10);
 }
-
 function _hrNextCallSet() {
-  const m  = (document.getElementById('nc-pop-m')||{}).value;
-  const y  = (document.getElementById('nc-pop-y')||{}).value;
-  const nc  = document.getElementById('hrd-nextcall');
-  const lbl = document.getElementById('hrd-nc-label');
-  const val = (m && y) ? m + '/' + y : '';
-  if (nc)  nc.value = val;
-  if (lbl) lbl.textContent = val || 'Not planned';
-  document.querySelectorAll('.nc-popup').forEach(p => p.remove());
+  const m=(document.getElementById('nc-pop-m')||{}).value;
+  const y=(document.getElementById('nc-pop-y')||{}).value;
+  const nc=document.getElementById('hrd-nextcall');
+  const lbl=document.getElementById('hrd-nc-label');
+  const val=(m&&y)?m+'/'+y:'';
+  if(nc) nc.value=val;
+  if(lbl){ lbl.textContent=val||'Not planned'; const now=new Date(); const past=val&&(parseInt(y)*12+(parseInt(m)-1)<now.getFullYear()*12+now.getMonth()); lbl.style.color=past?'#fca5a5':'rgba(255,255,255,.8)'; }
+  document.querySelectorAll('.nc-popup').forEach(p=>p.remove());
 }
-
 function _hrNextCallClear() {
-  const nc  = document.getElementById('hrd-nextcall');
-  const lbl = document.getElementById('hrd-nc-label');
-  if (nc)  nc.value = '';
-  if (lbl) lbl.textContent = 'Not planned';
-  document.querySelectorAll('.nc-popup').forEach(p => p.remove());
+  const nc=document.getElementById('hrd-nextcall');
+  const lbl=document.getElementById('hrd-nc-label');
+  if(nc) nc.value='';
+  if(lbl){ lbl.textContent='Not planned'; lbl.style.color='rgba(255,255,255,.8)'; }
+  document.querySelectorAll('.nc-popup').forEach(p=>p.remove());
 }
