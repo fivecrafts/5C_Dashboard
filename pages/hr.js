@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.26 · 2026-10-09 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.27 · 2026-10-09 · Five Crafts s.r.o.
 // 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
 'use strict';
 
@@ -376,12 +376,11 @@ function openHRDrawer(safeId) {
               const now=new Date();
               return parseInt(ncY)*12+(parseInt(ncM)-1) < now.getFullYear()*12+now.getMonth();
             })();
-            const badgeColor = isPast ? 'var(--red)' : 'var(--slate)';
-            const badgeBg    = isPast ? 'var(--red-t)' : 'var(--bg)';
-            const badgeBorder= isPast ? '1px solid var(--red-l)' : '1px solid var(--border)';
+            const badgeColor = isPast ? '#fca5a5' : 'rgba(255,255,255,.8)';
+            const badgeBg    = isPast ? 'rgba(220,38,38,.25)' : 'rgba(255,255,255,.12)';
             return `<span onclick="_hrNextCallPopup(this)" title="Click to set Term of next call"
-              style="font-size:.72rem;background:${badgeBg};border:${badgeBorder};border-radius:8px;padding:3px 10px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
-              📞 <span id="hrd-nc-label" style="color:${badgeColor};font-weight:600">${isSet?nc:'Not planned'}</span>
+              style="font-size:.72rem;background:${badgeBg};border-radius:8px;padding:3px 10px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
+              📞 <span id="hrd-nc-label" style="color:${badgeColor}">${isSet?nc:'Not planned'}</span>
               <input type="hidden" id="hrd-nextcall" value="${isSet?nc:''}">
             </span>`;
           })()}
@@ -717,7 +716,7 @@ function _hrNextCallPopup(badge) {
   const now = new Date();
   const curY = now.getFullYear();
   let mOpts = '<option value="">Month</option>';
-  for (let m=1; m<=12; m++) { const mm=String(m).padStart(2,'0'); mOpts+=`<option value="${mm}">${mm} – ${MONTHS[m-1]}</option>`; }
+  for (let m=1; m<=12; m++) { const mm=String(m).padStart(2,'0'); mOpts+=`<option value="${mm}">${MONTHS[m-1]}</option>`; }
   let yOpts = '<option value="">Year</option>';
   for (let y=curY; y<=curY+3; y++) yOpts+=`<option value="${y}">${y}</option>`;
   const popup = document.createElement('div');
@@ -747,13 +746,13 @@ function _hrNextCallSet() {
   const lbl=document.getElementById('hrd-nc-label');
   const val=(m&&y)?m+'/'+y:'';
   if(nc) nc.value=val;
-  if(lbl){ lbl.textContent=val||'Not planned'; const now=new Date(); const past=val&&(parseInt(y)*12+(parseInt(m)-1)<now.getFullYear()*12+now.getMonth()); lbl.style.color=past?'var(--red)':'var(--slate)'; const badge=lbl.closest('span'); if(badge){ badge.style.background=past?'var(--red-t)':'var(--bg)'; badge.style.border=past?'1px solid var(--red-l)':'1px solid var(--border)'; } }
+  if(lbl){ lbl.textContent=val||'Not planned'; const now=new Date(); const past=val&&(parseInt(y)*12+(parseInt(m)-1)<now.getFullYear()*12+now.getMonth()); lbl.style.color=past?'#fca5a5':'rgba(255,255,255,.8)'; }
   document.querySelectorAll('.nc-popup').forEach(p=>p.remove());
 }
 function _hrNextCallClear() {
   const nc=document.getElementById('hrd-nextcall');
   const lbl=document.getElementById('hrd-nc-label');
   if(nc) nc.value='';
-  if(lbl){ lbl.textContent='Not planned'; lbl.style.color='var(--slate)'; const badge=lbl.closest('span'); if(badge){ badge.style.background='var(--bg)'; badge.style.border='1px solid var(--border)'; } }
+  if(lbl){ lbl.textContent='Not planned'; lbl.style.color='rgba(255,255,255,.8)'; }
   document.querySelectorAll('.nc-popup').forEach(p=>p.remove());
 }
