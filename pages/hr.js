@@ -360,20 +360,36 @@ function openHRDrawer(safeId) {
         <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           ${hrStatusBadge(c.status)}
           ${ageLbl?`<span style="font-size:.72rem;color:var(--slate)">${ageLbl}</span>`:''}
-          <!-- Term of next call inline picker -->
-          <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.06);border-radius:8px;padding:3px 8px">
-            <span style="font-size:.72rem">📞</span>
-            <input id="hrd-nextcall"
-              value="${(()=>{const nc=c.nextCall||'';if(!nc||nc==='Not planned')return '';const[m,y]=nc.split('/');return(m&&y)?y+'-'+m:'';})()}"
-              type="month"
-              min="2024-01" max="2030-12"
-              title="Term of next call"
-              style="border:none;background:transparent;font-size:.72rem;color:var(--navy2);font-family:var(--font);width:110px;outline:none;cursor:pointer"
-              onchange="(()=>{const v=this.value;if(v){const[y,m]=v.split('-');this.setAttribute('data-fmt',m+'/'+y);}else{this.setAttribute('data-fmt','');}})()">
-            <button type="button" title="Set Not planned"
-              onclick="$('hrd-nextcall').value='';$('hrd-nextcall').setAttribute('data-fmt','')"
-              style="border:none;background:transparent;color:var(--slate2);cursor:pointer;font-size:.7rem;padding:0;line-height:1">✕</button>
-          </div>
+          <!-- Term of next call inline selector -->
+          ${(()=>{
+            const nc = c.nextCall||'';
+            const isSet = nc && nc !== 'Not planned';
+            const [ncM, ncY] = isSet ? nc.split('/') : ['',''];
+            return `<div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.1);border-radius:8px;padding:3px 8px">
+              <span style="font-size:.72rem;flex-shrink:0">📞</span>
+              <select id="hrd-nc-m" onchange="_hrNextCallChange()"
+                style="border:none;background:transparent;color:#fff;font-size:.72rem;font-family:var(--font);cursor:pointer;outline:none;padding:0;max-width:44px">
+                <option value="">—</option>
+                <option value=\"01\">Jan</option><option value=\"02\">Feb</option><option value=\"03\">Mar</option><option value=\"04\">Apr</option><option value=\"05\">May</option><option value=\"06\">Jun</option><option value=\"07\">Jul</option><option value=\"08\">Aug</option><option value=\"09\">Sep</option><option value=\"10\">Oct</option><option value=\"11\">Nov</option><option value=\"12\">Dec</option>
+              </select>
+              <select id="hrd-nc-y" onchange="_hrNextCallChange()"
+                style="border:none;background:transparent;color:#fff;font-size:.72rem;font-family:var(--font);cursor:pointer;outline:none;padding:0;max-width:44px">
+                <option value="">—</option>
+                <option value=\"2024\">2024</option><option value=\"2025\">2025</option><option value=\"2026\">2026</option><option value=\"2027\">2027</option><option value=\"2028\">2028</option><option value=\"2029\">2029</option><option value=\"2030\">2030</option>
+              </select>
+              <button type="button" title="Not planned" onclick="_hrNextCallClear()"
+                style="border:none;background:rgba(255,255,255,.15);color:#fff;border-radius:4px;cursor:pointer;font-size:.65rem;padding:1px 5px;line-height:1.4">✕</button>
+              <input type="hidden" id="hrd-nextcall" value="${isSet?nc:''}">
+            </div>
+            <script>
+              (()=>{
+                const m=document.getElementById('hrd-nc-m');
+                const y=document.getElementById('hrd-nc-y');
+                if(m&&'${ncM}') m.value='${ncM}';
+                if(y&&'${ncY}') y.value='${ncY}';
+              })();
+            </script>`;
+          })()}
         </div>
       </div>
     </div>
@@ -479,6 +495,7 @@ function openHRDrawer(safeId) {
       <textarea id="hrd-note" rows="2" placeholder="Append new note (prefixed with today's date)…"></textarea>
     </div>
 
+
     <!-- System info -->
     <div style="font-size:.68rem;color:var(--slate2);margin-top:4px">
       ${c.id} · Created ${(c.createdAt||'').slice(0,10)||'—'} · Updated ${(c.updatedAt||'').slice(0,10)||'—'}
@@ -512,7 +529,7 @@ async function saveHRDrawer(origId) {
     email:           $('hrd-email') ? $('hrd-email').value.trim() : c.email,
     competencies:    $('hrd-comp')  ? $('hrd-comp').value.trim()  : c.competencies,
     notes:           updNotes,
-    nextCall:        (()=>{ const v=($('hrd-nextcall')||{}).value?.trim(); if(!v) return 'Not planned'; const [y,m]=v.split('-'); return m&&y?m+'/'+y:'Not planned'; })(),
+    nextCall:        (()=>{ const v=($('hrd-nextcall')||{}).value?.trim(); return v||'Not planned'; })(),
   };
   try {
     const ok = await P.saveHRRow(c, fields);
@@ -696,4 +713,21 @@ async function archivePoolCheck(origId) {
       renderHR();
     } else toast('⚠ Archive failed','error');
   } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+// ── HR Next Call helpers ─────────────────────────────────────
+function _hrNextCallChange() {
+  const m = document.getElementById('hrd-nc-m');
+  const y = document.getElementById('hrd-nc-y');
+  const nc = document.getElementById('hrd-nextcall');
+  if (!m || !y || !nc) return;
+  nc.value = (m.value && y.value) ? m.value + '/' + y.value : '';
+}
+function _hrNextCallClear() {
+  const m = document.getElementById('hrd-nc-m');
+  const y = document.getElementById('hrd-nc-y');
+  const nc = document.getElementById('hrd-nextcall');
+  if (m) m.value = '';
+  if (y) y.value = '';
+  if (nc) nc.value = '';
 }
