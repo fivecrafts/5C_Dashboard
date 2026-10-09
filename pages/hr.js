@@ -360,36 +360,37 @@ function openHRDrawer(safeId) {
         <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           ${hrStatusBadge(c.status)}
           ${ageLbl?`<span style="font-size:.72rem;color:var(--slate)">${ageLbl}</span>`:''}
-          <!-- Term of next call inline selector -->
-          ${(()=>{
-            const nc = c.nextCall||'';
-            const isSet = nc && nc !== 'Not planned';
-            const [ncM, ncY] = isSet ? nc.split('/') : ['',''];
-            return `<div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.1);border-radius:8px;padding:3px 8px">
-              <span style="font-size:.72rem;flex-shrink:0">📞</span>
-              <select id="hrd-nc-m" onchange="_hrNextCallChange()"
-                style="border:none;background:transparent;color:#fff;font-size:.72rem;font-family:var(--font);cursor:pointer;outline:none;padding:0;max-width:44px">
-                <option value="">—</option>
-                <option value=\"01\">Jan</option><option value=\"02\">Feb</option><option value=\"03\">Mar</option><option value=\"04\">Apr</option><option value=\"05\">May</option><option value=\"06\">Jun</option><option value=\"07\">Jul</option><option value=\"08\">Aug</option><option value=\"09\">Sep</option><option value=\"10\">Oct</option><option value=\"11\">Nov</option><option value=\"12\">Dec</option>
+          <!-- Term of next call: shown as badge, edit via footer field -->
+          <span id="hrd-nc-badge" onclick="_hrNextCallPopup()" title="Click to change Term of next call"
+            style="font-size:.72rem;background:rgba(255,255,255,.15);border-radius:8px;padding:3px 9px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap">
+            📞 <span id="hrd-nc-label">${esc((c.nextCall&&c.nextCall!=='Not planned')?c.nextCall:'Not planned')}</span>
+          </span>
+          <!-- hidden inputs for save -->
+          <input type="hidden" id="hrd-nextcall" value="${esc((c.nextCall&&c.nextCall!=='Not planned')?c.nextCall:'')}">
+          <!-- popup picker (initially hidden) -->
+          <div id="hrd-nc-popup" style="display:none;position:absolute;top:60px;right:16px;z-index:200;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.2);padding:12px;min-width:200px">
+            <div style="font-size:.7rem;font-weight:700;color:var(--navy2);margin-bottom:8px">📞 Term of next call</div>
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+              <select id="hrd-nc-m" style="flex:1;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:.78rem;font-family:var(--font)">
+                <option value="">Month</option>
+                <option value="01">01 – Jan</option><option value="02">02 – Feb</option><option value="03">03 – Mar</option>
+                <option value="04">04 – Apr</option><option value="05">05 – May</option><option value="06">06 – Jun</option>
+                <option value="07">07 – Jul</option><option value="08">08 – Aug</option><option value="09">09 – Sep</option>
+                <option value="10">10 – Oct</option><option value="11">11 – Nov</option><option value="12">12 – Dec</option>
               </select>
-              <select id="hrd-nc-y" onchange="_hrNextCallChange()"
-                style="border:none;background:transparent;color:#fff;font-size:.72rem;font-family:var(--font);cursor:pointer;outline:none;padding:0;max-width:44px">
-                <option value="">—</option>
-                <option value=\"2024\">2024</option><option value=\"2025\">2025</option><option value=\"2026\">2026</option><option value=\"2027\">2027</option><option value=\"2028\">2028</option><option value=\"2029\">2029</option><option value=\"2030\">2030</option>
+              <select id="hrd-nc-y" style="flex:1;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:.78rem;font-family:var(--font)">
+                <option value="">Year</option>
+                <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+                <option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option>
+                <option value="2030">2030</option>
               </select>
-              <button type="button" title="Not planned" onclick="_hrNextCallClear()"
-                style="border:none;background:rgba(255,255,255,.15);color:#fff;border-radius:4px;cursor:pointer;font-size:.65rem;padding:1px 5px;line-height:1.4">✕</button>
-              <input type="hidden" id="hrd-nextcall" value="${isSet?nc:''}">
             </div>
-            <script>
-              (()=>{
-                const m=document.getElementById('hrd-nc-m');
-                const y=document.getElementById('hrd-nc-y');
-                if(m&&'${ncM}') m.value='${ncM}';
-                if(y&&'${ncY}') y.value='${ncY}';
-              })();
-            </script>`;
-          })()}
+            <div style="display:flex;gap:6px">
+              <button onclick="_hrNextCallSet()" style="flex:1;padding:6px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-size:.75rem;font-weight:600">✓ Set</button>
+              <button onclick="_hrNextCallClear()" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--slate);cursor:pointer;font-size:.75rem">Not planned</button>
+              <button onclick="document.getElementById('hrd-nc-popup').style.display='none'" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--slate);cursor:pointer;font-size:.75rem">✕</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -716,18 +717,35 @@ async function archivePoolCheck(origId) {
 }
 
 // ── HR Next Call helpers ─────────────────────────────────────
-function _hrNextCallChange() {
-  const m = document.getElementById('hrd-nc-m');
-  const y = document.getElementById('hrd-nc-y');
+function _hrNextCallPopup() {
+  const popup = document.getElementById('hrd-nc-popup');
+  if (!popup) return;
+  const vis = popup.style.display !== 'none';
+  popup.style.display = vis ? 'none' : 'block';
+  if (!vis) {
+    // Pre-fill selects from hidden input
+    const nc = (document.getElementById('hrd-nextcall')||{}).value || '';
+    const [m, y] = nc ? nc.split('/') : ['', ''];
+    const sm = document.getElementById('hrd-nc-m');
+    const sy = document.getElementById('hrd-nc-y');
+    if (sm) sm.value = m || '';
+    if (sy) sy.value = y || '';
+  }
+}
+function _hrNextCallSet() {
+  const m = (document.getElementById('hrd-nc-m')||{}).value;
+  const y = (document.getElementById('hrd-nc-y')||{}).value;
   const nc = document.getElementById('hrd-nextcall');
-  if (!m || !y || !nc) return;
-  nc.value = (m.value && y.value) ? m.value + '/' + y.value : '';
+  const lbl = document.getElementById('hrd-nc-label');
+  const val = (m && y) ? m + '/' + y : '';
+  if (nc) nc.value = val;
+  if (lbl) lbl.textContent = val || 'Not planned';
+  document.getElementById('hrd-nc-popup').style.display = 'none';
 }
 function _hrNextCallClear() {
-  const m = document.getElementById('hrd-nc-m');
-  const y = document.getElementById('hrd-nc-y');
   const nc = document.getElementById('hrd-nextcall');
-  if (m) m.value = '';
-  if (y) y.value = '';
+  const lbl = document.getElementById('hrd-nc-label');
   if (nc) nc.value = '';
+  if (lbl) lbl.textContent = 'Not planned';
+  document.getElementById('hrd-nc-popup').style.display = 'none';
 }
