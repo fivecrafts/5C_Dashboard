@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.24 · 2026-10-09 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.25 · 2026-10-09 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -442,8 +442,11 @@ const MsProvider = (() => {
       // Build column index map (store globally for save operations)
       DATA_HR_COLS = {};
       headers.forEach((h,i) => { DATA_HR_COLS[h] = i; });
+      // Build case-insensitive lookup
+      const DATA_HR_COLS_LC = {};
+      Object.entries(DATA_HR_COLS).forEach(([k,v]) => { DATA_HR_COLS_LC[k.toLowerCase()] = v; });
       const g = (row, name) => {
-        const i = DATA_HR_COLS[name];
+        const i = DATA_HR_COLS[name] ?? DATA_HR_COLS_LC[name.toLowerCase()];
         return i !== undefined ? String(row[i]??'').trim() : '';
       };
       // Extract href from =HYPERLINK("url","text") formula, else use cell value
