@@ -376,11 +376,11 @@ function openHRDrawer(safeId) {
               const now=new Date();
               return parseInt(ncY)*12+(parseInt(ncM)-1) < now.getFullYear()*12+now.getMonth();
             })();
-            const badgeColor = isPast ? 'var(--red)' : 'var(--slate)';
-            const badgeBg    = isPast ? 'var(--red-t)' : 'var(--bg)';
-            const badgeBorder= isPast ? '1px solid var(--red-l)' : '1px solid var(--border)';
+            const badgeColor = isPast ? '#dc2626' : '#475569';
+            const badgeBg    = isPast ? '#fee2e2' : '#f1f5f9';
+            const badgeBorder= isPast ? '#fca5a5' : '#e2e8f0';
             return `<span onclick="_hrNextCallPopup(this)" title="Click to set Term of next call"
-              style="font-size:.72rem;background:${badgeBg};border:${badgeBorder};border-radius:8px;padding:3px 10px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
+              style="font-size:.72rem;background:${badgeBg};border:1px solid ${badgeBorder};border-radius:8px;padding:3px 10px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
               📞 <span id="hrd-nc-label" style="color:${badgeColor};font-weight:600">${isSet?nc:'Not planned'}</span>
               <input type="hidden" id="hrd-nextcall" value="${isSet?nc:''}">
             </span>`;
