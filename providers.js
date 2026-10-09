@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.25 · 2026-10-09 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.27 · 2026-10-09 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -88,6 +88,9 @@ const MsProvider = (() => {
     // US format: 5/19/2026 or 05/19/2026
     const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (us) return `${us[3]}-${us[1].padStart(2,'0')}-${us[2].padStart(2,'0')}`;
+    // Czech/European format: DD.MM.YYYY
+    const eu = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (eu) return `${eu[3]}-${eu[2].padStart(2,'0')}-${eu[1].padStart(2,'0')}`;
     // Excel serial number
     const n = Number(s);
     if (!isNaN(n) && n > 1) {
@@ -488,23 +491,23 @@ const MsProvider = (() => {
           rateRequested:   g(row,'Cena požadovaná'),
           rateAgreed:      g(row,'Cena smluvená'),
           proposedProjects:g(row,'Projekty navržené'),
-          updatedAt:       g(row,'UpdateDate'),
+          updatedAt:       excelDate(g(row,'UpdateDate')),
           linkedin:        gUrl(row, formulas[i+1], 'LI'),
           cv:              gUrl(row, formulas[i+1], 'CV'),
           country:         g(row,'Country'),
           commitment:      g(row,'Úvazek'),
-          availableFrom:   g(row,'Nástup'),
+          availableFrom:   excelDate(g(row,'Nástup')),
           source:          g(row,'Source'),
           hrRole:          g(row,'HR | Role'),
-          hrInterviewDate: g(row,'HR | Interview Date'),
+          hrInterviewDate: excelDate(g(row,'HR | Interview Date')),
           hrKnowhow:       g(row,'HR | Key Know-how'),
           hrMotivation:    g(row,'HR | Motivation'),
           hrExpectations:  g(row,'HR | Expectations'),
           hrSummary:       g(row,'HR | Summary'),
           phone:           g(row,'Telefon'),
           email:           g(row,'Email'),
-          dob:             g(row,'DoB'),
-          createdAt:       g(row,'CreateDate'),
+          dob:             excelDate(g(row,'DoB')),
+          createdAt:       excelDate(g(row,'CreateDate')),
           notes:           g(row,'Poznámka'),
           oldStatus:       g(row,'Old Status'),
           nextCall:        g(row,'Term of next call') || 'Not planned',
@@ -635,8 +638,8 @@ const MsProvider = (() => {
           result:     g(row,'Výsledek'),
           noteGeneral:g(row,'NOTE'),
           duplicateFlag:g(row,'Duplicate Flag'),
-          createdAt:  g(row,'DateCreated'),
-          updatedAt:  g(row,'DateUpdated'),
+          createdAt:  excelDate(g(row,'DateCreated')),
+          updatedAt:  excelDate(g(row,'DateUpdated')),
           archived:   arch,
         };
       }).filter(r => r && (r.id || r.name));
