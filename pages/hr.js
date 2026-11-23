@@ -1,4 +1,4 @@
-// 5C Dashboard v1.40.28 · 2026-10-09 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.29 · 2026-10-09 · Five Crafts s.r.o.
 // 5C Dashboard v1.34.0 · 2026-06-18 15:00 · Five Crafts s.r.o.
 'use strict';
 
@@ -13,7 +13,7 @@ if (typeof DATA_HR_COLS === 'undefined') window.DATA_HR_COLS = {};
 
 let _hrShowRates     = false; // rates hidden in list by default
 let _hrDrawerRates  = false; // rates hidden in drawer by default
-let _hrSource       = 'both'; // 'hr' | 'pool' | 'both'
+let _hrSource       = 'hr';   // 'hr' | 'pool' | 'both'
 let _hrActiveGroups = new Set(); // clicked group labels for multi-select filter
 
 function hrToggleGroup(label) {
