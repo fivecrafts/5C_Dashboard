@@ -1,4 +1,4 @@
-// 5C Dashboard v1.39.1 · 2026-06-19 · Five Crafts s.r.o.
+// 5C Dashboard v1.40.29 · 2026-10-09 · Five Crafts s.r.o.
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -47,7 +47,7 @@ function renderSourcing() {
   if (!el) return;
   const runs = DATA_SOURCING_RUNS || [];
   const oppCount = DATA_PIPE.filter(r => !['Cancelled','Done'].includes(r.s)).length;
-  const hrCount  = (DATA_HR||[]).length + (DATA_POOL||[]).length;
+  const hrCount  = (DATA_HR||[]).length;
 
   el.innerHTML = `
   <div style="max-width:1100px">
@@ -268,9 +268,7 @@ function openSourcingModal(oppKey) {
       <div class="field-group">
         <label>Search In</label>
         <div style="display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;width:fit-content">
-          <button id="src-pool-hr"   onclick="_srcTogglePool('hr')"   style="padding:6px 12px;font-size:.78rem;font-weight:600;border:none;cursor:pointer;background:var(--navy);color:#fff">HR Candidates</button>
-          <button id="src-pool-pool" onclick="_srcTogglePool('pool')" style="padding:6px 12px;font-size:.78rem;font-weight:600;border:none;cursor:pointer;background:var(--card);color:var(--slate)">Search Pool</button>
-          <button id="src-pool-both" onclick="_srcTogglePool('both')" style="padding:6px 12px;font-size:.78rem;font-weight:600;border:none;cursor:pointer;background:var(--card);color:var(--slate)">Both</button>
+          <span style="font-size:.72rem;color:var(--slate2);padding:6px 8px">👤 HR Candidates only</span>
         </div>
       </div>
       <div class="field-group">
@@ -390,8 +388,7 @@ async function _srcRun() {
   const minScore = parseInt($('src-min-score')?.value||'5');
 
   let candidates = [];
-  if (_srcPoolMode==='hr'||_srcPoolMode==='both')   candidates = candidates.concat((DATA_HR||[]).map(c=>({...c,_source:'hr'})));
-  if (_srcPoolMode==='pool'||_srcPoolMode==='both') candidates = candidates.concat((DATA_POOL||[]).map(c=>({...c,_source:'pool'})));
+  candidates = candidates.concat((DATA_HR||[]).map(c=>({...c,_source:'hr'})));
   candidates = candidates.filter(c=>!['Blacklisted','Rejected'].includes(c.status||''));
   if (!candidates.length) { toast('No candidates loaded','error'); return; }
 
